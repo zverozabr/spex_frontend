@@ -1,0 +1,102 @@
+{
+  "extends": [
+    "react-app",
+    "plugin:react/all",
+    "plugin:jest/recommended",
+    "plugin:promise/recommended",
+    "plugin:security/recommended"
+  ],
+  "plugins": [
+    "jest",
+    "react",
+    "react-hooks",
+    "react-redux",
+    "security",
+    "unicorn",
+    "promise",
+    "import"
+  ],
+
+  "settings": {
+    "import/resolver": {
+      "webpack": {
+        "config": "./config/webpack.config.js"
+      }
+    }
+  },
+
+  "rules": {
+    "semi": [2, "always"],
+    "eol-last": ["error", "always"],
+
+    "security/detect-object-injection": [0],
+
+    "promise/prefer-await-to-callbacks": "warn",
+    "promise/prefer-await-to-then": "warn",
+    "promise/always-return": "warn",
+
+    "react/jsx-indent": [2, 2, {"indentLogicalExpressions": true, "checkAttributes": true}],
+    "react/jsx-props-no-spreading":  [0],
+    "react/jsx-no-bind": [0],
+    "react/jsx-indent-props": [2, 2],
+    "react/function-component-definition": [1, { "namedComponents": "arrow-function", "unnamedComponents": "arrow-function" }],
+    "react/jsx-max-props-per-line": [1, { "when":  "multiline" }],
+    "react/jsx-no-literals": [0],
+    "react/jsx-max-depth": [0],
+    "react/jsx-sort-props": [0],
+    "react/jsx-fragments": ["warn", "element"],
+    "react/sort-prop-types": [0],
+    // "import/no-unused-modules": [1, {"unusedExports": true}], // uncomment to find out what files are unused
+    "no-unused-vars": "warn",
+    "no-multi-spaces": "warn",
+    "no-restricted-syntax": "off",
+    "arrow-parens": "warn",
+    "comma-dangle": ["warn", "always-multiline"],
+    "padded-blocks": ["warn", "never"],
+    "react/require-default-props": "warn",
+    "linebreak-style": "off",
+    "arrow-body-style": "off",
+    "no-param-reassign": "off",
+    "react/no-typos": "off",
+    "func-names": "off",
+    "import/no-named-as-default-member": "off",
+    "import/no-named-as-default": "off",
+    "import/prefer-default-export": "off",
+    "jsx-a11y/anchor-is-valid": [ "error", {
+      "components": [ "Link" ],
+      "specialLink": [ "to", "hrefLeft", "hrefRight" ],
+      "aspects": [ "noHref", "invalidHref", "preferButton" ]
+    }],
+    "max-len": ["error", {"code": 180, "ignoreRegExpLiterals": true, "tabWidth": 2}],
+    "no-console": ["warn"],
+    "no-underscore-dangle": "off",
+    "object-curly-newline": ["error", {
+      "ImportDeclaration": {"multiline": true, "consistent": true, "minProperties": 6}
+    }],
+    "react/jsx-filename-extension": ["warn", { "extensions": [".js", ".jsx"] }],
+    "react/jsx-one-expression-per-line": "off",
+    "react/destructuring-assignment": "off",
+    "react/no-danger": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "max-classes-per-file": "off",
+    "react/jsx-curly-spacing": [2, {"when": "never"}],
+    "object-curly-spacing": ["warn", "always", { "objectsInObjects": true }],
+    "import/order": ["warn", {
+      "groups": ["builtin", "external", "internal"],
+      "pathGroups": [
+        {
+          "pattern": "react",
+          "group": "external",
+          "position": "before"
+        }
+      ],
+      "pathGroupsExcludedImportTypes": ["react"],
+      "alphabetize": {
+        "order": "asc",
+        "caseInsensitive": true
+      }
+    }],
+    "react/forbid-component-props": [0],
+    "quotes": ["error", "single", { "avoidEscape": true }]
+  }
+}
