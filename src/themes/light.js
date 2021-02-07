@@ -6,6 +6,10 @@ const lightTheme = {
   name: 'light',
   palette: {
     type: 'light',
+    background: {
+      default: '#fff',
+      paper: '#ccc',
+    },
   },
 };
 

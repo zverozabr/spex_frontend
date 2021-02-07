@@ -2,8 +2,7 @@ import styled from 'styled-components';
 
 export default styled.div`
   width: 100%;
-  height: calc(100% - 64px);
-  box-sizing: border-box;
+  height: 35%;
   overflow: hidden;
-  padding: 20px;
+  background-color: #ccc;
 `;

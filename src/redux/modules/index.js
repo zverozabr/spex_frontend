@@ -1,5 +1,7 @@
 import { all } from 'redux-saga/effects';
+import imagesSlice from '../api/images';
 import progress from './progress';
+
 
 // Put modules that have their reducers nested in other (root) reducers here
 const nestedSlices = [];
@@ -7,6 +9,7 @@ const nestedSlices = [];
 // Put modules whose reducers you want in the root tree in this array.
 const rootSlices = [
   progress,
+  imagesSlice,
 ];
 
 const sagas = [...rootSlices, ...nestedSlices]

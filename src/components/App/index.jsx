@@ -13,7 +13,7 @@ import AppRouter from '@/routes';
 import { getTheme } from '@/themes';
 
 const App = () => {
-    const { theme, GlobalStyle } = getTheme('dark');
+    const { theme, GlobalStyle } = getTheme('light');
 
     return (
       <Provider store={store}>

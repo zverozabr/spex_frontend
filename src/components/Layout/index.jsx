@@ -1,25 +1,28 @@
 import React, { Fragment } from 'react';
-import Progress from '@/components/Progress';
+
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Typography from '@material-ui/core/Typography';
+
+import AnalysisPage from '@/components/AnalysisPage';
+import Progress from '+components/Progress';
+
 import Body from './components/Body';
 
-const Index = () => (
+const Layout = () => (
   <Fragment>
     <Progress />
+    <AppBar position="static">
+      <Toolbar>
+        <Typography variant="h6">
+          Super Awesome Spatial Analysis App
+        </Typography>
+      </Toolbar>
+    </AppBar>
     <Body>
-      <div
-        style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '24px',
-        }}
-      >
-        Hello, Genentech
-      </div>
+      <AnalysisPage />
     </Body>
   </Fragment>
 );
 
-export default Index;
+export default Layout;

@@ -46,7 +46,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 export const getTheme = (name) => {
-  const theme = createMuiTheme(themes[name] || themes.dark);
+  const theme = createMuiTheme(themes[name] || themes.light);
 
   return {
     theme,
