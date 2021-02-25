@@ -1,5 +1,5 @@
 import { all } from 'redux-saga/effects';
-import imagesSlice from '../api/images';
+import omeroSlice from '../api/omero';
 import progress from './progress';
 
 
@@ -9,7 +9,7 @@ const nestedSlices = [];
 // Put modules whose reducers you want in the root tree in this array.
 const rootSlices = [
   progress,
-  imagesSlice,
+  omeroSlice,
 ];
 
 const sagas = [...rootSlices, ...nestedSlices]

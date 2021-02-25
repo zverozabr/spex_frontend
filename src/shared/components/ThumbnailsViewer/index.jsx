@@ -4,17 +4,26 @@ import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 import styled from 'styled-components';
 
-const ImageList = styled(({ className, images, value, onClick }) => {
+const ThumbnailsViewer = styled((props) => {
+  const {
+    className,
+    thumbnails,
+    active,
+    size = 0.5,
+    onClick,
+  } = props;
+
   return (
     <GridList className={className} cellHeight={160} cols={3}>
-      {images.map((item) => (
+      {Object.keys(thumbnails).map((id) => (
         <GridListTile
-          key={item.src}
-          className={`${value === item.id ? 'active' : ''}`}
-          cols={item.cols || 1}
-          onClick={() => onClick(item)}
+          key={id}
+          className={`${active === id ? 'active' : ''}`}
+          cols={size}
+          rows={size}
+          onClick={() => onClick(id)}
         >
-          <img src={item.src} alt={item.title} />
+          <img src={thumbnails[id]} alt={id} />
         </GridListTile>
       ))}
     </GridList>
@@ -37,4 +46,4 @@ const ImageList = styled(({ className, images, value, onClick }) => {
   }
 `;
 
-export default ImageList;
+export default ThumbnailsViewer;

@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 
 import {
-  actions as imagesActions,
-  selectors as imagesSelectors,
-} from '@/redux/api/images';
+  actions as omeroActions,
+  selectors as omeroSelectors,
+} from '@/redux/api/omero';
 
-import ImageList from '+components/ImageList';
 import ImageViewer from '+components/ImageViewer';
 import Tabs, { Tab, TabPanel } from '+components/Tabs';
+import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import Container from './components/Container';
 import DataContainer from './components/DataContainer';
@@ -18,68 +19,104 @@ import NoDataContainer from './components/NoDataContainer';
 import PipelineContainer from './components/PipelineContainer';
 import RightPanel from './components/RightPanel';
 
-const Layout = () => {
+const AnalysisPage = () => {
   const dispatch = useDispatch();
 
-  const [imageViewerContainerElem, setImageViewerContainerElem] = useState();
+  const location = useLocation();
+  const datasetId = useMemo(
+    () => {
+      const search = new URLSearchParams(location.search);
+      return search.get('dataset');
+    },
+    [location.search],
+  );
+
+  const [imageId, setImageId] = useState();
   const [activeDataTab, setActiveDataTab] = useState(0);
   const [activePipelineTab, setActivePipelineTab] = useState(0);
-  const [activeImageId, setActiveImageId] = useState();
 
-  const previews = useSelector(imagesSelectors.getPreviews);
-  const activeImage = useSelector(imagesSelectors.getImage(activeImageId));
+  const datasetDetails = useSelector(omeroSelectors.getDatasetDetails(datasetId));
+  const datasetThumbnails = useSelector(omeroSelectors.getDatasetThumbnails(datasetId));
+  const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
 
-  const onPreviewClick = (newValue) => {
-    const { id } = newValue;
-    setActiveImageId(id);
-  };
-
-  const onDataTabChange = (event, newValue) => {
-    setActiveDataTab(newValue);
-  };
-
-  const onPipelineTabChange = (event, newValue) => {
-    setActivePipelineTab(newValue);
-  };
-
-  useEffect(
-    () => {
-      if (previews.length > 0) {
-        return;
+  const onPreviewClick = useCallback(
+    (id) => {
+      if (imageId !== id) {
+        dispatch(omeroActions.clearImageDetails(imageId));
       }
-      dispatch(imagesActions.fetchPreviews());
+      setImageId(id);
     },
-    [ dispatch, previews.length ],
+    [imageId, dispatch],
+  );
+
+  const onDataTabChange = useCallback(
+    (_, id) => {
+      setActiveDataTab(id);
+    },
+    [],
+  );
+
+  const onPipelineTabChange = useCallback(
+    (_, id) => {
+      setActivePipelineTab(id);
+    },
+    [],
   );
 
   useEffect(
     () => {
-      if (activeImage) {
+      if (datasetDetails || !datasetId) {
         return;
       }
-      dispatch(imagesActions.fetchImage(activeImageId));
+      dispatch(omeroActions.fetchDatasetDetails(datasetId));
     },
-    [ dispatch, activeImage, activeImageId ],
+    [dispatch, datasetId, datasetDetails],
+  );
+
+  useEffect(
+    () => {
+      if (!datasetDetails?.images || datasetThumbnails) {
+        return;
+      }
+      const ids = datasetDetails.images.map((item) => item['@id']);
+      dispatch(omeroActions.fetchDatasetThumbnails({ datasetId, ids }));
+    },
+    [dispatch, datasetId, datasetDetails?.images, datasetThumbnails],
+  );
+
+  useEffect(
+    () => {
+      if (!imageId) {
+        return;
+      }
+      dispatch(omeroActions.fetchImageDetails(imageId));
+    },
+    [imageId, dispatch],
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(omeroActions.clearDatasetDetails(datasetId));
+      dispatch(omeroActions.clearDatasetThumbnails(datasetId));
+    },
+    [dispatch, datasetId],
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(omeroActions.clearImageDetails(imageId));
+    },
+    [imageId, dispatch],
   );
 
   return (
     <Container>
       <LeftPanel>
-        <ImageViewerContainer ref={setImageViewerContainerElem}>
-          {activeImage && (
-            <ImageViewer
-              container={imageViewerContainerElem}
-              images={[activeImage]}
-              visible
-              noClose
-              noNavbar
-              noImgDetails
-              rotatable={false}
-              scalable={false}
-              showTotal={false}
-            />
+        <ImageViewerContainer>
+          {imageId && (
+            <ImageViewer data={imageDetails} />
           )}
-          {!activeImage && (
+          {!imageId && (
             <NoDataContainer>
               Select image to analyse
             </NoDataContainer>
@@ -94,9 +131,9 @@ const Layout = () => {
             <Tab label="Data Tables" />
           </Tabs>
           <TabPanel value={activeDataTab} index={0}>
-            <ImageList
-              images={previews}
-              value={activeImageId}
+            <ThumbnailsViewer
+              thumbnails={datasetThumbnails || []}
+              active={imageId}
               onClick={onPreviewClick}
             />
           </TabPanel>
@@ -130,4 +167,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default AnalysisPage;
