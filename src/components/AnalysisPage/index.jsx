@@ -8,10 +8,12 @@ import {
   selectors as omeroSelectors,
 } from '@/redux/api/omero';
 
+import Accordion, { AccordionSummary, AccordionDetails } from '+components/Accordion';
 import ImageViewer from '+components/ImageViewer';
 import NoData from '+components/NoData';
 import Tabs, { Tab, TabPanel } from '+components/Tabs';
 import ThumbnailsViewer from '+components/ThumbnailsViewer';
+import Typography from '+components/Typography';
 
 import Container from './components/Container';
 import DataContainer from './components/DataContainer';
@@ -170,6 +172,33 @@ const AnalysisPage = () => {
       {!datasetErrorMsg && (
         <Fragment>
           <LeftPanel>
+            {!imageErrorMsg && (
+              <Accordion>
+                <AccordionSummary>{imageDetails.meta.imageName}</AccordionSummary>
+                <AccordionDetails>
+                  <Typography>Image ID:	{imageDetails.meta.imageId}</Typography>
+                  <Typography>Dataset: {imageDetails.meta.datasetName}</Typography>
+                  <Typography>Owner: {imageDetails.meta.imageAuthor}</Typography>
+                  <Typography>Acquisition Date:	{imageDetails.acquisition_date}</Typography>
+                  <Typography>Import Date:	{imageDetails.import_date}</Typography>
+                  <Typography>Dimension (XY):	{imageDetails.size.width} x {imageDetails.size.height}</Typography>
+                  <Typography>Pixels Type: {imageDetails.meta.pixelsType}</Typography>
+                  <Typography>
+                    Pixels Size (XYZ) ({imageDetails.pixel_size.symbol_z}):
+                    {' '}
+                    {imageDetails.pixel_size.x ? Number.parseFloat(imageDetails.pixel_size.x).toFixed(2) : '-'}
+                    {' '}x{' '}
+                    {imageDetails.pixel_size.y ? Number.parseFloat(imageDetails.pixel_size.y).toFixed(2) : '-'}
+                    {' '}x{' '}
+                    {imageDetails.pixel_size.z ? Number.parseFloat(imageDetails.pixel_size.z).toFixed(2) : '-'}
+                  </Typography>
+                  <Typography>Z-sections:	{imageDetails.size.z}</Typography>
+                  <Typography>Timepoints:	{imageDetails.size.t}</Typography>
+                  <Typography>Channels:	{imageDetails.channels.map(({ label }) => label).join(', ')}</Typography>
+                </AccordionDetails>
+              </Accordion>
+            )}
+
             <ImageViewerContainer>
               {imageErrorMsg && <NoData>{imageErrorMsg}</NoData>}
               {!imageErrorMsg && <ImageViewer data={imageDetails} />}
