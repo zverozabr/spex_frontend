@@ -5,5 +5,5 @@ export default styled.div`
   height: calc(100% - 64px);
   box-sizing: border-box;
   overflow: hidden;
-  padding: 20px;
+  padding: 10px;
 `;
