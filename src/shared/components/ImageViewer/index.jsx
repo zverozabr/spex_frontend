@@ -1,7 +1,7 @@
 import React from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MapContainer } from 'react-leaflet';
+import { MapContainer, ZoomControl } from 'react-leaflet';
 import styled from 'styled-components';
 
 import OmeroLayer from './components/OmeroLayer';
@@ -19,6 +19,7 @@ const ImageViewer = styled((props) => {
       maxZoom={10}
       zoom={2}
       attributionControl={false}
+      zoomControl={false}
     >
       <OmeroLayer
         data={data}
@@ -27,6 +28,7 @@ const ImageViewer = styled((props) => {
           tileSize: 128,
         }}
       />
+      <ZoomControl position="bottomright" />
     </MapContainer>
   );
 })`
