@@ -1,13 +1,15 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { Fragment, useState, useMemo, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
+import PathNames from '@/models/PathNames';
 import {
   actions as omeroActions,
   selectors as omeroSelectors,
 } from '@/redux/api/omero';
 
 import ImageViewer from '+components/ImageViewer';
+import NoData from '+components/NoData';
 import Tabs, { Tab, TabPanel } from '+components/Tabs';
 import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
@@ -15,38 +17,90 @@ import Container from './components/Container';
 import DataContainer from './components/DataContainer';
 import ImageViewerContainer from './components/ImageViewerContainer';
 import LeftPanel from './components/LeftPanel';
-import NoDataContainer from './components/NoDataContainer';
 import PipelineContainer from './components/PipelineContainer';
 import RightPanel from './components/RightPanel';
 
 const AnalysisPage = () => {
   const dispatch = useDispatch();
-
+  const history = useHistory();
   const location = useLocation();
-  const datasetId = useMemo(
+
+  const { datasetId, imageId } = useMemo(
     () => {
-      const search = new URLSearchParams(location.search);
-      return search.get('dataset');
+      // const search = new URLSearchParams(location.search);
+      // return search.get('dataset');
+      const pathArray = location.pathname.split('/');
+      const datasetId = pathArray[1] === PathNames.dataset && pathArray[2] ? pathArray[2] : undefined;
+      const imageId = pathArray[3] === PathNames.img && pathArray[4] ? pathArray[4] : undefined;
+      return { datasetId, imageId };
     },
-    [location.search],
+    [location.pathname],
   );
 
-  const [imageId, setImageId] = useState();
+  const datasetDetails = useSelector(omeroSelectors.getDatasetDetails(datasetId));
+  const datasetImagesDetails = useSelector(omeroSelectors.getDatasetImagesDetails(datasetId));
+  const datasetThumbnails = useSelector(omeroSelectors.getDatasetThumbnails(datasetId));
+  const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
+  const isOmeroFetching = useSelector(omeroSelectors.isFetching);
+
   const [activeDataTab, setActiveDataTab] = useState(0);
   const [activePipelineTab, setActivePipelineTab] = useState(0);
 
-  const datasetDetails = useSelector(omeroSelectors.getDatasetDetails(datasetId));
-  const datasetThumbnails = useSelector(omeroSelectors.getDatasetThumbnails(datasetId));
-  const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
+  const datasetErrorMsg = useMemo(
+    () => {
+      switch (true) {
+        case datasetId == null:
+          return 'Select dataset to analyse';
+        case datasetId >= 0 && (!datasetDetails || !datasetThumbnails) && isOmeroFetching:
+          return 'Dataset is loading...';
+        case datasetId >= 0 && !datasetDetails:
+          return 'Dataset not found';
+        case !datasetDetails?.images.length && !isOmeroFetching:
+          return 'Dataset is empty';
+        default:
+          return null;
+      }
+    },
+    [datasetDetails, datasetId, datasetThumbnails, isOmeroFetching],
+  );
+
+  const imageErrorMsg = useMemo(
+    () => {
+      switch (true) {
+        case imageId == null:
+          return 'Select image to analyse';
+        case imageId >= 0 && !imageDetails && isOmeroFetching:
+          return 'Image is loading...';
+        case imageId >= 0 && !imageDetails:
+          return 'Image not found';
+        default:
+          return null;
+      }
+    },
+    [imageDetails, imageId, isOmeroFetching],
+  );
+
+  const thumbnails = useMemo(
+    () => {
+      return Object.keys(datasetThumbnails || {}).map((id) =>
+        ({
+          id,
+          img: datasetThumbnails[id],
+          title: datasetImagesDetails[id].Name,
+        }));
+    },
+    [datasetImagesDetails, datasetThumbnails],
+  );
 
   const onPreviewClick = useCallback(
     (id) => {
       if (imageId !== id) {
         dispatch(omeroActions.clearImageDetails(imageId));
       }
-      setImageId(id);
+      const url = `/${PathNames.dataset}/${datasetId}/${PathNames.img}/${id}`;
+      history.push(url);
     },
-    [imageId, dispatch],
+    [imageId, history, datasetId, dispatch],
   );
 
   const onDataTabChange = useCallback(
@@ -75,7 +129,7 @@ const AnalysisPage = () => {
 
   useEffect(
     () => {
-      if (!datasetDetails?.images || datasetThumbnails) {
+      if (!datasetDetails?.images.length || datasetThumbnails) {
         return;
       }
       const ids = datasetDetails.images.map((item) => item['@id']);
@@ -111,58 +165,58 @@ const AnalysisPage = () => {
 
   return (
     <Container>
-      <LeftPanel>
-        <ImageViewerContainer>
-          {imageId && (
-            <ImageViewer data={imageDetails} />
-          )}
-          {!imageId && (
-            <NoDataContainer>
-              Select image to analyse
-            </NoDataContainer>
-          )}
-        </ImageViewerContainer>
-      </LeftPanel>
+      {datasetErrorMsg && <NoData>{datasetErrorMsg}</NoData>}
 
-      <RightPanel>
-        <DataContainer>
-          <Tabs value={activeDataTab} onChange={onDataTabChange}>
-            <Tab label="Images" />
-            <Tab label="Data Tables" />
-          </Tabs>
-          <TabPanel value={activeDataTab} index={0}>
-            <ThumbnailsViewer
-              thumbnails={datasetThumbnails || []}
-              active={imageId}
-              onClick={onPreviewClick}
-            />
-          </TabPanel>
-          <TabPanel value={activeDataTab} index={1}>
-            Data Tables
-          </TabPanel>
-        </DataContainer>
+      {!datasetErrorMsg && (
+        <Fragment>
+          <LeftPanel>
+            <ImageViewerContainer>
+              {imageErrorMsg && <NoData>{imageErrorMsg}</NoData>}
+              {!imageErrorMsg && <ImageViewer data={imageDetails} />}
+            </ImageViewerContainer>
+          </LeftPanel>
 
-        <PipelineContainer>
-          <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
-            <Tab label="Preprocess" />
-            <Tab label="Segment" />
-            <Tab label="Phenotype" />
-            <Tab label="Spatial Analysis" />
-          </Tabs>
-          <TabPanel value={activePipelineTab} index={0}>
-            Preprocess
-          </TabPanel>
-          <TabPanel value={activePipelineTab} index={1}>
-            Segment
-          </TabPanel>
-          <TabPanel value={activePipelineTab} index={2}>
-            Phenotype
-          </TabPanel>
-          <TabPanel value={activePipelineTab} index={3}>
-            Spatial Analysis
-          </TabPanel>
-        </PipelineContainer>
-      </RightPanel>
+          <RightPanel>
+            <DataContainer>
+              <Tabs value={activeDataTab} onChange={onDataTabChange}>
+                <Tab label="Images" />
+                <Tab label="Data Tables" />
+              </Tabs>
+              <TabPanel value={activeDataTab} index={0}>
+                <ThumbnailsViewer
+                  thumbnails={thumbnails}
+                  active={imageId}
+                  onClick={onPreviewClick}
+                />
+              </TabPanel>
+              <TabPanel value={activeDataTab} index={1}>
+                Data Tables
+              </TabPanel>
+            </DataContainer>
+
+            <PipelineContainer>
+              <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
+                <Tab label="Preprocess" />
+                <Tab label="Segment" />
+                <Tab label="Phenotype" />
+                <Tab label="Spatial Analysis" />
+              </Tabs>
+              <TabPanel value={activePipelineTab} index={0}>
+                Preprocess
+              </TabPanel>
+              <TabPanel value={activePipelineTab} index={1}>
+                Segment
+              </TabPanel>
+              <TabPanel value={activePipelineTab} index={2}>
+                Phenotype
+              </TabPanel>
+              <TabPanel value={activePipelineTab} index={3}>
+                Spatial Analysis
+              </TabPanel>
+            </PipelineContainer>
+          </RightPanel>
+        </Fragment>
+      )}
     </Container>
   );
 };

@@ -2,23 +2,9 @@ import { all, call, put, cancelled } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
-const fakeProjectsData = {
-  '1': {
-    images: [
-      4496763, 4496769, 4496771, 4496757, 4496770, 4496753, 4496805, 4496765,
-      4496792, 4496781, 4496758, 4496761, 4496780, 4496804, 4496807, 4496779,
-      4496808, 4496795, 4496799, 4496787, 4496782, 4496801, 4496764, 4496778,
-      4496783, 4496752, 4496754, 4496785, 4496789, 4496767, 4496811, 4496751,
-      4496755, 4496791, 4496784, 4496786, 4496803, 4496756, 4496775, 4496774,
-    ],
-  },
-  '2': {},
-  '3': {},
-};
-
 const initialState = {
   isFetching: false,
-  datasets: null,
+  datasets: [],
   datasetsDetails: {},
   datasetsThumbnails: {},
   imagesDetails: {},
@@ -44,7 +30,7 @@ const slice = createSlice({
 
     fetchDatasetsSuccess: (state, { payload: { data } }) => {
       stopFetching(state);
-      state.datasets = (data || {});
+      state.datasets = (data || []);
     },
 
     fetchDatasetDetailsSuccess: (state, { payload: { id, details, images } }) => {
@@ -121,7 +107,7 @@ const slice = createSlice({
       * saga({ payload: id }) {
         initApi();
         // eslint-disable-next-line no-console
-        console.info('fetchDatasetDetails');
+        console.info('fetchDatasetDetails', id);
         try {
           const detailsUrl = `http://idr.openmicroscopy.org/api/v0/m/datasets/${id}`;
           // TODO: Make offset and limit as props
@@ -153,7 +139,7 @@ const slice = createSlice({
       * saga({ payload: { datasetId, ids } }) {
         initApi();
         // eslint-disable-next-line no-console
-        console.info('fetchDatasetThumbnails');
+        console.info('fetchDatasetThumbnails', datasetId, ids);
         try {
           const url = 'http://idr.openmicroscopy.org/webclient/get_thumbnails';
           const urlWithParams = `${url}/?${ids.map((id) => `id=${id}`).join('&')}`;
@@ -175,7 +161,7 @@ const slice = createSlice({
       * saga({ payload: id }) {
         initApi();
         // eslint-disable-next-line no-console
-        console.info('fetchImageDetails');
+        console.info('fetchImageDetails', id);
         try {
           const url = 'http://idr.openmicroscopy.org/iviewer/image_data';
           const urlWithParams = `${url}/${id}`;
@@ -195,6 +181,11 @@ const slice = createSlice({
   }),
 
   selectors: (getState) => ({
+    isFetching: createSelector(
+      [getState],
+      (state) => state?.isFetching,
+    ),
+
     getDatasets: createSelector(
       [getState],
       (state) => state?.datasets,
@@ -203,6 +194,17 @@ const slice = createSlice({
     getDatasetDetails: (id) => createSelector(
       [getState],
       (state) => state?.datasetsDetails[id],
+    ),
+
+    getDatasetImagesDetails: (id) => createSelector(
+      [getState],
+      (state) => {
+        if (state?.datasetsDetails[id]) {
+          const { images } = state?.datasetsDetails[id];
+          return images.reduce((acc, el) => ({ ...acc, [el['@id']]: el }), {});
+        }
+        return undefined;
+      },
     ),
 
     getDatasetThumbnails: (id) => createSelector(

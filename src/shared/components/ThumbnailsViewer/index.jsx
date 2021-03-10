@@ -2,12 +2,13 @@
 import React from 'react';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
+import GridListTileBar from '@material-ui/core/GridListTileBar';
 import styled from 'styled-components';
 
 const ThumbnailsViewer = styled((props) => {
   const {
     className,
-    thumbnails,
+    thumbnails = [],
     active,
     size = 0.5,
     onClick,
@@ -15,34 +16,46 @@ const ThumbnailsViewer = styled((props) => {
 
   return (
     <GridList className={className} cellHeight={160} cols={3}>
-      {Object.keys(thumbnails).map((id) => (
+      {thumbnails.map((thumbnail) => (
         <GridListTile
-          key={id}
-          className={`${active === id ? 'active' : ''}`}
+          key={thumbnail.id}
+          className={`${active === thumbnail.id ? 'active' : ''}`}
           cols={size}
           rows={size}
-          onClick={() => onClick(id)}
+          onClick={() => onClick(thumbnail.id)}
         >
-          <img src={thumbnails[id]} alt={id} />
+          <img src={thumbnail.img} alt={thumbnail.title} />
+          <GridListTileBar
+            title={thumbnail.title}
+            subtitle={thumbnail.author ? (<span>by: {thumbnail.author}</span>) : undefined}
+          />
         </GridListTile>
       ))}
     </GridList>
   );
 })`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  overflow: hidden;
-
   .MuiGridListTile-root {
-    border: 2px solid transparent;
+    border: 0.125em solid transparent;
     &.active {
       border-color: red;
-    }    
+    }
+
+    .MuiGridListTile-tile {
+      cursor: pointer;
+    }
   }
-  
-  .MuiGridListTile-tile {
-    cursor: pointer;
+
+  .MuiGridListTileBar-root {
+    height: 30%;
+    background-color: rgba(255, 255, 255, 0.24);
+
+    .MuiGridListTileBar-titleWrap {
+      margin: 0 0.188em;
+    }
+
+    .MuiGridListTileBar-title {
+      font-size: 0.563em;
+    }
   }
 `;
 
