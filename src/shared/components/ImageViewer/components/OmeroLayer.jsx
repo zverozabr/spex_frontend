@@ -10,6 +10,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
     tileFormat: 'jpg',
     fitBounds: true,
     setMaxBounds: false,
+    channels: [],
   },
 
   initialize(data, options) {
@@ -24,13 +25,22 @@ L.TileLayer.Omero = L.TileLayer.extend({
       this._explicitTileSize = true;
     }
 
+    if (options.channels.length) {
+      //&c=1|40:6477$FF0000,2|907:7742$FFCC00,3|275:11648$FF0000,-4|398:4237$FFFFFF
+      this._channels = options.channels
+        .map((el, i) => {
+          return `${el.active ? '' : '-'}${i + 1}|${el.window.start}:${el.window.end}$${el.color}`;
+        })
+        .join(',');
+    }
+
     L.setOptions(this, options);
 
     this._baseUrl = this._templateUrl(options.baseUrl);
     this._getInfo(data);
   },
   _templateUrl(baseUrl) {
-    return baseUrl + '{id}/15/0/?region={region}&q={q}';
+    return `${baseUrl}{id}/15/0/?region={region}&q={q}${this._channels ? `&c=${this._channels}` : ''}`;
   },
   _getInfo(data) {
     const _this = this;

@@ -19,7 +19,7 @@ const PositionsClasses = {
   [Positions.topright]: 'leaflet-top leaflet-right',
 };
 
-const MapCustomControl = (props) => {
+const CustomControl = (props) => {
   const { position, containerProps, children } = props;
   return (
     <div className={PositionsClasses[position]}>
@@ -30,16 +30,16 @@ const MapCustomControl = (props) => {
   );
 };
 
-MapCustomControl.propTypes = {
+CustomControl.propTypes = {
   children: PropTypes.oneOfType([ PropTypes.node, PropTypes.object, PropTypes.func ]),
   containerProps: PropTypes.shape({}),
   position: PropTypes.oneOf(Object.values(Positions)),
 };
 
-MapCustomControl.defaultProps = {
+CustomControl.defaultProps = {
   children: null,
   containerProps: {},
   position: Positions.bottomright,
 };
 
-export default MapCustomControl;
+export default CustomControl;

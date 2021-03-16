@@ -17,7 +17,9 @@ L.Control.ResetZoom = L.Control.extend({
     link.href = '#';
 
     L.DomEvent.on(link, 'click', this._click, this);
-    L.DomEvent.on(link, 'dblclick', this._click, this);
+    L.DomEvent.on(link, 'dblclick', this._noop, this);
+    L.DomEvent.on(link, 'mousedown ', this._noop, this);
+    L.DomEvent.on(link, 'touchstart ', this._noop, this);
 
     return container;
   },
@@ -26,6 +28,11 @@ L.Control.ResetZoom = L.Control.extend({
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
     this._map.setView(this._map.getCenter(), this._map.options.zoom);
+  },
+
+  _noop: function (e) {
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
   },
 });
 

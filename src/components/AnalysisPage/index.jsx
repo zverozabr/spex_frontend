@@ -29,8 +29,6 @@ const AnalysisPage = () => {
 
   const { datasetId, imageId } = useMemo(
     () => {
-      // const search = new URLSearchParams(location.search);
-      // return search.get('dataset');
       const pathArray = location.pathname.split('/');
       const datasetId = pathArray[1] === PathNames.dataset && pathArray[2] ? pathArray[2] : undefined;
       const imageId = pathArray[3] === PathNames.img && pathArray[4] ? pathArray[4] : undefined;

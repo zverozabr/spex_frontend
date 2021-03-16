@@ -28,7 +28,7 @@ const Layout = () => {
   const datasetId = useMemo(
     () => {
       const pathArray = location.pathname.split('/');
-      return pathArray[1] === PathNames.dataset && pathArray[2] ? pathArray[2] : undefined;
+      return pathArray[1] === PathNames.dataset && pathArray[2] ? pathArray[2] : 'none';
     },
     [location.pathname],
   );

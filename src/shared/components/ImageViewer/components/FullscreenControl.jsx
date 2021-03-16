@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
 import { useEffect } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
@@ -22,8 +23,10 @@ L.Control.Fullscreen = L.Control.extend({
     this._map.on('fullscreenchange', this._toggleTitle, this);
     this._toggleTitle();
 
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
     L.DomEvent.on(this.link, 'click', this._click, this);
+    L.DomEvent.on(this.link, 'dblclick', this._noop, this);
+    L.DomEvent.on(this.link, 'mousedown ', this._noop, this);
+    L.DomEvent.on(this.link, 'touchstart ', this._noop, this);
 
     return container;
   },
@@ -32,6 +35,11 @@ L.Control.Fullscreen = L.Control.extend({
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
     this._map.toggleFullscreen(this.options);
+  },
+
+  _noop: function (e) {
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
   },
 
   _toggleTitle: function() {

@@ -1,0 +1,17 @@
+import styled from 'styled-components';
+
+export default styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  
+  transform: translateX(100%);
+  background-color: #ccc;
+  cursor: pointer;
+`;
