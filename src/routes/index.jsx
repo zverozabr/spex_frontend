@@ -1,12 +1,16 @@
 import React from 'react';
 import { Switch, Route, BrowserRouter } from 'react-router-dom';
-import Layout from '@/components/Layout';
+
+import Login from '@/components/Login';
+import PrivateRoute from '+components/PrivateRoute';
+import PrivateRoutes from './PrivateRoutes';
 
 const AppRouter = () => {
   return (
     <BrowserRouter>
       <Switch>
-        <Route path="/" render={() => <Layout />} />
+        <Route exact path="/login" component={Login} />
+        <PrivateRoute path="/" component={PrivateRoutes} />
       </Switch>
     </BrowserRouter>
   );
