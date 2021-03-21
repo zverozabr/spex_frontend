@@ -1,12 +1,13 @@
-import { all, call, put, cancelled } from 'redux-saga/effects';
+import { call, put, cancelled } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
 const initialState = {
   isFetching: false,
-  datasets: [],
-  datasetsDetails: {},
-  datasetsThumbnails: {},
+  projects: [],
+  datasets: {},
+  images: {},
+  thumbnails: {},
   imagesDetails: {},
   error: '',
 };
@@ -19,37 +20,64 @@ const initApi = () => {
   }
 };
 
+const baseUrl = '/omero/px';
+
 const slice = createSlice({
   name: 'omero',
   initialState,
   reducers: {
+    fetchProjects: startFetching,
+    fetchProjectsSuccess: (state, { payload: { projects } }) => {
+      stopFetching(state);
+      state.projects = (projects || []);
+    },
+
     fetchDatasets: startFetching,
-    fetchDatasetDetails: startFetching,
-    fetchDatasetThumbnails: startFetching,
+    fetchDatasetsSuccess: (state, { payload: { projectId, datasets } }) => {
+      stopFetching(state);
+      state.datasets[projectId] = (datasets || []);
+    },
+    clearDatasets: (state, { payload: projectId }) => {
+      if (!projectId) {
+        return;
+      }
+      delete state.datasets[projectId];
+    },
+
+    fetchImages: startFetching,
+    fetchImagesSuccess: (state, { payload: { datasetId, images } }) => {
+      stopFetching(state);
+      state.images[datasetId] = (images || []);
+    },
+    clearImages: (state, { payload: datasetId }) => {
+      if (!datasetId) {
+        return;
+      }
+      delete state.images[datasetId];
+    },
+
+    fetchThumbnails: startFetching,
+    fetchThumbnailsSuccess: (state, { payload: { datasetId, data } }) => {
+      stopFetching(state);
+      state.thumbnails[datasetId] = (data || {});
+    },
+    clearThumbnails: (state, { payload: datasetId }) => {
+      if (!datasetId) {
+        return;
+      }
+      delete state.thumbnails[datasetId];
+    },
+
     fetchImageDetails: startFetching,
-
-    fetchDatasetsSuccess: (state, { payload: { data } }) => {
-      stopFetching(state);
-      state.datasets = (data || []);
-    },
-
-    fetchDatasetDetailsSuccess: (state, { payload: { id, details, images } }) => {
-      stopFetching(state);
-      const data = {
-        ...details,
-        images,
-      };
-      state.datasetsDetails[id] = (data || {});
-    },
-
-    fetchDatasetThumbnailsSuccess: (state, { payload: { id, data } }) => {
-      stopFetching(state);
-      state.datasetsThumbnails[id] = (data || {});
-    },
-
     fetchImageDetailsSuccess: (state, { payload: { id, data } }) => {
       stopFetching(state);
       state.imagesDetails[id] = (data || {});
+    },
+    clearImageDetails: (state, { payload: id }) => {
+      if (!id) {
+        return;
+      }
+      delete state.imagesDetails[id];
     },
 
     requestFail(state, { payload: { message } }) {
@@ -58,39 +86,17 @@ const slice = createSlice({
     },
 
     cancelled: stopFetching,
-
-    clearDatasetDetails: (state, { payload: id }) => {
-      if (!id) {
-        return;
-      }
-      delete state.datasetsDetails[id];
-    },
-
-    clearDatasetThumbnails: (state, { payload: id }) => {
-      if (!id) {
-        return;
-      }
-      delete state.datasetsThumbnails[id];
-    },
-
-    clearImageDetails: (state, { payload: id }) => {
-      if (!id) {
-        return;
-      }
-      delete state.imagesDetails[id];
-    },
   },
 
   sagas: (actions) => ({
-    [actions.fetchDatasets]: {
+    [actions.fetchProjects]: {
       * saga() {
         initApi();
-        // eslint-disable-next-line no-console
-        console.info('fetchDatasets');
+
         try {
-          const url = 'http://idr.openmicroscopy.org/api/v0/m/datasets';
+          const url = `${baseUrl}/webclient/api/containers`;
           const { data } = yield call(api.get, url);
-          yield put(actions.fetchDatasetsSuccess({ data: data.data }));
+          yield put(actions.fetchProjectsSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -103,26 +109,16 @@ const slice = createSlice({
       },
     },
 
-    [actions.fetchDatasetDetails]: {
+    [actions.fetchDatasets]: {
       * saga({ payload: id }) {
         initApi();
-        // eslint-disable-next-line no-console
-        console.info('fetchDatasetDetails', id);
+
         try {
-          const detailsUrl = `http://idr.openmicroscopy.org/api/v0/m/datasets/${id}`;
-          // TODO: Make offset and limit as props
-          const imagesUrl = `${detailsUrl}/images?offset=50&limit=20`;
-
-          const [ details, images ] = yield all([
-            call(api.get, detailsUrl),
-            call(api.get, imagesUrl),
-          ]);
-
-          yield put(actions.fetchDatasetDetailsSuccess({
-            id,
-            details: details.data.data,
-            images: images.data.data,
-          }));
+          const searchParams = new URLSearchParams('');
+          searchParams.append('id', `${id}`);
+          const url = `${baseUrl}/webclient/api/datasets/?${searchParams}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchDatasetsSuccess({ projectId: id, datasets: data.datasets }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -135,16 +131,36 @@ const slice = createSlice({
       },
     },
 
-    [actions.fetchDatasetThumbnails]: {
+    [actions.fetchImages]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const searchParams = new URLSearchParams('');
+          searchParams.append('id', `${id}`);
+          const url = `${baseUrl}/webclient/api/images/?${searchParams}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchImagesSuccess({ datasetId: id, images: data.images }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        } finally {
+          if (yield cancelled()) {
+            yield put(actions.cancelled());
+          }
+        }
+      },
+    },
+
+    [actions.fetchThumbnails]: {
       * saga({ payload: { datasetId, ids } }) {
         initApi();
-        // eslint-disable-next-line no-console
-        console.info('fetchDatasetThumbnails', datasetId, ids);
+
         try {
-          const url = 'http://idr.openmicroscopy.org/webclient/get_thumbnails';
-          const urlWithParams = `${url}/?${ids.map((id) => `id=${id}`).join('&')}`;
-          const { data } = yield call(api.get, urlWithParams);
-          yield put(actions.fetchDatasetThumbnailsSuccess({ id: datasetId, data }));
+          const url = `${baseUrl}/webclient/get_thumbnails/?${ids.map((id) => `id=${id}`).join('&')}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchThumbnailsSuccess({ datasetId, data }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -160,12 +176,30 @@ const slice = createSlice({
     [actions.fetchImageDetails]: {
       * saga({ payload: id }) {
         initApi();
-        // eslint-disable-next-line no-console
-        console.info('fetchImageDetails', id);
+
         try {
-          const url = 'http://idr.openmicroscopy.org/iviewer/image_data';
-          const urlWithParams = `${url}/${id}`;
-          const { data } = yield call(api.get, urlWithParams);
+          const url = `${baseUrl}/iviewer/image_data/${id}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchImageDetailsSuccess({ id, data }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        } finally {
+          if (yield cancelled()) {
+            yield put(actions.cancelled());
+          }
+        }
+      },
+    },
+
+    [actions.fetchTail]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/iviewer/image_data/${id}`;
+          const { data } = yield call(api.get, url);
           yield put(actions.fetchImageDetailsSuccess({ id, data }));
         } catch (error) {
           yield put(actions.requestFail(error));
@@ -186,30 +220,24 @@ const slice = createSlice({
       (state) => state?.isFetching,
     ),
 
-    getDatasets: createSelector(
+    getProjects: createSelector(
       [getState],
-      (state) => state?.datasets,
+      (state) => state?.projects,
     ),
 
-    getDatasetDetails: (id) => createSelector(
+    getDatasets: (projectId) => createSelector(
       [getState],
-      (state) => state?.datasetsDetails[id],
+      (state) => state?.datasets[projectId],
     ),
 
-    getDatasetImagesDetails: (id) => createSelector(
+    getImages: (datasetId) => createSelector(
       [getState],
-      (state) => {
-        if (state?.datasetsDetails[id]) {
-          const { images } = state?.datasetsDetails[id];
-          return images.reduce((acc, el) => ({ ...acc, [el['@id']]: el }), {});
-        }
-        return undefined;
-      },
+      (state) => state?.images[datasetId],
     ),
 
-    getDatasetThumbnails: (id) => createSelector(
+    getThumbnails: (datasetId) => createSelector(
       [getState],
-      (state) => state?.datasetsThumbnails[id],
+      (state) => state?.thumbnails[datasetId],
     ),
 
     getImageDetails: (id) => createSelector(

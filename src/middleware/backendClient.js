@@ -88,13 +88,21 @@ const wrapHttpWithCancellation = (httpMethod, arity) => {
 };
 
 /**
+ * Configures action for if backend request failed auth
+ * @param unAuthFunction
+ */
+export const configureBackendClient = (unAuthFunction) => {
+  unAuthAction = unAuthFunction;
+};
+
+/**
  * instantiate axios
  * @param config - axios config [details](https://github.com/axios/axios#request-config)
  */
 const backendClient = (config = {}) => {
-  // if (!unAuthAction) {
-  //   throw new Error('Backed client is not configured, use configureBackendClient');
-  // }
+  if (!unAuthAction) {
+    throw new Error('Backed client is not configured, use configureBackendClient');
+  }
 
   let newConfig = config;
 

@@ -23,7 +23,11 @@ import ResetZoomControl from './components/ResetZoomControl';
 import SideBar from './components/Sidebar';
 import SidebarToggle from './components/SidebarToggle';
 
-const baseUrl = 'http://idr.openmicroscopy.org/webgateway/render_image_region/';
+const {
+  REACT_APP_BACKEND_URL_ROOT,
+} = process.env;
+
+const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/px/webgateway/render_image_region`;
 
 const ImageViewer = styled((props) => {
   const { className, data } = props;
@@ -81,7 +85,7 @@ const ImageViewer = styled((props) => {
         data={data}
         options={{
           baseUrl,
-          tileSize: 128,
+          // tileSize: 96,
           channels,
         }}
       />

@@ -27,21 +27,22 @@ const AnalysisPage = () => {
   const history = useHistory();
   const location = useLocation();
 
-  const { datasetId, imageId } = useMemo(
+  const { projectId, datasetId, imageId } = useMemo(
     () => {
       const pathArray = location.pathname.split('/');
-      const datasetId = pathArray[1] === PathNames.dataset && pathArray[2] ? pathArray[2] : undefined;
-      const imageId = pathArray[3] === PathNames.img && pathArray[4] ? pathArray[4] : undefined;
-      return { datasetId, imageId };
+      const projectId = pathArray[1] === PathNames.project && pathArray[2] ? pathArray[2] : undefined;
+      const datasetId = pathArray[3] === PathNames.dataset && pathArray[4] ? pathArray[4] : undefined;
+      const imageId = pathArray[5] === PathNames.img && pathArray[6] ? pathArray[6] : undefined;
+      return { projectId, datasetId, imageId };
     },
     [location.pathname],
   );
 
-  const datasetDetails = useSelector(omeroSelectors.getDatasetDetails(datasetId));
-  const datasetImagesDetails = useSelector(omeroSelectors.getDatasetImagesDetails(datasetId));
-  const datasetThumbnails = useSelector(omeroSelectors.getDatasetThumbnails(datasetId));
-  const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
+
+  const datasetImages = useSelector(omeroSelectors.getImages(datasetId));
+  const datasetThumbnails = useSelector(omeroSelectors.getThumbnails(datasetId));
+  const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
 
   const [activeDataTab, setActiveDataTab] = useState(0);
   const [activePipelineTab, setActivePipelineTab] = useState(0);
@@ -51,17 +52,17 @@ const AnalysisPage = () => {
       switch (true) {
         case datasetId == null:
           return 'Select dataset to analyse';
-        case datasetId >= 0 && (!datasetDetails || !datasetThumbnails) && isOmeroFetching:
+        case datasetId >= 0 && (!datasetImages || !datasetThumbnails) && isOmeroFetching:
           return 'Dataset is loading...';
-        case datasetId >= 0 && !datasetDetails:
+        case datasetId >= 0 && !datasetImages:
           return 'Dataset not found';
-        case !datasetDetails?.images.length && !isOmeroFetching:
+        case !datasetImages?.length && !isOmeroFetching:
           return 'Dataset is empty';
         default:
           return null;
       }
     },
-    [datasetDetails, datasetId, datasetThumbnails, isOmeroFetching],
+    [datasetImages, datasetId, datasetThumbnails, isOmeroFetching],
   );
 
   const imageErrorMsg = useMemo(
@@ -80,16 +81,21 @@ const AnalysisPage = () => {
     [imageDetails, imageId, isOmeroFetching],
   );
 
+  const hashDatasetImages = useMemo(
+    () => (datasetImages || []).reduce((acc, el) => ({ ...acc, [el.id]: el }), {}),
+    [datasetImages],
+  );
+
   const thumbnails = useMemo(
     () => {
       return Object.keys(datasetThumbnails || {}).map((id) =>
         ({
           id,
           img: datasetThumbnails[id],
-          title: datasetImagesDetails[id].Name,
+          title: hashDatasetImages[id].name,
         }));
     },
-    [datasetImagesDetails, datasetThumbnails],
+    [datasetThumbnails, hashDatasetImages],
   );
 
   const onPreviewClick = useCallback(
@@ -97,10 +103,10 @@ const AnalysisPage = () => {
       if (imageId !== id) {
         dispatch(omeroActions.clearImageDetails(imageId));
       }
-      const url = `/${PathNames.dataset}/${datasetId}/${PathNames.img}/${id}`;
+      const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}/${PathNames.img}/${id}`;
       history.push(url);
     },
-    [imageId, history, datasetId, dispatch],
+    [imageId, projectId, datasetId, history, dispatch],
   );
 
   const onDataTabChange = useCallback(
@@ -119,23 +125,31 @@ const AnalysisPage = () => {
 
   useEffect(
     () => {
-      if (datasetDetails || !datasetId) {
+      if (!datasetId || datasetImages?.length) {
         return;
       }
-      dispatch(omeroActions.fetchDatasetDetails(datasetId));
+      dispatch(omeroActions.fetchImages(datasetId));
     },
-    [dispatch, datasetId, datasetDetails],
+    [dispatch, datasetId, datasetImages?.length],
   );
 
   useEffect(
     () => {
-      if (!datasetDetails?.images.length || datasetThumbnails) {
+      if (!datasetImages?.length || Object.keys(datasetThumbnails || {}).length) {
         return;
       }
-      const ids = datasetDetails.images.map((item) => item['@id']);
-      dispatch(omeroActions.fetchDatasetThumbnails({ datasetId, ids }));
+      const ids = datasetImages.map((item) => item.id);
+      dispatch(omeroActions.fetchThumbnails({ datasetId, ids }));
     },
-    [dispatch, datasetId, datasetDetails?.images, datasetThumbnails],
+    [dispatch, datasetId, datasetImages, datasetThumbnails],
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(omeroActions.clearImages(datasetId));
+      dispatch(omeroActions.clearThumbnails(datasetId));
+    },
+    [dispatch, datasetId],
   );
 
   useEffect(
@@ -146,14 +160,6 @@ const AnalysisPage = () => {
       dispatch(omeroActions.fetchImageDetails(imageId));
     },
     [imageId, dispatch],
-  );
-
-  useEffect(
-    () => () => {
-      dispatch(omeroActions.clearDatasetDetails(datasetId));
-      dispatch(omeroActions.clearDatasetThumbnails(datasetId));
-    },
-    [dispatch, datasetId],
   );
 
   useEffect(

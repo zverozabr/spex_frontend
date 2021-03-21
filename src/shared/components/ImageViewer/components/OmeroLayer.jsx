@@ -2,12 +2,22 @@ import { useEffect } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 
+import backendClient from '@/middleware/backendClient';
+
+let api;
+
+const initApi = () => {
+  if (!api) {
+    api = backendClient();
+  }
+};
+
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
     continuousWorld: true,
-    tileSize: 256,
+    tileSize: 128,
     updateWhenIdle: true,
-    tileFormat: 'jpg',
+    // tileFormat: 'jpg',
     fitBounds: true,
     setMaxBounds: false,
     channels: [],
@@ -20,10 +30,10 @@ L.TileLayer.Omero = L.TileLayer.extend({
       this._customMaxZoom = true;
     }
 
-    // Check for explicit tileSize set
-    if (options.tileSize) {
-      this._explicitTileSize = true;
-    }
+    // // Check for explicit tileSize set
+    // if (options.tileSize) {
+    //   this._explicitTileSize = true;
+    // }
 
     if (options.channels.length) {
       //&c=1|40:6477$FF0000,2|907:7742$FFCC00,3|275:11648$FF0000,-4|398:4237$FFFFFF
@@ -39,15 +49,19 @@ L.TileLayer.Omero = L.TileLayer.extend({
     this._baseUrl = this._templateUrl(options.baseUrl);
     this._getInfo(data);
   },
+
   _templateUrl(baseUrl) {
-    return `${baseUrl}{id}/15/0/?region={region}&q={q}${this._channels ? `&c=${this._channels}` : ''}`;
+    return `${baseUrl}/{id}/0/0/?region={region}&q={q}${this._channels ? `&c=${this._channels}` : ''}`;
   },
+
   _getInfo(data) {
     const _this = this;
-
     _this._id = data.id;
     _this.x = data.size.width;
     _this.y = data.size.height;
+    if (data.tile_size) {
+      _this.options.tileSize = data.tile_size.width;
+    }
 
     const tierSizes = [];
     const imageSizes = [];
@@ -58,17 +72,17 @@ L.TileLayer.Omero = L.TileLayer.extend({
     let tilesY_;
 
     // Unless an explicit tileSize is set, use a preferred tileSize
-    if (!_this._explicitTileSize) {
-      // Set the default first
-      _this.options.tileSize = 256;
-      if (data.tiles) {
-        // Image API 2.0 Case
-        _this.options.tileSize = data.tiles[0].width;
-      } else if (data.tile_width) {
-        // Image API 1.1 Case
-        _this.options.tileSize = data.tile_width;
-      }
-    }
+    // if (!_this._explicitTileSize) {
+    //   // Set the default first
+    //   _this.options.tileSize = 256;
+    //   if (data.tiles) {
+    //     // Image API 2.0 Case
+    //     _this.options.tileSize = data.tiles[0].width;
+    //   } else if (data.tile_width) {
+    //     // Image API 1.1 Case
+    //     _this.options.tileSize = data.tile_width;
+    //   }
+    // }
 
     const ceilLog2 = (x) => {
       return Math.ceil(Math.log(x) / Math.LN2);
@@ -106,6 +120,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
     _this._tierSizes = tierSizes;
     _this._imageSizes = imageSizes;
   },
+
   _fitBounds() {
     const _this = this;
 
@@ -125,6 +140,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
 
     _this._map.fitBounds(bounds, true);
   },
+
   _setMaxBounds() {
     const _this = this;
 
@@ -143,6 +159,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
 
     _this._map.setMaxBounds(bounds, true);
   },
+
   _getInitialZoom(mapSize) {
     const _this = this;
     const tolerance = 0.8;
@@ -161,8 +178,71 @@ L.TileLayer.Omero = L.TileLayer.extend({
     // return a default zoom
     return 2;
   },
+
   onAdd(map) {
     const _this = this;
+
+    initApi();
+
+    let normalNaturalWidth = 1;
+    let normalNaturalHeight = 1;
+
+    map.on('zoomstart', () => {
+      normalNaturalWidth = 1;
+      normalNaturalHeight = 1;
+    });
+
+    _this.on('tileloadstart', async ({ tile }) => {
+      const tileUrl = tile.src;
+      tile.src = '';
+      tile.dataset.src = tileUrl;
+      const { data } = await api.get(tileUrl, {
+        responseType: 'arraybuffer',
+      });
+      tile.src = `data:image;base64,${Buffer.from(data, 'binary').toString('base64')}`;
+      const { naturalWidth, naturalHeight } = tile;
+      normalNaturalWidth = Math.max(normalNaturalWidth, naturalWidth);
+      normalNaturalHeight = Math.max(normalNaturalHeight, naturalHeight);
+    });
+
+    _this.on('tileload', (data) => {
+      const { tile } = data;
+      const { naturalWidth, naturalHeight } = tile;
+      const { width, height } = tile.style;
+
+      normalNaturalWidth = Math.max(normalNaturalWidth, naturalWidth);
+      normalNaturalHeight = Math.max(normalNaturalHeight, naturalHeight);
+
+      if (naturalWidth === naturalHeight || width !== height) {
+        return;
+      }
+
+      let scale = 1;
+      let fixedWidth = parseInt(width, 10);
+      let fixedHeight = parseInt(height, 10);
+
+      if (naturalWidth > naturalHeight) {
+        const d = naturalHeight / naturalWidth;
+        fixedHeight = fixedHeight * d;
+
+        if (naturalWidth < normalNaturalWidth) {
+          scale = naturalWidth / normalNaturalWidth;
+        }
+      }
+
+      if (naturalWidth < naturalHeight) {
+        const d = naturalWidth / naturalHeight;
+        fixedWidth = fixedWidth * d;
+
+        if (naturalHeight < normalNaturalHeight) {
+          scale = naturalHeight / normalNaturalHeight;
+        }
+      }
+
+      tile.style.width = `${Math.round(fixedWidth * scale)}px`;
+      tile.style.height = `${Math.round(fixedHeight * scale)}px`;
+    });
+
     // Store unmutated imageSizes
     _this._imageSizesOriginal = _this._imageSizes.slice(0);
 
@@ -199,6 +279,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
       _this._setMaxBounds();
     }
   },
+
   onRemove(map) {
     const _this = this;
 
@@ -215,6 +296,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
       L.TileLayer.prototype.onRemove.call(_this, map);
     }
   },
+
   _isValidTile(coords) {
     const _this = this;
     const zoom = _this._getZoomForUrl();
@@ -232,6 +314,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
 
     return !(x < 0 || sizes[0] <= x || y < 0 || sizes[1] <= y);
   },
+
   getTileUrl(coords) {
     const _this = this;
     const x = coords.x;
@@ -257,11 +340,10 @@ L.TileLayer.Omero = L.TileLayer.extend({
       L.extend(
         {
           id: _this._id,
-          format: _this.options.tileFormat,
-          // quality: _this.quality,
+          // format: _this.options.tileFormat,
           q: quality,
           region: [minx, miny, xDiff, yDiff].join(','),
-          rotation: 0,
+          // rotation: 0,
           size: size,
         },
         _this.options,
