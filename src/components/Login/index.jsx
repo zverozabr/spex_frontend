@@ -2,23 +2,68 @@ import React, { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 
-import { actions as authActions, selectors as authSelectors } from '@/redux/api/users/auth';
+import { actions as authActions, selectors as authSelectors } from '@/redux/modules/users/auth';
 
 import Button from '+components/Button';
 import Form, { Field, FormRenderer, Controls, Validators } from '+components/Form';
 
+import Alert from './components/Alert';
 import Container from './components/Container';
 
 const Auth = () => {
   const dispatch = useDispatch();
 
-  const isAuthenticated = useSelector(authSelectors.isAuthenticated);
+  const {
+    isAuthenticated,
+    isFetching,
+    error,
+  } = useSelector(authSelectors.getState);
 
   const onLogin = useCallback(
     (values) => {
       dispatch(authActions.login(values));
     },
     [dispatch],
+  );
+
+  const render = useCallback(
+    ({ handleSubmit, submitting, pristine }) => (
+      <FormRenderer onSubmit={handleSubmit}>
+        {!!error && (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        )}
+
+        <Field
+          name="username"
+          label="Username"
+          component={Controls.Input}
+          type="username"
+          validate={Validators.required}
+          required
+        />
+
+        <Field
+          name="password"
+          label="Password"
+          component={Controls.Input}
+          type="password"
+          validate={Validators.required}
+          required
+        />
+
+        <Button
+          variant="contained"
+          color="primary"
+          type="submit"
+          disabled={pristine || isFetching || submitting}
+        >
+          Sign In
+        </Button>
+      </FormRenderer>
+    ),
+    [isFetching, error],
   );
 
   if (isAuthenticated) {
@@ -29,47 +74,7 @@ const Auth = () => {
     <Container>
       <Form
         onSubmit={onLogin}
-        render={({ handleSubmit, submitting }) => (
-          <FormRenderer onSubmit={handleSubmit} noValidate>
-            <Field
-              name="login"
-              label="Login"
-              component={Controls.Input}
-              type="email"
-              validate={Validators.required}
-              required
-            />
-
-            <Field
-              name="password"
-              label="Password"
-              component={Controls.Input}
-              type="password"
-              validate={Validators.required}
-              required
-            />
-
-            <Controls.Label
-              label="Remember Me"
-              control={
-                <Field
-                  name="remember_me"
-                  component={Controls.Checkbox}
-                  type="checkbox"
-                />
-              }
-            />
-
-            <Button
-              variant="contained"
-              color="primary"
-              type="submit"
-              disabled={submitting}
-            >
-              Sign In
-            </Button>
-          </FormRenderer>
-        )}
+        render={render}
       />
     </Container>
   );

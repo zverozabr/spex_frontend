@@ -11,5 +11,10 @@ export default styled.div`
     width: 400px;
     max-width: 400px;
     padding: 16px;
+    position: relative;
+
+    > div {
+      margin-bottom: 1em;
+    }
   }
 `;

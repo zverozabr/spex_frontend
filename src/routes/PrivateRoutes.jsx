@@ -6,7 +6,7 @@ import AnalysisPage from '@/components/AnalysisPage';
 import Layout from '@/components/Layout';
 import NotFound404 from '@/components/NotFound404';
 
-import { actions as authActions } from '@/redux/api/users/auth';
+import { actions as authActions } from '@/redux/modules/users/auth';
 
 const PrivateRoutes = () => {
   const dispatch = useDispatch();
