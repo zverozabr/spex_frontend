@@ -1,4 +1,4 @@
-import { call, put, cancelled } from 'redux-saga/effects';
+import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
@@ -20,7 +20,7 @@ const initApi = () => {
   }
 };
 
-const baseUrl = '/omero/px';
+const baseUrl = '/omero';
 
 const slice = createSlice({
   name: 'omero',
@@ -85,7 +85,7 @@ const slice = createSlice({
       state.error = message;
     },
 
-    cancelled: stopFetching,
+    cancel: stopFetching,
   },
 
   sagas: (actions) => ({
@@ -101,10 +101,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },
@@ -123,10 +119,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },
@@ -145,10 +137,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },
@@ -165,10 +153,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },
@@ -185,10 +169,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },
@@ -205,10 +185,6 @@ const slice = createSlice({
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },

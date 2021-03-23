@@ -10,7 +10,7 @@ import { ThemeProvider } from 'styled-components';
 
 import { configureBackendClient } from '@/middleware/backendClient';
 import { store } from '@/redux';
-import { actions as authActions } from '@/redux/api/users/auth';
+import { actions as authActions } from '@/redux/modules/users/auth';
 import AppRouter from '@/routes';
 import { getTheme } from '@/themes';
 

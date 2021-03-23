@@ -1,7 +1,7 @@
 import { all } from 'redux-saga/effects';
-import omeroSlice from '../api/omero';
-import authSlice from '../api/users/auth';
+import omeroSlice from './omero';
 import progress from './progress';
+import authSlice from './users/auth';
 
 
 // Put modules that have their reducers nested in other (root) reducers here

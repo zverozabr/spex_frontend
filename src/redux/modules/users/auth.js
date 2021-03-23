@@ -1,4 +1,4 @@
-import { call, cancelled, put } from 'redux-saga/effects';
+import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSelector, createSlice, startFetching, stopFetching } from '@/redux/utils';
 import storage from '+utils/storage';
@@ -17,7 +17,7 @@ const initApi = () => {
   }
 };
 
-const baseUrl = '/omero';
+const baseUrl = '/users';
 
 const slice = createSlice({
   name: 'auth',
@@ -35,18 +35,22 @@ const slice = createSlice({
       state.isAuthenticated = false;
     },
 
-    loginSuccess(state, { payload: { Authorization } }) {
+    loginSuccess(state, { payload: { authorization } }) {
       stopFetching(state);
-      storage.setItem('access_token', Authorization);
-      state.isAuthenticated = true;
+      if (authorization) {
+        storage.setItem('access_token', authorization);
+        state.isAuthenticated = true;
+        return;
+      }
+      state.error = 'Username or password is not matched';
     },
 
-    requestFail(state, { payload: { message } }) {
+    requestFail(state) {
       stopFetching(state);
-      state.error = message;
+      state.error = 'Username or password is not matched';
     },
 
-    cancelled: stopFetching,
+    cancel: stopFetching,
   },
 
   sagas: (actions) => ({
@@ -56,18 +60,13 @@ const slice = createSlice({
 
         try {
           const url = `${baseUrl}/login`;
-          const { login, password } = payload;
-          const user = { login, password };
-          const { data } = yield call(api.post, url, user);
-          yield put(actions.loginSuccess(data));
+          const { headers } = yield call(api.post, url, payload);
+
+          yield put(actions.loginSuccess(headers));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
           console.error(error.message);
-        } finally {
-          if (yield cancelled()) {
-            yield put(actions.cancelled());
-          }
         }
       },
     },

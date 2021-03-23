@@ -38,9 +38,11 @@ localStorage.setItem('getSessionStorage', Math.random());
 localStorage.removeItem('getSessionStorage');
 
 export const getStorage = () => {
-  const local = +localStorage.getItem('rememberme') || 0;
+  // const local = +localStorage.getItem('rememberme') || 0;
 
-  return local ? localStorage : sessionStorage;
+  // return local ? localStorage : sessionStorage;
+
+  return localStorage;
 };
 
 const base = {

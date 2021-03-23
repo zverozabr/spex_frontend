@@ -7,8 +7,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 
-import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/api/omero';
-import { actions as authActions } from '@/redux/api/users/auth';
+import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+import { actions as authActions } from '@/redux/modules/users/auth';
 
 import Button from '+components/Button';
 import Progress from '+components/Progress';

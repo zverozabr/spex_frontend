@@ -6,7 +6,7 @@ import PathNames from '@/models/PathNames';
 import {
   actions as omeroActions,
   selectors as omeroSelectors,
-} from '@/redux/api/omero';
+} from '@/redux/modules/omero';
 
 import Accordion, { AccordionSummary, AccordionDetails } from '+components/Accordion';
 import ImageViewer from '+components/ImageViewer';
