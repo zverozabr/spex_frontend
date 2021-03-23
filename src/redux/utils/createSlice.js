@@ -30,71 +30,155 @@ const clearState = (initialState) => () => {
 };
 
 /**
-  Function to create a redux "duck" module by reusing redux toolkit's
-  createSlice. Motivation behind "duck" is to reduce unnecessary redux
-  boilerplate as actions, types, reducers, and async actions are tightly coupled
-  anyway. Adding helper functions also reduces repetitive information, "don't
-  repeat yourself".
+ * @callback SagaGenerator
+ * @param {{ payload: Object, type: string }} action
+ */
 
-  Example:
-```
-  import { takeEvery, takeLatest, call, put } from 'redux-saga/effects'
+/**
+ * @typedef {Object} Saga
+ * @property {SagaGenerator} saga
+ * @property {function} [taker=takeEvery] - one of takeEvery (by default), takeLatest, takeMaybe
+ * }
+ */
 
-  export default createSlice({
-    name: 'todos',
-    initialState: [],
-    reducers: {
-      addTodo(state, action) {
-        state.push(action.payload);
-      }
-    },
-    sagas: (actions, selectors) => ({
-      // the computed object key is possible because redux toolkit adds
-      // a .toString() for the action function
-      [actions.addTodo]: {
-        * saga(action) {
-          // For the action addTodo, on every action make the API call.
-          yield put(Api.postTodo, action.payload);
-        },
-        // takeLatest will cancel previous fetch if a new addTodo was received
-        // by default if omitted, taker will be takeEvery
-        taker: takeLatest
-      },
-    }),
-    selectors: (getState) => ({
-      getFirstTodo: createSelector(
-        [getState],
-        (state) => state[0],
-      ),
-    })
-  })
-```
+/**
+ * @typedef {{ watcher: Generator }} SagaWatcher
+ */
 
-  If you need fine grained control of the watcher saga, you can can use the
-  'watcher' object key instead of 'saga'. This will ignore the taker and saga
-  and insert your watcher directly in the module.sagas array. The name of the
-  watcher saga need not be tied to any action.
+/**
+ * @typedef {SagaGenerator|Saga|SagaWatcher} SagaObject
+ */
 
-```
-  sagas: (actions, selectors) => ({
-    watchLoginCycle: {
-      * watcher() {
-        while (true) {
-          yield take('LOGIN_ACTION');
-          // do login stuff...
-          yield take('LOGOUT_ACTION');
-          // do logout stuff...
-        }
-      }
-    }
-  })
-```
 
-  https://github.com/erikras/ducks-modular-redux
+/**
+ * @callback SelectorsFactory
+ *
+ * Factory for generation selectors for slice
+ *
+ * @param {function(any): any} getState - method for get the current state for slice
+ * @return {Object} collection of selectors
+ *
+ * @example
+ * ```
+ * createSlice({
+ *  // ...
+ *  selectors: (getState) => ({
+ *    getFirstTodo: createSelector(
+ *      [getState],
+ *      (state) => state[0],
+ *    ),
+ *  })
+ * })
+ * ```
+ */
 
-  https://redux.js.org/redux-toolkit/overview
-*/
-export const createSlice = ({ sagas, reducers, selectors, ...sliceOpts }) => {
+
+/**
+ * @callback SagasFactory
+ *
+ * @param {Object} actions - collection of actions, keys are names of reducers
+ * @param {Object} selectors - collection of selectors
+ * @return {Object} - collection of {@link SagaObject}s
+ *
+ * @example
+ * ```
+ * (actions, selectors) => ({
+ *   [actions.someActionName]: {
+ *     * saga({ payload }) {
+ *       // do something
+ *       yield call(api.get, someUrl, payload);
+ *     }
+ *   },
+ *   * [actions.anotherActionName]: saga({ payload }) {
+ *     // do something
+ *     yield call(api.get, someUrl, payload);
+ *   },
+ *   watchLoginCycle: {
+ *     * watcher() {
+ *       while (true) {
+ *         yield take('LOGIN_ACTION');
+ *         // do login stuff...
+ *         yield take('LOGOUT_ACTION');
+ *         // do logout stuff...
+ *       }
+ *     }
+ *   }
+ * })
+ * ```
+ */
+
+/**
+ * Function to create a redux "duck" module by reusing redux toolkit's createSlice.
+ * Motivation behind "duck" is to reduce unnecessary redux
+ * boilerplate as actions, types, reducers, and async actions are tightly coupled
+ * anyway. Adding helper functions also reduces repetitive information, "don't repeat yourself".
+ *
+ * @param {Object} options - params for createSlice function
+ * @param {Object} options.initialState - initial state
+ * @param {string} options.name - slice name
+ * @param {Object} options.reducers - collection of reducers, name of reducers will be used for creating actions
+ * @param {SagasFactory} [options.sagas] - collection of sagas, see example
+ * @param {SelectorsFactory} [options.selectors] - factory for generation of selectors collection
+ * @return {{selectors: {getState: function(*): *}, actions: *}}
+ *
+ * @see {@link https://github.com/erikras/ducks-modular-redux}
+ * @see {@link https://redux.js.org/redux-toolkit/overview}
+ *
+ * @example
+ * ```
+ * import { takeEvery, takeLatest, call, put } from 'redux-saga/effects'
+ *
+ * export default createSlice({
+ *    name: 'todos',
+ *    initialState: [],
+ *    reducers: {
+ *      addTodo(state, action) {
+ *        state.push(action.payload);
+ *      }
+ *    },
+ *    sagas: (actions, selectors) => ({
+ *      // the computed object key is possible because redux toolkit adds
+ *      // a .toString() for the action function
+ *      [actions.addTodo]: {
+ *        * saga(action) {
+ *          // For the action addTodo, on every action make the API call.
+ *          yield put(Api.postTodo, action.payload);
+ *        },
+ *        // takeLatest will cancel previous fetch if a new addTodo was received
+ *        // by default if omitted, taker will be takeEvery
+ *        taker: takeLatest
+ *      },
+ *    }),
+ *    selectors: (getState) => ({
+ *      getFirstTodo: createSelector(
+ *        [getState],
+ *        (state) => state[0],
+ *      ),
+ *    })
+ * })
+ *
+ *
+ * // If you need fine grained control of the watcher saga, you can can use the
+ * // 'watcher' object key instead of 'saga'. This will ignore the taker and saga
+ * // and insert your watcher directly in the module.sagas array. The name of the
+ * // watcher saga need not be tied to any action.
+ *
+ * sagas: (actions, selectors) => ({
+ *   watchLoginCycle: {
+ *     * watcher() {
+ *       while (true) {
+ *         yield take('LOGIN_ACTION');
+ *         // do login stuff...
+ *         yield take('LOGOUT_ACTION');
+ *         // do logout stuff...
+ *       }
+ *     }
+ *   }
+ * })
+ * ```
+ */
+export const createSlice = (options) => {
+  const { sagas, reducers, selectors, ...sliceOpts } = options;
   const hasCancel = !!reducers?.cancel;
 
   const stateIdentity = (s) => s;
@@ -127,7 +211,12 @@ export const createSlice = ({ sagas, reducers, selectors, ...sliceOpts }) => {
   if (sagas) {
     const sagasWithContext = sagas(newSlice.actions, newSlice.selectors);
 
-    newSlice.sagas = Object.entries(sagasWithContext).map(([actionType, sagaObj]) => {
+    /**
+     * @param {string} actionType
+     * @param {SagaObject} sagaObj
+     * @return {(function(): Generator<*, void, *>)|*}
+     */
+    const map = ([actionType, sagaObj]) => {
       let saga;
       let taker;
 
@@ -155,7 +244,6 @@ export const createSlice = ({ sagas, reducers, selectors, ...sliceOpts }) => {
               yield take(cancelActionType);
 
               if (hasCancel) {
-                // FIXME if we have `cancel` reducer in a module it will be called in not correct workflow position.
                 // It is true only for calling with namespace.
                 yield put({
                   type: cancelType,
@@ -168,7 +256,9 @@ export const createSlice = ({ sagas, reducers, selectors, ...sliceOpts }) => {
           });
         });
       };
-    });
+    };
+
+    newSlice.sagas = Object.entries(sagasWithContext).map(map);
   }
 
   return newSlice;
