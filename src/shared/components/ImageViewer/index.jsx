@@ -27,7 +27,7 @@ const {
   REACT_APP_BACKEND_URL_ROOT,
 } = process.env;
 
-const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/px/webgateway/render_image_region`;
+const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/webgateway/render_image_region`;
 
 const ImageViewer = styled((props) => {
   const { className, data } = props;

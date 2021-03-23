@@ -2,16 +2,6 @@ import { useEffect } from 'react';
 import L from 'leaflet';
 import { useMap } from 'react-leaflet';
 
-import backendClient from '@/middleware/backendClient';
-
-let api;
-
-const initApi = () => {
-  if (!api) {
-    api = backendClient();
-  }
-};
-
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
     continuousWorld: true,
@@ -51,7 +41,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
   },
 
   _templateUrl(baseUrl) {
-    return `${baseUrl}/{id}/0/0/?region={region}&q={q}${this._channels ? `&c=${this._channels}` : ''}`;
+    return `${baseUrl}/{id}/0/0/?region={region}&q={q}&m=c${this._channels ? `&c=${this._channels}` : ''}`;
   },
 
   _getInfo(data) {
@@ -182,8 +172,6 @@ L.TileLayer.Omero = L.TileLayer.extend({
   onAdd(map) {
     const _this = this;
 
-    initApi();
-
     let normalNaturalWidth = 1;
     let normalNaturalHeight = 1;
 
@@ -193,13 +181,13 @@ L.TileLayer.Omero = L.TileLayer.extend({
     });
 
     _this.on('tileloadstart', async ({ tile }) => {
-      const tileUrl = tile.src;
-      tile.src = '';
-      tile.dataset.src = tileUrl;
-      const { data } = await api.get(tileUrl, {
-        responseType: 'arraybuffer',
-      });
-      tile.src = `data:image;base64,${Buffer.from(data, 'binary').toString('base64')}`;
+      // const tileUrl = tile.src;
+      // tile.src = '';
+      // tile.dataset.src = tileUrl;
+      // const { data } = await api.get(tileUrl, {
+      //   responseType: 'arraybuffer',
+      // });
+      // tile.src = `data:image;base64,${Buffer.from(data, 'binary').toString('base64')}`;
       const { naturalWidth, naturalHeight } = tile;
       normalNaturalWidth = Math.max(normalNaturalWidth, naturalWidth);
       normalNaturalHeight = Math.max(normalNaturalHeight, naturalHeight);
