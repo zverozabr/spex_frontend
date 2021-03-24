@@ -4,12 +4,11 @@ export default styled.div`
   --width: ${(props) => props.$width};
 
   z-index: 9999;
-  position: relative;
+  position: absolute;
   top: 10px;
   left: 0;
   width: var(--width);
   height: calc(100% - 10px);
-  padding: 20px;
 
   background-color: #ccc;
   cursor: default;
