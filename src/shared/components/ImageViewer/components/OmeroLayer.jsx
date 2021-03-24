@@ -5,9 +5,9 @@ import { useMap } from 'react-leaflet';
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
     continuousWorld: true,
+    tileCount: 12,
     tileSize: 128,
     updateWhenIdle: true,
-    // tileFormat: 'jpg',
     fitBounds: true,
     setMaxBounds: false,
     channels: [],
@@ -19,11 +19,6 @@ L.TileLayer.Omero = L.TileLayer.extend({
     if (options.maxZoom) {
       this._customMaxZoom = true;
     }
-
-    // // Check for explicit tileSize set
-    // if (options.tileSize) {
-    //   this._explicitTileSize = true;
-    // }
 
     if (options.channels.length) {
       //&c=1|40:6477$FF0000,2|907:7742$FFCC00,3|275:11648$FF0000,-4|398:4237$FFFFFF
@@ -40,17 +35,28 @@ L.TileLayer.Omero = L.TileLayer.extend({
     this._getInfo(data);
   },
 
-  _templateUrl(baseUrl) {
-    return `${baseUrl}/{id}/0/0/?region={region}&q={q}&m=c${this._channels ? `&c=${this._channels}` : ''}`;
-  },
-
   _getInfo(data) {
     const _this = this;
     _this._id = data.id;
     _this.x = data.size.width;
     _this.y = data.size.height;
+
     if (data.tile_size) {
-      _this.options.tileSize = data.tile_size.width;
+      _this.options.tileSize = L.point(data.tile_size.width, data.tile_size.height);
+    } else {
+      // Calc tile size
+      let aspectRatio = _this.x >= _this.y ? _this.x / _this.y : _this.y / _this.x;
+      let n = 0;
+
+      if (_this.options.tileCount%2 === 0 && Math.trunc(aspectRatio)%2 === 0) {
+        n = -1;
+      }
+      if (_this.options.tileCount%2 !== 0 && Math.trunc(aspectRatio)%2 !== 0) {
+        n = 1;
+      }
+
+      const divider = (_this.options.tileCount + n) * aspectRatio;
+      _this.options.tileSize = L.point(Math.round(_this.x / divider), Math.round(_this.y / divider));
     }
 
     const tierSizes = [];
@@ -61,27 +67,14 @@ L.TileLayer.Omero = L.TileLayer.extend({
     let tilesX_;
     let tilesY_;
 
-    // Unless an explicit tileSize is set, use a preferred tileSize
-    // if (!_this._explicitTileSize) {
-    //   // Set the default first
-    //   _this.options.tileSize = 256;
-    //   if (data.tiles) {
-    //     // Image API 2.0 Case
-    //     _this.options.tileSize = data.tiles[0].width;
-    //   } else if (data.tile_width) {
-    //     // Image API 1.1 Case
-    //     _this.options.tileSize = data.tile_width;
-    //   }
-    // }
-
     const ceilLog2 = (x) => {
       return Math.ceil(Math.log(x) / Math.LN2);
     };
 
     // Calculates maximum native zoom for the layer
     _this.maxNativeZoom = Math.max(
-      ceilLog2(_this.x / _this.options.tileSize),
-      ceilLog2(_this.y / _this.options.tileSize),
+      ceilLog2(_this.x / _this.options.tileSize.x),
+      ceilLog2(_this.y / _this.options.tileSize.y),
       0,
     );
 
@@ -101,8 +94,8 @@ L.TileLayer.Omero = L.TileLayer.extend({
       scale = Math.pow(2, _this.maxNativeZoom - i);
       width_ = Math.ceil(_this.x / scale);
       height_ = Math.ceil(_this.y / scale);
-      tilesX_ = Math.ceil(width_ / _this.options.tileSize);
-      tilesY_ = Math.ceil(height_ / _this.options.tileSize);
+      tilesX_ = Math.ceil(width_ / _this.options.tileSize.x);
+      tilesY_ = Math.ceil(height_ / _this.options.tileSize.y);
       tierSizes.push([tilesX_, tilesY_]);
       imageSizes.push(L.point(width_, height_));
     }
@@ -171,65 +164,6 @@ L.TileLayer.Omero = L.TileLayer.extend({
 
   onAdd(map) {
     const _this = this;
-
-    let normalNaturalWidth = 1;
-    let normalNaturalHeight = 1;
-
-    map.on('zoomstart', () => {
-      normalNaturalWidth = 1;
-      normalNaturalHeight = 1;
-    });
-
-    _this.on('tileloadstart', async ({ tile }) => {
-      // const tileUrl = tile.src;
-      // tile.src = '';
-      // tile.dataset.src = tileUrl;
-      // const { data } = await api.get(tileUrl, {
-      //   responseType: 'arraybuffer',
-      // });
-      // tile.src = `data:image;base64,${Buffer.from(data, 'binary').toString('base64')}`;
-      const { naturalWidth, naturalHeight } = tile;
-      normalNaturalWidth = Math.max(normalNaturalWidth, naturalWidth);
-      normalNaturalHeight = Math.max(normalNaturalHeight, naturalHeight);
-    });
-
-    _this.on('tileload', (data) => {
-      const { tile } = data;
-      const { naturalWidth, naturalHeight } = tile;
-      const { width, height } = tile.style;
-
-      normalNaturalWidth = Math.max(normalNaturalWidth, naturalWidth);
-      normalNaturalHeight = Math.max(normalNaturalHeight, naturalHeight);
-
-      if (naturalWidth === naturalHeight || width !== height) {
-        return;
-      }
-
-      let scale = 1;
-      let fixedWidth = parseInt(width, 10);
-      let fixedHeight = parseInt(height, 10);
-
-      if (naturalWidth > naturalHeight) {
-        const d = naturalHeight / naturalWidth;
-        fixedHeight = fixedHeight * d;
-
-        if (naturalWidth < normalNaturalWidth) {
-          scale = naturalWidth / normalNaturalWidth;
-        }
-      }
-
-      if (naturalWidth < naturalHeight) {
-        const d = naturalWidth / naturalHeight;
-        fixedWidth = fixedWidth * d;
-
-        if (naturalHeight < normalNaturalHeight) {
-          scale = naturalHeight / normalNaturalHeight;
-        }
-      }
-
-      tile.style.width = `${Math.round(fixedWidth * scale)}px`;
-      tile.style.height = `${Math.round(fixedHeight * scale)}px`;
-    });
 
     // Store unmutated imageSizes
     _this._imageSizesOriginal = _this._imageSizes.slice(0);
@@ -303,23 +237,25 @@ L.TileLayer.Omero = L.TileLayer.extend({
     return !(x < 0 || sizes[0] <= x || y < 0 || sizes[1] <= y);
   },
 
+  _templateUrl(baseUrl) {
+    return `${baseUrl}/{id}/0/0/?region={region}&q={q}&m=c${this._channels ? `&c=${this._channels}` : ''}`;
+  },
+
   getTileUrl(coords) {
     const _this = this;
     const x = coords.x;
     const y = coords.y;
     const zoom = _this._getZoomForUrl();
     const scale = Math.pow(2, _this.maxNativeZoom - zoom);
-    const tileBaseSize = _this.options.tileSize * scale;
-    const minx = x * tileBaseSize;
-    const miny = y * tileBaseSize;
-    const maxx = Math.min(minx + tileBaseSize, _this.x);
-    const maxy = Math.min(miny + tileBaseSize, _this.y);
+    const tileBaseSizeX = _this.options.tileSize.x * scale;
+    const tileBaseSizeY = _this.options.tileSize.y * scale;
+    const minx = x * tileBaseSizeX;
+    const miny = y * tileBaseSizeY;
+    const maxx = Math.min(minx + tileBaseSizeX, _this.x);
+    const maxy = Math.min(miny + tileBaseSizeY, _this.y);
 
     const xDiff = maxx - minx;
     const yDiff = maxy - miny;
-
-    // Canonical URI Syntax for v2
-    const size = Math.ceil(xDiff / scale) + ',';
 
     const quality = Math.min(1, Math.max(0.1, coords.z / 5));
 
@@ -328,11 +264,8 @@ L.TileLayer.Omero = L.TileLayer.extend({
       L.extend(
         {
           id: _this._id,
-          // format: _this.options.tileFormat,
           q: quality,
           region: [minx, miny, xDiff, yDiff].join(','),
-          // rotation: 0,
-          size: size,
         },
         _this.options,
       ),
