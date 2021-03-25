@@ -104,7 +104,10 @@ const backendClient = (config = {}) => {
     throw new Error('Backed client is not configured, use configureBackendClient');
   }
 
-  let newConfig = config;
+  let newConfig = {
+    ...config,
+    withCredentials: true,
+  };
 
   const jwtToken = storage.access_token;
 

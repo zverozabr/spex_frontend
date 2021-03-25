@@ -5,8 +5,7 @@ import { useMap } from 'react-leaflet';
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
     continuousWorld: true,
-    tileCount: 12,
-    tileSize: 128,
+    tileCount: +process.env.TILE_COUNT || 8,
     updateWhenIdle: true,
     fitBounds: true,
     setMaxBounds: false,
