@@ -71,9 +71,9 @@ const ImageViewer = (props) => {
       <MapContainer
         crs={L.CRS.Simple}
         center={[0, 0]}
-        minZoom={1}
-        maxZoom={10}
-        zoom={1}
+        minZoom={0}
+        maxZoom={5}
+        zoom={0}
         attributionControl={false}
         zoomControl={false}
         whenCreated={setMap}

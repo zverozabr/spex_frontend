@@ -5,7 +5,6 @@ import { useMap } from 'react-leaflet';
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
     continuousWorld: true,
-    tileCount: +process.env.TILE_COUNT || 8,
     updateWhenIdle: true,
     fitBounds: true,
     setMaxBounds: false,
@@ -40,23 +39,14 @@ L.TileLayer.Omero = L.TileLayer.extend({
     _this.x = data.size.width;
     _this.y = data.size.height;
 
-    if (data.tile_size) {
-      _this.options.tileSize = L.point(data.tile_size.width, data.tile_size.height);
-    } else {
-      // Calc tile size
-      let aspectRatio = _this.x >= _this.y ? _this.x / _this.y : _this.y / _this.x;
-      let n = 0;
+    // Calculates tile sizes
+    let tileCount = Math.max(Math.ceil(Math.max(_this.x, _this.y) / 512), 4);
+    tileCount = Math.log2(tileCount);
+    tileCount = 2 ** Math.round(tileCount);
 
-      if (_this.options.tileCount%2 === 0 && Math.trunc(aspectRatio)%2 === 0) {
-        n = -1;
-      }
-      if (_this.options.tileCount%2 !== 0 && Math.trunc(aspectRatio)%2 !== 0) {
-        n = 1;
-      }
-
-      const divider = (_this.options.tileCount + n) * aspectRatio;
-      _this.options.tileSize = L.point(Math.round(_this.x / divider), Math.round(_this.y / divider));
-    }
+    const tileSizeX = Math.ceil(_this.x / tileCount);
+    const tileSizeY = Math.ceil(_this.y / tileCount);
+    _this.options.tileSize = L.point(tileSizeX, tileSizeY);
 
     const tierSizes = [];
     const imageSizes = [];
@@ -158,7 +148,7 @@ L.TileLayer.Omero = L.TileLayer.extend({
       }
     }
     // return a default zoom
-    return 2;
+    return 0;
   },
 
   onAdd(map) {
@@ -256,7 +246,8 @@ L.TileLayer.Omero = L.TileLayer.extend({
     const xDiff = maxx - minx;
     const yDiff = maxy - miny;
 
-    const quality = Math.min(1, Math.max(0.1, coords.z / 5));
+    const maxZoom = Math.max(1, _this.maxNativeZoom);
+    const quality = Math.min(1, Math.max(0.1, coords.z / maxZoom));
 
     return L.Util.template(
       _this._baseUrl,

@@ -34,6 +34,7 @@ const Layout = ({ children }) => {
     [location.pathname],
   );
 
+  const isFetching = useSelector(omeroSelectors.isFetching);
   const projects = useSelector(omeroSelectors.getProjects);
   const projectDatasets = useSelector((state) => omeroSelectors.getDatasets(projectId)(state));
 
@@ -104,6 +105,7 @@ const Layout = ({ children }) => {
               defaultValue={none}
               value={projectId}
               onChange={onProjectChange}
+              disabled={isFetching}
             >
               <Option value={none}>Select project</Option>
               {projects?.map((item) => (
@@ -119,7 +121,7 @@ const Layout = ({ children }) => {
               defaultValue={none}
               value={datasetId}
               onChange={onDatasetChange}
-              disabled={projectId && projectId === none}
+              disabled={isFetching || (projectId && projectId === none)}
             >
               <Option value={none}>Select dataset</Option>
               {projectDatasets?.map((item) => (
