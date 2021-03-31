@@ -59,4 +59,23 @@ export default styled.div`
     background: #fff url(${ResetZoom}) no-repeat 6px 6px;
     background-size: 18px 18px;
   }
+
+  // Draw
+  .sr-only {
+    display: none;
+  }
+  
+  &.pathCreated .leaflet-draw-draw-rectangle {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .leaflet-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .leaflet-draw-tooltip {
+    display: none;
+  }
 `;

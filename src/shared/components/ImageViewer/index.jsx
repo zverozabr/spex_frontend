@@ -1,10 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import classNames from 'classnames';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
 import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import SideBarToggleIcon from 'mdi-react/MenuRightIcon';
 import PropTypes from 'prop-types';
-import { MapContainer, ZoomControl } from 'react-leaflet';
+import { MapContainer, ZoomControl, FeatureGroup } from 'react-leaflet';
+import { EditControl } from 'react-leaflet-draw';
 import { useToggle } from 'react-use';
 
 import Checkbox from '+components/Checkbox';
@@ -32,6 +35,7 @@ const ImageViewer = (props) => {
   const [map, setMap] = useState(null);
   const [channels, setChannels] = useState(cloneDeep(data.channels));
   const [sidebarCollapsed, toggleSidebar] = useToggle(true);
+  const [pathCreated, togglePath] = useToggle(false);
 
   const onSidebarMouseEnter = useCallback(
     () => {
@@ -66,8 +70,57 @@ const ImageViewer = (props) => {
     [channels],
   );
 
+  const onCreatePath = useCallback(
+    (event) => {
+      const [ latLngs ] = event.layer.getLatLngs();
+      const { sourceTarget: _map } = event;
+      const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
+      const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
+      const region = [Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y)];
+      // eslint-disable-next-line no-console
+      console.log('region:', region.join(', '));
+      togglePath();
+    },
+    [togglePath],
+  );
+
+  const onEditPath = useCallback(
+    (event) => {
+      const [ latLngs ] = event.layer.getLatLngs();
+      const { sourceTarget: _map } = event;
+      const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
+      const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
+      const region = [Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y)];
+      // eslint-disable-next-line no-console
+      console.log('region:', region.join(', '));
+    },
+    [],
+  );
+
+  const onDeletedPath = useCallback(
+    () => {
+      // eslint-disable-next-line no-console
+      console.log('path deleted');
+      togglePath();
+    },
+    [togglePath],
+  );
+
+  useEffect(
+    () => {
+      L.EditToolbar.Delete.include({
+        enable: function () {
+          // eslint-disable-next-line react/no-this-in-sfc
+          this.options.featureGroup.clearLayers();
+          onDeletedPath();
+        },
+      });
+    },
+    [onDeletedPath, togglePath],
+  );
+
   return (
-    <Container className={className}>
+    <Container className={classNames(className, { pathCreated })}>
       <MapContainer
         crs={L.CRS.Simple}
         center={[0, 0]}
@@ -85,9 +138,29 @@ const ImageViewer = (props) => {
             channels,
           }}
         />
+
+        <FullscreenControl position="topright" />
+
+        <FeatureGroup>
+          <EditControl
+            position="topright"
+            onEdited={onEditPath}
+            onCreated={onCreatePath}
+            onDeleted={onDeletedPath}
+            draw={{
+              // see: https://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html#drawoptions
+              polyline: false,
+              polygon: false,
+              rectangle: true,
+              circle: false,
+              marker: false,
+              circlemarker: false,
+            }}
+          />
+        </FeatureGroup>
+
         <ZoomControl position="bottomright" />
         <ResetZoomControl position="bottomright" />
-        <FullscreenControl position="topright" />
       </MapContainer>
 
       <SideBar
