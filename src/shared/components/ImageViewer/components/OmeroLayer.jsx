@@ -1,6 +1,10 @@
-import { useEffect } from 'react';
+import { useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import L from 'leaflet';
+import cloneDeep from 'lodash/cloneDeep';
+import isEqual from 'lodash/isEqual';
 import { useMap } from 'react-leaflet';
+import { useDebounce } from 'react-use';
 
 L.TileLayer.Omero = L.TileLayer.extend({
   options: {
@@ -12,6 +16,12 @@ L.TileLayer.Omero = L.TileLayer.extend({
   },
 
   initialize(data, options) {
+    this._setOptions(options);
+    this._getData(data);
+  },
+
+  _setOptions(options) {
+    this._inputOptions = options;
     options = typeof options !== 'undefined' ? options : {};
 
     if (options.maxZoom) {
@@ -30,11 +40,11 @@ L.TileLayer.Omero = L.TileLayer.extend({
     L.setOptions(this, options);
 
     this._baseUrl = this._templateUrl(options.baseUrl);
-    this._getInfo(data);
   },
 
-  _getInfo(data) {
+  _getData(data) {
     const _this = this;
+    _this._inputData = data;
     _this._id = data.id;
     _this.x = data.size.width;
     _this.y = data.size.height;
@@ -151,6 +161,60 @@ L.TileLayer.Omero = L.TileLayer.extend({
     return 0;
   },
 
+  _isValidTile(coords) {
+    const _this = this;
+    const zoom = _this._getZoomForUrl();
+    const sizes = _this._tierSizes[zoom];
+    const x = coords.x;
+    const y = coords.y;
+
+    if (zoom < 0 && x >= 0 && y >= 0) {
+      return true;
+    }
+
+    if (!sizes) {
+      return false;
+    }
+
+    return !(x < 0 || sizes[0] <= x || y < 0 || sizes[1] <= y);
+  },
+
+  _templateUrl(baseUrl) {
+    return `${baseUrl}/{id}/0/0/?region={region}&q={q}&m=c${this._channels ? `&c=${this._channels}` : ''}`;
+  },
+
+  getTileUrl(coords) {
+    const _this = this;
+    const x = coords.x;
+    const y = coords.y;
+    const zoom = _this._getZoomForUrl();
+    const scale = Math.pow(2, _this.maxNativeZoom - zoom);
+    const tileBaseSizeX = _this.options.tileSize.x * scale;
+    const tileBaseSizeY = _this.options.tileSize.y * scale;
+    const minx = x * tileBaseSizeX;
+    const miny = y * tileBaseSizeY;
+    const maxx = Math.min(minx + tileBaseSizeX, _this.x);
+    const maxy = Math.min(miny + tileBaseSizeY, _this.y);
+
+    const xDiff = maxx - minx;
+    const yDiff = maxy - miny;
+
+    const maxZoom = Math.max(1, _this.maxNativeZoom);
+    const quality = Math.min(1, Math.max(0.1, coords.z / maxZoom));
+
+    return L.Util.template(
+      _this._baseUrl,
+      L.extend(
+        {
+          id: _this._id,
+          q: quality,
+          region: [minx, miny, xDiff, yDiff].join(','),
+        },
+        _this.options,
+      ),
+    );
+  },
+
   onAdd(map) {
     const _this = this;
 
@@ -208,85 +272,87 @@ L.TileLayer.Omero = L.TileLayer.extend({
     }
   },
 
-  _isValidTile(coords) {
-    const _this = this;
-    const zoom = _this._getZoomForUrl();
-    const sizes = _this._tierSizes[zoom];
-    const x = coords.x;
-    const y = coords.y;
-
-    if (zoom < 0 && x >= 0 && y >= 0) {
-      return true;
-    }
-
-    if (!sizes) {
-      return false;
-    }
-
-    return !(x < 0 || sizes[0] <= x || y < 0 || sizes[1] <= y);
+  updateOptions(options) {
+    this._setOptions(options);
   },
 
-  _templateUrl(baseUrl) {
-    return `${baseUrl}/{id}/0/0/?region={region}&q={q}&m=c${this._channels ? `&c=${this._channels}` : ''}`;
-  },
-
-  getTileUrl(coords) {
-    const _this = this;
-    const x = coords.x;
-    const y = coords.y;
-    const zoom = _this._getZoomForUrl();
-    const scale = Math.pow(2, _this.maxNativeZoom - zoom);
-    const tileBaseSizeX = _this.options.tileSize.x * scale;
-    const tileBaseSizeY = _this.options.tileSize.y * scale;
-    const minx = x * tileBaseSizeX;
-    const miny = y * tileBaseSizeY;
-    const maxx = Math.min(minx + tileBaseSizeX, _this.x);
-    const maxy = Math.min(miny + tileBaseSizeY, _this.y);
-
-    const xDiff = maxx - minx;
-    const yDiff = maxy - miny;
-
-    const maxZoom = Math.max(1, _this.maxNativeZoom);
-    const quality = Math.min(1, Math.max(0.1, coords.z / maxZoom));
-
-    return L.Util.template(
-      _this._baseUrl,
-      L.extend(
-        {
-          id: _this._id,
-          q: quality,
-          region: [minx, miny, xDiff, yDiff].join(','),
-        },
-        _this.options,
-      ),
-    );
+  updateData(data) {
+    this._getData(data);
   },
 });
 
 const OmeroLayer = (props) => {
-  const { data, options } = props;
+  const { data, options, debounce } = props;
   const map = useMap();
+  const omeroLayer = useRef(null);
 
-  useEffect(
+  // Update layer
+  useDebounce(
     () => {
-      if (!data) {
-        return undefined;
+      if (!map || !data || !options || !omeroLayer.current || !map.hasLayer(omeroLayer.current)) {
+        return;
       }
 
-      const omeroLayer = new L.TileLayer.Omero(data, options);
-      map.addLayer(omeroLayer);
+      const clonedData = cloneDeep(data);
+      const clonedOptions = cloneDeep(options);
+      const layer = omeroLayer.current;
 
-      return () => {
-        if (!map.hasLayer(omeroLayer)) {
-          return;
-        }
-        map.removeLayer(omeroLayer);
-      };
+      const isDataEqual = isEqual(clonedData, layer._inputData);
+      const isOptionsEqual = isEqual(clonedOptions, layer._inputOptions);
+
+      if (!isDataEqual) {
+        layer.updateData(clonedData);
+      }
+
+      if (!isOptionsEqual) {
+        layer.updateOptions(clonedOptions);
+      }
+
+      if (!isDataEqual || !isOptionsEqual) {
+        layer.redraw();
+      }
+    },
+    debounce,
+    [map, data, options],
+  );
+
+  // Create layer
+  useEffect(
+    () => {
+      if (!map || !data || !options || (omeroLayer.current && map.hasLayer(omeroLayer.current))) {
+        return;
+      }
+
+      const clonedData = cloneDeep(data);
+      const clonedOptions = cloneDeep(options);
+      const layer = new L.TileLayer.Omero(clonedData, clonedOptions);
+      map.addLayer(layer);
+      omeroLayer.current = layer;
     },
     [map, data, options],
   );
 
+  // Remove layer
+  useEffect(
+    () => () => {
+      if (map.hasLayer(omeroLayer.current)) {
+        map.removeLayer(omeroLayer.current);
+      }
+    },
+    [map],
+  );
+
   return null;
+};
+
+OmeroLayer.propTypes = {
+  data: PropTypes.shape({}).isRequired,
+  options: PropTypes.shape({}).isRequired,
+  debounce: PropTypes.number,
+};
+
+OmeroLayer.defaultProps = {
+  debounce: 600,
 };
 
 export default OmeroLayer;
