@@ -30,9 +30,9 @@ const AnalysisPage = () => {
   const { projectId, datasetId, imageId } = useMemo(
     () => {
       const pathArray = location.pathname.split('/');
-      const projectId = pathArray[1] === PathNames.project && pathArray[2] ? pathArray[2] : undefined;
-      const datasetId = pathArray[3] === PathNames.dataset && pathArray[4] ? pathArray[4] : undefined;
-      const imageId = pathArray[5] === PathNames.img && pathArray[6] ? pathArray[6] : undefined;
+      const projectId = pathArray[1] === PathNames.project && pathArray[2] ? `${pathArray[2]}` : undefined;
+      const datasetId = pathArray[3] === PathNames.dataset && pathArray[4] ? `${pathArray[4]}` : undefined;
+      const imageId = pathArray[5] === PathNames.img && pathArray[6] ? `${pathArray[6]}` : undefined;
       return { projectId, datasetId, imageId };
     },
     [location.pathname],
@@ -44,6 +44,7 @@ const AnalysisPage = () => {
   const datasetThumbnails = useSelector(omeroSelectors.getThumbnails(datasetId));
   const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
 
+  const [imageIds, setImageIds] = useState([]);
   const [activeDataTab, setActiveDataTab] = useState(0);
   const [activePipelineTab, setActivePipelineTab] = useState(0);
 
@@ -68,6 +69,8 @@ const AnalysisPage = () => {
   const imageErrorMsg = useMemo(
     () => {
       switch (true) {
+        case imageIds && imageIds.length > 0:
+          return null;
         case imageId == null:
           return 'Select image to analyse';
         case imageId >= 0 && !imageDetails && isOmeroFetching:
@@ -78,7 +81,7 @@ const AnalysisPage = () => {
           return null;
       }
     },
-    [imageDetails, imageId, isOmeroFetching],
+    [imageDetails, imageId, imageIds, isOmeroFetching],
   );
 
   const hashDatasetImages = useMemo(
@@ -99,12 +102,21 @@ const AnalysisPage = () => {
   );
 
   const onPreviewClick = useCallback(
-    (id) => {
-      if (imageId !== id) {
+    (ids) => {
+      if (!ids || ids.length === 0 || ids.length > 1) {
+        setImageIds(ids);
+        const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}`;
+        history.push(url);
+        return;
+      }
+
+      setImageIds([]);
+      const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}/${PathNames.img}/${ids}`;
+      history.push(url);
+
+      if (ids[0] !== imageId) {
         dispatch(omeroActions.clearImageDetails(imageId));
       }
-      const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}/${PathNames.img}/${id}`;
-      history.push(url);
     },
     [imageId, projectId, datasetId, history, dispatch],
   );
@@ -176,7 +188,7 @@ const AnalysisPage = () => {
       {!datasetErrorMsg && (
         <Fragment>
           <LeftPanel>
-            {!imageErrorMsg && (
+            {!imageErrorMsg && imageDetails && (
               <Accordion>
                 <AccordionSummary>{imageDetails.meta.imageName}</AccordionSummary>
                 <AccordionDetails>
@@ -205,7 +217,15 @@ const AnalysisPage = () => {
 
             <ImageViewerContainer>
               {imageErrorMsg && <NoData>{imageErrorMsg}</NoData>}
-              {!imageErrorMsg && <ImageViewer data={imageDetails} />}
+              {!imageErrorMsg && imageDetails && <ImageViewer data={imageDetails} />}
+              {imageIds.length > 0 && (
+                <ThumbnailsViewer
+                  thumbnails={thumbnails.filter(({ id }) => imageIds.includes(id))}
+                  allowSelect={false}
+                  $size={2}
+                  $center
+                />
+              )}
             </ImageViewerContainer>
           </LeftPanel>
 
@@ -218,8 +238,9 @@ const AnalysisPage = () => {
               <TabPanel value={activeDataTab} index={0}>
                 <ThumbnailsViewer
                   thumbnails={thumbnails}
-                  active={imageId}
+                  active={imageId || imageIds}
                   onClick={onPreviewClick}
+                  allowMultiSelect
                 />
               </TabPanel>
               <TabPanel value={activeDataTab} index={1}>
