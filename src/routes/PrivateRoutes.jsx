@@ -5,6 +5,7 @@ import { Switch, Route } from 'react-router-dom';
 import AnalysisPage from '@/components/AnalysisPage';
 import Layout from '@/components/Layout';
 import NotFound404 from '@/components/NotFound404';
+import Projects from '@/components/Projects';
 
 import { actions as authActions } from '@/redux/modules/users/auth';
 
@@ -26,6 +27,11 @@ const PrivateRoutes = () => {
   return (
     <Layout>
       <Switch>
+        <Route
+          exact
+          path={[ '/' ]}
+          component={Projects}
+        />
         <Route
           exact
           path={[

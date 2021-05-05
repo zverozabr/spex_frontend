@@ -10,7 +10,7 @@ import PathNames from '@/models/PathNames';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 import { actions as authActions } from '@/redux/modules/users/auth';
 
-import Button from '+components/Button';
+import Button, { ButtonColors } from '+components/Button';
 import Progress from '+components/Progress';
 import Select, { Option } from '+components/Select';
 import Typography from '+components/Typography';
@@ -135,6 +135,7 @@ const Layout = ({ children }) => {
           <Button
             style={{ marginLeft: 'auto' }}
             variant="outlined"
+            color={ButtonColors.secondary}
             onClick={onLogout}
           >
             Log Out

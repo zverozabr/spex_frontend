@@ -4,7 +4,7 @@ import { Redirect } from 'react-router-dom';
 
 import { actions as authActions, selectors as authSelectors } from '@/redux/modules/users/auth';
 
-import Button from '+components/Button';
+import Button, { ButtonColors } from '+components/Button';
 import Form, { Field, FormRenderer, Controls, Validators } from '+components/Form';
 
 import Alert from './components/Alert';
@@ -54,8 +54,7 @@ const Auth = () => {
         />
 
         <Button
-          variant="contained"
-          color="primary"
+          color={ButtonColors.primary}
           type="submit"
           disabled={pristine || isFetching || submitting}
         >
