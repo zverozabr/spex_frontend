@@ -1,8 +1,8 @@
 import { useRef, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
+import PropTypes from 'prop-types';
 import { useMap } from 'react-leaflet';
 import { useDebounce } from 'react-use';
 
