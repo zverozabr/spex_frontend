@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 
-import { ButtonColors } from '+components/Button';
+import Button, { ButtonColors } from '+components/Button';
+import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Table from '+components/Table';
 
 import Container from './components/Container';
@@ -24,21 +25,33 @@ const data = [
 ];
 
 const Projects = () => {
-  const actions = [
-    {
+  const [ addProjectModalOpen, setAddProjectModalOpen ] = useState(false);
+
+  const onProjectModalOpen = useCallback(
+    () => { setAddProjectModalOpen(true); },
+    [],
+  );
+
+  const onProjectModalClose = useCallback(
+    () => { setAddProjectModalOpen(false); },
+    [],
+  );
+
+  const actions = useMemo(
+    () => ([{
       name: 'Delete Selected',
       // eslint-disable-next-line no-console
       fn: (rows) => console.log('delete', rows),
       color: ButtonColors.danger,
       enabledOnlyWhenSelectedRows: true,
-    },
-    {
+    }, {
       name: 'Add Project',
       // eslint-disable-next-line no-console
-      fn: (rows) => console.log('add', rows),
+      fn: onProjectModalOpen,
       color: ButtonColors.primary,
-    },
-  ];
+    }]),
+    [onProjectModalOpen],
+  );
 
   return (
     <Container>
@@ -48,6 +61,27 @@ const Projects = () => {
         data={data}
         allowRowSelection
       />
+      <Modal
+        open={addProjectModalOpen}
+        onClose={onProjectModalClose}
+      >
+        <ModalHeader>Add Project</ModalHeader>
+        <ModalBody>Project fields</ModalBody>
+        <ModalFooter>
+          <Button
+            color={ButtonColors.secondary}
+            onClick={onProjectModalClose}
+          >
+            Chancel
+          </Button>
+          <Button
+            color={ButtonColors.primary}
+            onClick={onProjectModalClose}
+          >
+            Submit
+          </Button>
+        </ModalFooter>
+      </Modal>
     </Container>
   );
 };
