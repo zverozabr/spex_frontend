@@ -1,30 +1,30 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
-import Button, { ButtonColors } from '+components/Button';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
+import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
+
+import { ButtonColors } from '+components/Button';
+import { Field, Controls, Validators } from '+components/Form';
+import FormModal from '+components/FormModal';
 import Table from '+components/Table';
 
 import Container from './components/Container';
 
-const columns = [
-  {
-    id: 'name',
-    accessor: 'name',
-    Header: 'Name',
-  }, {
-    id: 'description',
-    accessor: 'description',
-    Header: 'Description',
-  },
-];
-
-const data = [
-  { id: 1, name: 'Project 1', description: 'Some description 1' },
-  { id: 2, name: 'Project 2', description: 'Some description 2' },
-  { id: 3, name: 'Project 3', description: 'Some description 3' },
-];
+const columns = [{
+  id: 'name',
+  accessor: 'name',
+  Header: 'Name',
+}, {
+  id: 'description',
+  accessor: 'description',
+  Header: 'Description',
+}];
 
 const Projects = () => {
+  const dispatch = useDispatch();
+
+  const projects = useSelector(projectsSelectors.getProjects);
+
   const [ addProjectModalOpen, setAddProjectModalOpen ] = useState(false);
 
   const onProjectModalOpen = useCallback(
@@ -35,6 +35,14 @@ const Projects = () => {
   const onProjectModalClose = useCallback(
     () => { setAddProjectModalOpen(false); },
     [],
+  );
+
+  const onProjectModalSubmit = useCallback(
+    (values) => {
+      dispatch(projectsActions.createProject(values));
+      setAddProjectModalOpen(false);
+    },
+    [dispatch],
   );
 
   const actions = useMemo(
@@ -53,35 +61,53 @@ const Projects = () => {
     [onProjectModalOpen],
   );
 
+  useEffect(
+    () => {
+      if (projects.length) {
+        return;
+      }
+      dispatch(projectsActions.fetchProjects());
+    },
+    [dispatch, projects.length],
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(projectsActions.clearProjects());
+    },
+    [dispatch],
+  );
+
   return (
     <Container>
       <Table
         actions={actions}
         columns={columns}
-        data={data}
+        data={projects}
         allowRowSelection
       />
-      <Modal
+      <FormModal
+        header="Add Project"
         open={addProjectModalOpen}
         onClose={onProjectModalClose}
+        onSubmit={onProjectModalSubmit}
       >
-        <ModalHeader>Add Project</ModalHeader>
-        <ModalBody>Project fields</ModalBody>
-        <ModalFooter>
-          <Button
-            color={ButtonColors.secondary}
-            onClick={onProjectModalClose}
-          >
-            Chancel
-          </Button>
-          <Button
-            color={ButtonColors.primary}
-            onClick={onProjectModalClose}
-          >
-            Submit
-          </Button>
-        </ModalFooter>
-      </Modal>
+        <Field
+          name="name"
+          label="Name"
+          component={Controls.TextField}
+          validate={Validators.required}
+          required
+        />
+
+        <Field
+          name="description"
+          label="Description"
+          component={Controls.TextField}
+          multiline
+          rows={6}
+        />
+      </FormModal>
     </Container>
   );
 };
