@@ -38,7 +38,7 @@ const Auth = () => {
         <Field
           name="username"
           label="Username"
-          component={Controls.Input}
+          component={Controls.TextField}
           type="username"
           validate={Validators.required}
           required
@@ -47,7 +47,7 @@ const Auth = () => {
         <Field
           name="password"
           label="Password"
-          component={Controls.Input}
+          component={Controls.TextField}
           type="password"
           validate={Validators.required}
           required
@@ -56,7 +56,7 @@ const Auth = () => {
         <Button
           color={ButtonColors.primary}
           type="submit"
-          disabled={pristine || isFetching || submitting}
+          disabled={submitting || pristine || isFetching}
         >
           Sign In
         </Button>
