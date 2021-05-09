@@ -1,6 +1,7 @@
 import { all } from 'redux-saga/effects';
 import omeroSlice from './omero';
 import progress from './progress';
+import projectsSlice from './projects';
 import authSlice from './users/auth';
 
 
@@ -12,6 +13,7 @@ const rootSlices = [
   authSlice,
   progress,
   omeroSlice,
+  projectsSlice,
 ];
 
 const sagas = [...rootSlices, ...nestedSlices]
