@@ -8,9 +8,7 @@ export default styled.div`
   width: 100vw;
   height: 100vh;
   
-  form {
-    width: 400px;
-    max-width: 400px;
-    padding: 16px;
+  h6 + h6 {
+    margin-top: 14px;
   }
 `;

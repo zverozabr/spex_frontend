@@ -1,13 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
-import Button from '+components/Button';
+import Link from '+components/Link';
+import Typography from '+components/Typography';
+
 import Container from './components/Container';
 
 const NotFound404 = () => (
   <Container>
-    <h3>OOPS, looks like we lost you somewhere.</h3>
-    <Link to="/"><Button>Go home</Button></Link>
+    <Typography variant="h6">OOPS! Looks like we lost you somewhere.</Typography>
+    <Typography variant="h6"><Link to="/">Go home</Link></Typography>
   </Container>
 );
 
