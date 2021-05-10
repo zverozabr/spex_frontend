@@ -72,6 +72,12 @@ export default styled.div `
     .rt-td {
       display: flex;
       align-items: center;
+      padding: 0 0.563em;
+      justify-self: flex-start;
+
+      .MuiCheckbox-root {
+        margin-left: 0.235em;
+      }
     }
   }
 

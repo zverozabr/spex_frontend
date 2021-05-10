@@ -8,7 +8,7 @@ const ExpanderCell = styled(({ className, row: { isExpanded, subRows } }) => sub
     •
   </div>
 )) `
-  margin: 0 .563em;
+
 `;
 
 export default ExpanderCell;

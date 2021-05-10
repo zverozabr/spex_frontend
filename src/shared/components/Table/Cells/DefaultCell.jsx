@@ -9,7 +9,6 @@ const DefaultCell = styled(({ className, value }) => (
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  margin: 0 .563em;
 `;
 
 export default DefaultCell;

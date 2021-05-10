@@ -6,7 +6,7 @@ const RowSelectionCell = styled(({ className, row }) => {
     const { checked, indeterminate, onChange } = row.getToggleRowSelectedProps();
     return <Checkbox className={className} checked={checked} indeterminate={indeterminate} onChange={onChange} />;
 }) `
-  margin: 0 .563em;
+
 `;
 
 export default RowSelectionCell;
