@@ -7,10 +7,11 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 
-import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 import { actions as authActions } from '@/redux/modules/users/auth';
 
 import Button, { ButtonColors } from '+components/Button';
+import Link from '+components/Link';
 import Progress from '+components/Progress';
 import Select, { Option } from '+components/Select';
 import Typography from '+components/Typography';
@@ -24,36 +25,28 @@ const Layout = ({ children }) => {
   const history = useHistory();
   const location = useLocation();
 
-  const { projectId, datasetId } = useMemo(
+  const { projectId } = useMemo(
     () => {
       const pathArray = location.pathname.split('/');
       const projectId = pathArray[1] === PathNames.project && pathArray[2] ? pathArray[2] : none;
-      const datasetId = pathArray[3] === PathNames.dataset && pathArray[4] ? pathArray[4] : none;
-      return { projectId, datasetId };
+      return { projectId };
     },
     [location.pathname],
   );
 
-  const isFetching = useSelector(omeroSelectors.isFetching);
-  const projects = useSelector(omeroSelectors.getProjects);
-  const projectDatasets = useSelector((state) => omeroSelectors.getDatasets(projectId)(state));
+  const projects = useSelector(projectsSelectors.getProjects);
+  const isProjectsFetching = useSelector(projectsSelectors.isFetching);
 
   const onProjectChange = useCallback(
-    ({ target: { value } }) => {
-      const fixedId = value === none ? '' : `/${value}`;
-      const url = `/${PathNames.project}${fixedId}`;
+    ({ target: { value: id } }) => {
+      if (id === none) {
+        history.push('/');
+        return;
+      }
+      const url = `/${PathNames.project}/${id}`;
       history.push(url);
     },
     [history],
-  );
-
-  const onDatasetChange = useCallback(
-    ({ target: { value } }) => {
-      const fixedId = value === none ? '' : `/${value}`;
-      const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}${fixedId}`;
-      history.push(url);
-    },
-    [history, projectId],
   );
 
   const onLogout = useCallback(
@@ -68,26 +61,16 @@ const Layout = ({ children }) => {
       if (projects.length) {
         return;
       }
-      dispatch(omeroActions.fetchProjects());
+      dispatch(projectsActions.fetchProjects());
     },
     [dispatch, projects.length],
   );
 
   useEffect(
-    () => {
-      if (projectId && projectId === none) {
-        return;
-      }
-      dispatch(omeroActions.fetchDatasets(projectId));
-    },
-    [dispatch, projectId],
-  );
-
-  useEffect(
     () => () => {
-      dispatch(omeroActions.clearDatasets(projectId));
+      dispatch(projectsActions.clearProjects());
     },
-    [projectId, dispatch],
+    [dispatch],
   );
 
   return (
@@ -96,41 +79,20 @@ const Layout = ({ children }) => {
 
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6">
-            Genentech
-          </Typography>
+          <Typography variant="h6"><Link to="/">Genentech</Link></Typography>
 
-          <div style={{ width: '300px', marginLeft: '10px' }}>
-            <Select
-              defaultValue={none}
-              value={projectId}
-              onChange={onProjectChange}
-              disabled={isFetching}
-            >
-              <Option value={none}>Select project</Option>
-              {projects?.map((item) => (
-                <Option key={item.id} value={item.id}>
-                  {item.name}
-                </Option>
-              ))}
-            </Select>
-          </div>
-
-          <div style={{ width: '300px', marginLeft: '10px' }}>
-            <Select
-              defaultValue={none}
-              value={datasetId}
-              onChange={onDatasetChange}
-              disabled={isFetching || (projectId && projectId === none)}
-            >
-              <Option value={none}>Select dataset</Option>
-              {projectDatasets?.map((item) => (
-                <Option key={item.id} value={item.id}>
-                  {item.name}
-                </Option>
-              ))}
-            </Select>
-          </div>
+          {projects.length > 0 && !isProjectsFetching && (
+            <div style={{ width: '300px', marginLeft: '10px' }}>
+              <Select
+                defaultValue={none}
+                value={projectId}
+                onChange={onProjectChange}
+              >
+                <Option value={none}>Select project</Option>
+                {projects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+              </Select>
+            </div>
+          )}
 
           <Button
             style={{ marginLeft: 'auto' }}
