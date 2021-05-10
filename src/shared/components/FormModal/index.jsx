@@ -76,7 +76,7 @@ const FormModal = styled((props) => {
 })`
   ${ModalBody} {
     .MuiFormControl-root ~ .MuiFormControl-root {
-      margin-top: 15px;
+      margin-top: 14px;
     }
   }
 `;
