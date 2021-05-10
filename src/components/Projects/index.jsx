@@ -1,11 +1,14 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+import PathNames from '@/models/PathNames';
+
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 
 import { ButtonColors } from '+components/Button';
 import { Field, Controls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
+import Link from '+components/Link';
 import Table from '+components/Table';
 
 import Container from './components/Container';
@@ -14,6 +17,14 @@ const columns = [{
   id: 'name',
   accessor: 'name',
   Header: 'Name',
+  Cell: ({ row: { original: { id, name } } }) => useMemo(
+    () => (
+      <Link to={`/${PathNames.project}/${id}`}>
+        {name}
+      </Link>
+    ),
+    [id, name],
+  ),
 }, {
   id: 'description',
   accessor: 'description',
@@ -37,10 +48,17 @@ const Projects = () => {
     [],
   );
 
-  const onProjectModalSubmit = useCallback(
-    (values) => {
-      dispatch(projectsActions.createProject(values));
+  const onProjectAdd = useCallback(
+    (newProject) => {
+      dispatch(projectsActions.createProject(newProject));
       setAddProjectModalOpen(false);
+    },
+    [dispatch],
+  );
+
+  const onProjectsDelete = useCallback(
+    (projectsToDelete) => {
+      projectsToDelete.forEach((el) => dispatch(projectsActions.deleteProject(el.id)));
     },
     [dispatch],
   );
@@ -48,17 +66,15 @@ const Projects = () => {
   const actions = useMemo(
     () => ([{
       name: 'Delete Selected',
-      // eslint-disable-next-line no-console
-      fn: (rows) => console.log('delete', rows),
+      fn: onProjectsDelete,
       color: ButtonColors.danger,
       enabledOnlyWhenSelectedRows: true,
     }, {
       name: 'Add Project',
-      // eslint-disable-next-line no-console
       fn: onProjectModalOpen,
       color: ButtonColors.primary,
     }]),
-    [onProjectModalOpen],
+    [onProjectModalOpen, onProjectsDelete],
   );
 
   useEffect(
@@ -69,13 +85,6 @@ const Projects = () => {
       dispatch(projectsActions.fetchProjects());
     },
     [dispatch, projects.length],
-  );
-
-  useEffect(
-    () => () => {
-      dispatch(projectsActions.clearProjects());
-    },
-    [dispatch],
   );
 
   return (
@@ -90,7 +99,7 @@ const Projects = () => {
         header="Add Project"
         open={addProjectModalOpen}
         onClose={onProjectModalClose}
-        onSubmit={onProjectModalSubmit}
+        onSubmit={onProjectAdd}
       >
         <Field
           name="name"

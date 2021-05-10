@@ -26,25 +26,19 @@ const slice = createSlice({
     createProject: startFetching,
     deleteProject: startFetching,
 
-    fetchProjectsSuccess: (state, { payload: { projects } }) => {
+    fetchProjectsSuccess: (state, { payload: projects }) => {
       stopFetching(state);
       state.projects = (projects || []);
     },
 
-    createProjectSuccess: (state, { payload: { project } }) => {
+    createProjectSuccess: (state, { payload: project }) => {
       stopFetching(state);
-      // TODO: Put project to projects
-      // eslint-disable-next-line no-console
-      console.log({ project });
-      // state.projects = (projects || []);
+      state.projects.push(project);
     },
 
     deleteProjectSuccess(state, { payload: id }) {
       stopFetching(state);
-      // TODO: Remove project from projects
-      // eslint-disable-next-line no-console
-      console.log({ id });
-      // delete state.projects[id];
+      state.projects = state.projects.filter((el) => el.id !== id);
     },
 
     clearProjects: (state) => {
@@ -65,9 +59,9 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}`;
+          const url = `${baseUrl}/`;
           const { data } = yield call(api.get, url);
-          yield put(actions.fetchProjectsSuccess(data));
+          yield put(actions.fetchProjectsSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -81,9 +75,9 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}`;
+          const url = `${baseUrl}/`;
           const { data } = yield call(api.post, url, project);
-          yield put(actions.createProjectSuccess(data));
+          yield put(actions.createProjectSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
