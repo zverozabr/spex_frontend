@@ -1,13 +1,13 @@
 import styled from 'styled-components';
+import Button from '+components/Button';
 
 export default styled.div `
   display: flex;
-  justify-content: space-between;
   flex-wrap: nowrap;
-  overflow: hidden;
+  justify-content: flex-end;
   align-items: center;
-  height: 3.188em;
-  padding: 0 .625em;
+  overflow: hidden;
+  padding: 14px;
   background: #E3E3E4;
   
   .selected-row-actions {
@@ -18,17 +18,7 @@ export default styled.div `
     white-space: nowrap;
   }
   
-  .row-size-actions {
-    margin-left: auto;
-    .normal svg {
-      transform: scale(1, .9);
-    }
-    .double svg {
-      transform: scale(1, 1.2);
-    }
-  }
-  
-  .button-group-container + .row-size-actions {
-    margin-left: 1.250em;
+  ${Button} + ${Button} {
+    margin-left: 14px;
   }
 `;

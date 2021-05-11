@@ -12,7 +12,6 @@ import {
 } from 'react-table';
 
 import Button from '+components/Button';
-import ButtonGroup from '+components/ButtonGroup';
 import { closest } from '+utils/closest';
 import isFunction from '+utils/isFunction';
 
@@ -594,13 +593,9 @@ const Table = (props) => {
       >
         <Caption>{caption}</Caption>
         <TableWrapper>
-          {allowRowSelection && (
-            <ActionsContainer>
-              {allowRowSelection && selectedRowActions && (
-                <ButtonGroup className='selected-row-actions'>
-                  {selectedRowActions}
-                </ButtonGroup>
-              )}
+          {allowRowSelection && selectedRowActions && (
+            <ActionsContainer className='selected-row-actions'>
+              {selectedRowActions}
             </ActionsContainer>
           )}
           <TableContainer
