@@ -59,7 +59,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/`;
+          const url = `${baseUrl}`;
           const { data } = yield call(api.get, url);
           yield put(actions.fetchProjectsSuccess(data.data));
         } catch (error) {
@@ -75,7 +75,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/`;
+          const url = `${baseUrl}`;
           const { data } = yield call(api.post, url, project);
           yield put(actions.createProjectSuccess(data.data));
         } catch (error) {
