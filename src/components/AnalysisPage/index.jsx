@@ -150,8 +150,8 @@ const AnalysisPage = () => {
       if (!datasetImages?.length || Object.keys(datasetThumbnails || {}).length) {
         return;
       }
-      const ids = datasetImages.map((item) => item.id);
-      dispatch(omeroActions.fetchThumbnails({ datasetId, ids }));
+      const imageIds = datasetImages.map((item) => item.id);
+      dispatch(omeroActions.fetchThumbnails({ groupId: datasetId, imageIds }));
     },
     [dispatch, datasetId, datasetImages, datasetThumbnails],
   );

@@ -56,14 +56,15 @@ const Layout = ({ children }) => {
     [dispatch],
   );
 
+  const projectLength = Object.keys(projects).length;
   useEffect(
     () => {
-      if (projects.length) {
+      if (projectLength) {
         return;
       }
       dispatch(projectsActions.fetchProjects());
     },
-    [dispatch, projects.length],
+    [dispatch, projectLength],
   );
 
   useEffect(
@@ -81,7 +82,7 @@ const Layout = ({ children }) => {
         <Toolbar>
           <Typography variant="h6"><Link to="/">Genentech</Link></Typography>
 
-          {projects.length > 0 && !isProjectsFetching && (
+          {projectLength > 0 && !isProjectsFetching && (
             <div style={{ width: '300px', marginLeft: '10px' }}>
               <Select
                 defaultValue={none}
@@ -89,7 +90,7 @@ const Layout = ({ children }) => {
                 onChange={onProjectChange}
               >
                 <Option value={none}>Select project</Option>
-                {projects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+                {Object.values(projects).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
               </Select>
             </div>
           )}

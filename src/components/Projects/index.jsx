@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import PathNames from '@/models/PathNames';
@@ -77,24 +77,15 @@ const Projects = () => {
     [onProjectModalOpen, onProjectsDelete],
   );
 
-  useEffect(
-    () => {
-      if (projects.length) {
-        return;
-      }
-      dispatch(projectsActions.fetchProjects());
-    },
-    [dispatch, projects.length],
-  );
-
   return (
     <Container>
       <Table
         actions={actions}
         columns={columns}
-        data={projects}
+        data={Object.values(projects)}
         allowRowSelection
       />
+
       <FormModal
         header="Add Project"
         open={addProjectModalOpen}

@@ -2,10 +2,12 @@ import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
+import hash from '+utils/hash';
+
 const initialState = {
   isFetching: false,
   error: '',
-  projects: [],
+  projects: {},
 };
 
 let api;
@@ -28,21 +30,21 @@ const slice = createSlice({
 
     fetchProjectsSuccess: (state, { payload: projects }) => {
       stopFetching(state);
-      state.projects = (projects || []);
+      state.projects = hash(projects || [], 'id');
     },
 
     createProjectSuccess: (state, { payload: project }) => {
       stopFetching(state);
-      state.projects.push(project);
+      state.projects[project.id] = project;
     },
 
     deleteProjectSuccess(state, { payload: id }) {
       stopFetching(state);
-      state.projects = state.projects.filter((el) => el.id !== id);
+      delete state.projects[id];
     },
 
     clearProjects: (state) => {
-      state.projects = [];
+      state.projects = {};
     },
 
     requestFail(state, { payload: { message } }) {
@@ -112,6 +114,11 @@ const slice = createSlice({
     getProjects: createSelector(
       [getState],
       (state) => state?.projects,
+    ),
+
+    getProject: (id) => createSelector(
+      [getState],
+      (state) => state?.projects[id],
     ),
   }),
 });

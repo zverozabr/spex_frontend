@@ -57,9 +57,9 @@ const slice = createSlice({
     },
 
     fetchThumbnails: startFetching,
-    fetchThumbnailsSuccess: (state, { payload: { datasetId, data } }) => {
+    fetchThumbnailsSuccess: (state, { payload: { groupId, data } }) => {
       stopFetching(state);
-      state.thumbnails[datasetId] = (data || {});
+      state.thumbnails[groupId] = (data || {});
     },
     clearThumbnails: (state, { payload: datasetId }) => {
       if (!datasetId) {
@@ -142,13 +142,13 @@ const slice = createSlice({
     },
 
     [actions.fetchThumbnails]: {
-      * saga({ payload: { datasetId, ids } }) {
+      * saga({ payload: { groupId, imageIds } }) {
         initApi();
 
         try {
-          const url = `${baseUrl}/webclient/get_thumbnails/?${ids.map((id) => `id=${id}`).join('&')}`;
+          const url = `${baseUrl}/webclient/get_thumbnails/?${imageIds.map((id) => `id=${id}`).join('&')}`;
           const { data } = yield call(api.get, url);
-          yield put(actions.fetchThumbnailsSuccess({ datasetId, data }));
+          yield put(actions.fetchThumbnailsSuccess({ groupId, data }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

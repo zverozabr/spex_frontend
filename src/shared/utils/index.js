@@ -1,2 +1,3 @@
 export * from './makeId';
 export isFunction from './isFunction';
+export hash from './hash';
