@@ -86,28 +86,30 @@ const Projects = () => {
         allowRowSelection
       />
 
-      <FormModal
-        header="Add Project"
-        open={addProjectModalOpen}
-        onClose={onProjectModalClose}
-        onSubmit={onProjectAdd}
-      >
-        <Field
-          name="name"
-          label="Name"
-          component={Controls.TextField}
-          validate={Validators.required}
-          required
-        />
+      {addProjectModalOpen && (
+        <FormModal
+          header="Add Project"
+          open={addProjectModalOpen}
+          onClose={onProjectModalClose}
+          onSubmit={onProjectAdd}
+        >
+          <Field
+            name="name"
+            label="Name"
+            component={Controls.TextField}
+            validate={Validators.required}
+            required
+          />
 
-        <Field
-          name="description"
-          label="Description"
-          component={Controls.TextField}
-          multiline
-          rows={6}
-        />
-      </FormModal>
+          <Field
+            name="description"
+            label="Description"
+            component={Controls.TextField}
+            multiline
+            rows={6}
+          />
+        </FormModal>
+      )}
     </Container>
   );
 };
