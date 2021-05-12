@@ -103,6 +103,7 @@
   },
   "scripts": {
     "start": "node scripts/start.js",
+    "start:backend": "cd ../backend && pipenv run python app.py",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js"
   },
