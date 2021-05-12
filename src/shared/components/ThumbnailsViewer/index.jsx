@@ -62,10 +62,12 @@ const ThumbnailsViewer = styled((props) => {
           onClick={allowSelection ? emitClick(thumbnail.id) : null}
         >
           <img src={thumbnail.img} alt={thumbnail.title} />
-          <GridListTileBar
-            title={thumbnail.title}
-            subtitle={thumbnail.author ? (<span>by: {thumbnail.author}</span>) : undefined}
-          />
+          {(thumbnail.title || thumbnail.author) && (
+            <GridListTileBar
+              title={thumbnail.title}
+              subtitle={thumbnail.author ? (<span>by: {thumbnail.author}</span>) : undefined}
+            />
+          )}
         </GridListTile>
       ))}
     </GridList>
