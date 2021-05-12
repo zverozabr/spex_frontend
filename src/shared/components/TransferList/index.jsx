@@ -26,35 +26,32 @@ const onNoop = () => {};
 const TransferList = styled((props) => {
   const {
     className,
-    left,
-    right,
+    options,
+    value,
     leftTitle,
     rightTitle,
-    onChangeLeft,
     onChangeRight,
   } = props;
 
   const [checked, setChecked] = useState([]);
 
-  const leftChecked = intersection(checked, left);
-  const rightChecked = intersection(checked, right);
+  const leftChecked = intersection(checked, options);
+  const rightChecked = intersection(checked, value);
 
   const onCheckedLeft = useCallback(
     () => {
-      onChangeLeft(left.concat(rightChecked));
-      onChangeRight(not(right, rightChecked));
+      onChangeRight(not(value, rightChecked));
       setChecked(not(checked, rightChecked));
     },
-    [checked, left, onChangeLeft, onChangeRight, right, rightChecked],
+    [checked, onChangeRight, value, rightChecked],
   );
 
   const onCheckedRight = useCallback(
     () => {
-      onChangeRight(right.concat(leftChecked));
-      onChangeLeft(not(left, leftChecked));
+      onChangeRight(value.concat(leftChecked));
       setChecked(not(checked, leftChecked));
     },
-    [checked, left, leftChecked, onChangeLeft, onChangeRight, right],
+    [checked, leftChecked, onChangeRight, value],
   );
 
   const numberOfChecked = useCallback(
@@ -144,7 +141,7 @@ const TransferList = styled((props) => {
         className={classNames('list', 'list-left')}
         item
       >
-        {customList(leftTitle, left)}
+        {customList(leftTitle, options)}
       </Grid>
 
       <Grid item>
@@ -179,7 +176,7 @@ const TransferList = styled((props) => {
         className={classNames('list', 'list-right')}
         item
       >
-        {customList(rightTitle, right)}
+        {customList(rightTitle, value)}
       </Grid>
     </Grid>
   );
@@ -204,21 +201,19 @@ const TransferList = styled((props) => {
 
 TransferList.propTypes = {
   className: PropTypes.string,
-  left: PropTypes.arrayOf(PropTypes.string),
-  right: PropTypes.arrayOf(PropTypes.string),
+  options: PropTypes.arrayOf(PropTypes.shape({})),
+  value: PropTypes.arrayOf(PropTypes.shape({})),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
-  onChangeLeft: PropTypes.func,
   onChangeRight: PropTypes.func,
 };
 
 TransferList.defaultProps = {
   className: '',
-  left: [],
-  right: [],
+  options: {},
+  value: {},
   leftTitle: 'Choices',
   rightTitle: 'Chosen',
-  onChangeLeft: onNoop,
   onChangeRight: onNoop,
 };
 

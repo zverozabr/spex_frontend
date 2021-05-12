@@ -12,6 +12,7 @@ import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
+import ManageImagesModal from './components/ManageImagesModal';
 import PipelineContainer from './components/PipelineContainer';
 import Row from './components/Row';
 import ThumbnailsContainer from './components/ThumbnailsContainer';
@@ -32,21 +33,13 @@ const Project = () => {
   const project = useSelector(projectsSelectors.getProject(projectId));
   const { omeroIds = [] } = project || {};
   const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
-
   const fixedThumbnails = useMemo(
     () => (Object.keys(thumbnails || {}).map((id) =>({ id, img: thumbnails[id] }))),
     [thumbnails],
   );
 
   const [selectedThumbnails, setSelectedThumbnails] = useState([]);
-
-  const onAddImage = useCallback(
-    () => {
-      // eslint-disable-next-line no-console
-      console.log('onAddImage');
-    },
-    [],
-  );
+  const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
 
   const onRemoveImage = useCallback(
     () => {
@@ -71,19 +64,40 @@ const Project = () => {
     [],
   );
 
+  const onManageImagesModalOpen = useCallback(
+    () => { setManageImagesModalOpen(true); },
+    [],
+  );
+
+  const onManageImagesClose = useCallback(
+    () => { setManageImagesModalOpen(false); },
+    [],
+  );
+
+  const onImagesChanged = useCallback(
+    (values) => {
+      // eslint-disable-next-line no-console
+      console.log('onImagesChanged', values);
+      setManageImagesModalOpen(false);
+    },
+    [],
+  );
+
   useEffect(
     () => {
       if (!omeroIds.length) {
         return;
       }
-      const imageIds = omeroIds.map((item) => item.id);
-      dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds }));
-
-      return () => {
-        dispatch(omeroActions.clearThumbnails(projectId));
-      };
+      dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: omeroIds }));
     },
     [dispatch, omeroIds, projectId],
+  );
+
+  useEffect(
+    () => () => {
+      dispatch(omeroActions.clearThumbnails(projectId));
+    },
+    [dispatch, projectId],
   );
 
   return (
@@ -97,8 +111,8 @@ const Project = () => {
           >
             Remove Selected
           </Button>
-          <Button onClick={onAddImage}>
-            Add Image
+          <Button onClick={onManageImagesModalOpen}>
+            Manage Images
           </Button>
         </ButtonsContainer>
 
@@ -126,6 +140,16 @@ const Project = () => {
           Pipeline Will Be Here
         </PipelineContainer>
       </Row>
+
+      {manageImagesModalOpen && (
+        <ManageImagesModal
+          header="Manage Images"
+          open={manageImagesModalOpen}
+          project={project}
+          onClose={onManageImagesClose}
+          onSubmit={onImagesChanged}
+        />
+      )}
     </Container>
   );
 };
