@@ -26,11 +26,17 @@ const slice = createSlice({
   reducers: {
     fetchProjects: startFetching,
     createProject: startFetching,
+    updateProject: startFetching,
     deleteProject: startFetching,
 
     fetchProjectsSuccess: (state, { payload: projects }) => {
       stopFetching(state);
       state.projects = hash(projects || [], 'id');
+    },
+
+    updateProjectSuccess: (state, { payload: project }) => {
+      stopFetching(state);
+      state.projects[project.id] = project;
     },
 
     createProjectSuccess: (state, { payload: project }) => {
@@ -80,6 +86,24 @@ const slice = createSlice({
           const url = `${baseUrl}`;
           const { data } = yield call(api.post, url, project);
           yield put(actions.createProjectSuccess(data.data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.updateProject]: {
+      * saga({ payload: project }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/${project.id}`;
+          const { data } = yield call(api.put, url, project);
+          // TODO: Remove fixedData after issue with received id will be fixed
+          const fixedData = { ...data.data, id: project.id };
+          yield put(actions.updateProjectSuccess(fixedData));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

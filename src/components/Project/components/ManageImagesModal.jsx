@@ -11,6 +11,8 @@ import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Select, { Option } from '+components/Select';
 import TransferList from '+components/TransferList';
 
+import Row from './Row';
+
 const none = 'none';
 
 const ManageImagesModal = styled((props) => {
@@ -34,22 +36,22 @@ const ManageImagesModal = styled((props) => {
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
-  const omeroDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
-  const omeroImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
-  const omeroThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
+  const omeroProjectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
+  const omeroDatasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
+  const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
 
-  const hashOmeroImages = useMemo(
-    () => (omeroImages || []).reduce((acc, el) => ({ ...acc, [el.id]: el }), {}),
-    [omeroImages],
+  const hashOmeroDatasetImages = useMemo(
+    () => (omeroDatasetImages || []).reduce((acc, el) => ({ ...acc, [el.id]: el }), {}),
+    [omeroDatasetImages],
   );
 
   const options = useMemo(
-    () => (Object.keys(omeroThumbnails || {}).map((id) => ({
-      id,
-      img: omeroThumbnails[id],
-      title: hashOmeroImages[id].name,
+    () => (Object.keys(omeroDatasetThumbnails || {}).map((id) => ({
+      id: +id,
+      img: omeroDatasetThumbnails[id],
+      title: hashOmeroDatasetImages[id].name,
     }))),
-    [omeroThumbnails, hashOmeroImages],
+    [hashOmeroDatasetImages, omeroDatasetThumbnails],
   );
 
   const onProjectChange = useCallback(
@@ -86,7 +88,7 @@ const ManageImagesModal = styled((props) => {
 
   useEffect(
     () => {
-      if (omeroProjectId && omeroProjectId === none) {
+      if (!omeroProjectId || omeroProjectId === none) {
         return;
       }
       dispatch(omeroActions.fetchDatasets(omeroProjectId));
@@ -96,23 +98,24 @@ const ManageImagesModal = styled((props) => {
 
   useEffect(
     () => {
-      if (!omeroDatasetId || omeroImages?.length) {
+      if (!omeroDatasetId || omeroDatasetId === none) {
         return;
       }
       dispatch(omeroActions.fetchImages(omeroDatasetId));
     },
-    [dispatch, omeroDatasetId, omeroImages?.length],
+    [dispatch, omeroDatasetId],
   );
+
 
   useEffect(
     () => {
-      if (!omeroImages?.length || Object.keys(omeroThumbnails || {}).length) {
+      if (!omeroDatasetImages?.length || Object.keys(omeroDatasetThumbnails || {}).length) {
         return;
       }
-      const imageIds = omeroImages.map((item) => item.id);
+      const imageIds = omeroDatasetImages.map((item) => item.id);
       dispatch(omeroActions.fetchThumbnails({ groupId: omeroDatasetId, imageIds }));
     },
-    [dispatch, omeroDatasetId, omeroImages, omeroThumbnails],
+    [dispatch, omeroDatasetId, omeroDatasetImages, omeroDatasetThumbnails],
   );
 
   useEffect(
@@ -138,31 +141,35 @@ const ManageImagesModal = styled((props) => {
     >
       <ModalHeader>{header}</ModalHeader>
       <ModalBody>
-        <Select
-          defaultValue={none}
-          value={omeroProjectId}
-          onChange={onProjectChange}
-          disabled={isOmeroFetching}
-        >
-          <Option value={none}>Select project</Option>
-          {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-        </Select>
+        <Row>
+          <Select
+            defaultValue={none}
+            value={omeroProjectId}
+            onChange={onProjectChange}
+            disabled={isOmeroFetching}
+          >
+            <Option value={none}>Select project</Option>
+            {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          </Select>
 
-        <Select
-          defaultValue={none}
-          value={omeroDatasetId}
-          onChange={onDatasetChange}
-          disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
-        >
-          <Option value={none}>Select dataset</Option>
-          {omeroDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-        </Select>
+          <Select
+            defaultValue={none}
+            value={omeroDatasetId}
+            onChange={onDatasetChange}
+            disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
+          >
+            <Option value={none}>Select dataset</Option>
+            {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          </Select>
+        </Row>
 
-        <TransferList
-          options={options}
-          value={value}
-          onChangeRight={setValue}
-        />
+        <Row>
+          <TransferList
+            options={options}
+            value={value}
+            onChange={setValue}
+          />
+        </Row>
       </ModalBody>
       <ModalFooter>
         <Button
@@ -180,11 +187,14 @@ const ManageImagesModal = styled((props) => {
       </ModalFooter>
     </Modal>
   );
-})`
-  ${ModalBody} {
-    .MuiFormControl-root ~ .MuiFormControl-root {
-      margin-top: 14px;
-    }
+})`  
+  ${Row} + ${Row} {
+    margin-top: 20px;
+  }
+  
+  .transfer-list {
+    height: 300px;
+    margin: 0 auto;
   }
 `;
 

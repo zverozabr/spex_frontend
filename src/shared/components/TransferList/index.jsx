@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Card from '@material-ui/core/Card';
 import CardHeader from '@material-ui/core/CardHeader';
 import Divider from '@material-ui/core/Divider';
@@ -14,6 +14,7 @@ import styled from 'styled-components';
 
 import Button from '+components/Button';
 import Checkbox from '+components/Checkbox';
+import { ScrollBarMixin } from '+components/ScrollBar';
 
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
 const intersection = (a, b) => (a.filter((value) => b.indexOf(value) !== -1));
@@ -30,7 +31,7 @@ const TransferList = styled((props) => {
     value,
     leftTitle,
     rightTitle,
-    onChangeRight,
+    onChange,
   } = props;
 
   const [checked, setChecked] = useState([]);
@@ -38,20 +39,25 @@ const TransferList = styled((props) => {
   const leftChecked = intersection(checked, options);
   const rightChecked = intersection(checked, value);
 
+  const fixedOptions = useMemo(
+    () => (not(options, value)),
+    [options, value],
+  );
+
   const onCheckedLeft = useCallback(
     () => {
-      onChangeRight(not(value, rightChecked));
+      onChange(not(value, rightChecked));
       setChecked(not(checked, rightChecked));
     },
-    [checked, onChangeRight, value, rightChecked],
+    [checked, onChange, value, rightChecked],
   );
 
   const onCheckedRight = useCallback(
     () => {
-      onChangeRight(value.concat(leftChecked));
+      onChange(value.concat(leftChecked));
       setChecked(not(checked, leftChecked));
     },
-    [checked, leftChecked, onChangeRight, value],
+    [checked, leftChecked, onChange, value],
   );
 
   const numberOfChecked = useCallback(
@@ -72,7 +78,7 @@ const TransferList = styled((props) => {
 
       setChecked(newChecked);
     },
-  [checked],
+    [checked],
   );
 
   const onToggleAll = useCallback(
@@ -83,7 +89,7 @@ const TransferList = styled((props) => {
         setChecked(union(checked, items));
       }
     },
-  [checked, numberOfChecked],
+    [checked, numberOfChecked],
   );
 
   const customList = useCallback(
@@ -117,7 +123,12 @@ const TransferList = styled((props) => {
                     disableRipple
                   />
                 </ListItemIcon>
-                <ListItemText id={id} primary={el.title} />
+                {el.img && (
+                  <ListItemIcon>
+                    <img src={el.img} alt={el.title || 'Image'} />
+                  </ListItemIcon>
+                )}
+                {el.title && <ListItemText id={id} primary={el.title} />}
               </ListItem>
             );
           })}
@@ -125,13 +136,13 @@ const TransferList = styled((props) => {
         </List>
       </Card>
     ),
-  [checked, numberOfChecked, onToggle, onToggleAll],
+    [checked, numberOfChecked, onToggle, onToggleAll],
   );
 
   return (
     <Grid
       className={classNames('transfer-list', className || '')}
-      spacing={2}
+      spacing={3}
       justify="center"
       alignItems="center"
       wrap="nowrap"
@@ -141,7 +152,7 @@ const TransferList = styled((props) => {
         className={classNames('list', 'list-left')}
         item
       >
-        {customList(leftTitle, options)}
+        {customList(leftTitle, fixedOptions)}
       </Grid>
 
       <Grid item>
@@ -185,9 +196,30 @@ const TransferList = styled((props) => {
   height: 100%;
 
   .list {
+    width: 100%;
     height: 100%;
+    padding: 0;
+
     .MuiCard-root {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
       height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+    }
+    
+    .MuiList-root {
+      overflow-y: auto;
+      height: 100%;
+      max-height: 100%;
+
+      ${ScrollBarMixin};
+    }
+
+    .MuiListItemIcon-root {
+      min-width: unset;
+      margin-right: 16px;
     }
   }
 
@@ -205,7 +237,7 @@ TransferList.propTypes = {
   value: PropTypes.arrayOf(PropTypes.shape({})),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
-  onChangeRight: PropTypes.func,
+  onChange: PropTypes.func,
 };
 
 TransferList.defaultProps = {
@@ -214,7 +246,7 @@ TransferList.defaultProps = {
   value: {},
   leftTitle: 'Choices',
   rightTitle: 'Chosen',
-  onChangeRight: onNoop,
+  onChange: onNoop,
 };
 
 export default TransferList;

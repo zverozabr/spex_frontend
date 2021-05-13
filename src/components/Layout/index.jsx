@@ -88,6 +88,7 @@ const Layout = ({ children }) => {
                 defaultValue={none}
                 value={projectId}
                 onChange={onProjectChange}
+                $color="white"
               >
                 <Option value={none}>Select project</Option>
                 {Object.values(projects).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}

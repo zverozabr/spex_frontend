@@ -115,7 +115,7 @@ ThumbnailsViewer.propTypes = {
    * Collection of images.
    */
   thumbnails: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title: PropTypes.string,
     img: PropTypes.string,
     author: PropTypes.string,

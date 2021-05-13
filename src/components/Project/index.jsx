@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
-import { selectors as projectsSelectors } from '@/redux/modules/projects';
+import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 
 import Button, { ButtonColors } from '+components/Button';
 import NoData from '+components/NoData';
@@ -16,6 +16,8 @@ import ManageImagesModal from './components/ManageImagesModal';
 import PipelineContainer from './components/PipelineContainer';
 import Row from './components/Row';
 import ThumbnailsContainer from './components/ThumbnailsContainer';
+
+const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
 
 const Project = () => {
   const location = useLocation();
@@ -34,19 +36,23 @@ const Project = () => {
   const { omeroIds = [] } = project || {};
   const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
   const fixedThumbnails = useMemo(
-    () => (Object.keys(thumbnails || {}).map((id) =>({ id, img: thumbnails[id] }))),
+    () => (Object.keys(thumbnails || {}).map((id) =>({ id: +id, img: thumbnails[id] }))),
     [thumbnails],
   );
 
   const [selectedThumbnails, setSelectedThumbnails] = useState([]);
   const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
 
-  const onRemoveImage = useCallback(
+  const onRemoveImages = useCallback(
     () => {
-      // eslint-disable-next-line no-console
-      console.log('onRemoveImage');
+      const newProject = {
+        ...project,
+        omeroIds: not(omeroIds, selectedThumbnails),
+      };
+      dispatch(projectsActions.updateProject(newProject));
+      setSelectedThumbnails([]);
     },
-    [],
+    [dispatch, omeroIds, project, selectedThumbnails],
   );
 
   const onPipelineAdd = useCallback(
@@ -76,11 +82,14 @@ const Project = () => {
 
   const onImagesChanged = useCallback(
     (values) => {
-      // eslint-disable-next-line no-console
-      console.log('onImagesChanged', values);
       setManageImagesModalOpen(false);
+      const newProject = {
+        ...project,
+        omeroIds: values,
+      };
+      dispatch(projectsActions.updateProject(newProject));
     },
-    [],
+    [dispatch, project],
   );
 
   useEffect(
@@ -91,6 +100,15 @@ const Project = () => {
       dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: omeroIds }));
     },
     [dispatch, omeroIds, projectId],
+  );
+
+  useEffect(
+    () => {
+      if (omeroIds.length === 0) {
+        dispatch(omeroActions.clearThumbnails(projectId));
+      }
+    },
+    [dispatch, omeroIds.length, projectId],
   );
 
   useEffect(
@@ -106,7 +124,7 @@ const Project = () => {
         <ButtonsContainer>
           <Button
             color={ButtonColors.danger}
-            onClick={onRemoveImage}
+            onClick={onRemoveImages}
             disabled={selectedThumbnails.length === 0}
           >
             Remove Selected

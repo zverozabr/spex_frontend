@@ -4,7 +4,7 @@ import styled from 'styled-components';
 
 const Select = styled(SelectOrigin)`
   width: 100%;
-  color: white;
+  color: ${(props) => props.$color};
 `;
 
 const Option = styled(MenuItemOrigin)`
