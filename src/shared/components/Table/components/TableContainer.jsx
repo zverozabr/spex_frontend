@@ -61,10 +61,7 @@ export default styled.div `
       display: flex;
       align-items: center;
       width: 100%;
-      height: 2.125em;
-      &.double {
-        height: 3.375em;
-      }
+      height: 3.375em;
       :nth-of-type(odd) {
         background: white;
       }
