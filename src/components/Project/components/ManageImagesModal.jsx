@@ -32,26 +32,27 @@ const ManageImagesModal = styled((props) => {
   const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
 
-  const [value, setValue] = useState(project?.omeroIds || []);
+  const [value, setValue] = useState([]);
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
   const omeroProjectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
   const omeroDatasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
   const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
+  const currentProjectThumbnails = useSelector(omeroSelectors.getThumbnails(project?.id));
 
-  const hashOmeroDatasetImages = useMemo(
-    () => (omeroDatasetImages || []).reduce((acc, el) => ({ ...acc, [el.id]: el }), {}),
-    [omeroDatasetImages],
-  );
+  // const hashOmeroDatasetImages = useMemo(
+  //   () => (omeroDatasetImages || []).reduce((acc, el) => ({ ...acc, [el.id]: el }), {}),
+  //   [omeroDatasetImages],
+  // );
 
   const options = useMemo(
     () => (Object.keys(omeroDatasetThumbnails || {}).map((id) => ({
       id: +id,
       img: omeroDatasetThumbnails[id],
-      title: hashOmeroDatasetImages[id].name,
+      // title: hashOmeroDatasetImages[id].name,
     }))),
-    [hashOmeroDatasetImages, omeroDatasetThumbnails],
+    [omeroDatasetThumbnails],
   );
 
   const onProjectChange = useCallback(
@@ -74,6 +75,34 @@ const ManageImagesModal = styled((props) => {
       onSubmit(selected);
     },
     [onSubmit, value],
+  );
+
+  useEffect(
+    () => {
+      if (!project?.omeroIds?.length) {
+        return undefined;
+      }
+
+      dispatch(omeroActions.fetchThumbnails({
+        groupId: project.id,
+        imageIds: project.omeroIds,
+      }));
+
+      return () => {
+        dispatch(omeroActions.clearThumbnails(project?.id));
+      };
+    },
+    [dispatch, project?.id, project?.omeroIds],
+  );
+
+  useEffect(
+    () => {
+      setValue(Object.keys(currentProjectThumbnails || {}).map((id) => ({
+        id: +id,
+        img: currentProjectThumbnails[id],
+      })));
+    },
+    [currentProjectThumbnails],
   );
 
   useEffect(
@@ -122,7 +151,7 @@ const ManageImagesModal = styled((props) => {
     () => () => {
       dispatch(omeroActions.clearDatasets(omeroProjectId));
     },
-    [omeroProjectId, dispatch],
+    [dispatch, omeroProjectId],
   );
 
   useEffect(

@@ -99,7 +99,7 @@ const Project = () => {
       }
       dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: omeroIds }));
     },
-    [dispatch, omeroIds, projectId],
+    [dispatch, omeroIds, omeroIds.length, projectId],
   );
 
   useEffect(
@@ -142,6 +142,8 @@ const Project = () => {
               active={selectedThumbnails}
               onClick={onThumbnailClick}
               allowMultiSelect
+              $size={1.5}
+              $center
             />
           )}
         </ThumbnailsContainer>
