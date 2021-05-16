@@ -12,13 +12,22 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
-import Button from '+components/Button';
+import Button, { ButtonSizes } from '+components/Button';
 import Checkbox from '+components/Checkbox';
 import { ScrollBarMixin } from '+components/ScrollBar';
 
-const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
-const intersection = (a, b) => (a.filter((value) => b.indexOf(value) !== -1));
+const not = (a, b) => {
+  const fixedB = b.map((el) => el.id);
+  return a.filter((value) => fixedB.indexOf(value.id) === -1);
+};
+
+const intersection = (a, b) => {
+  const fixedB = b.map((el) => el.id);
+  return a.filter((value) => fixedB.indexOf(value.id) !== -1);
+};
+
 const union = (a, b) => ([...a, ...not(b, a)]);
+
 const onNoop = () => {};
 
 /**
@@ -164,7 +173,7 @@ const TransferList = styled((props) => {
         >
           <Button
             variant="outlined"
-            size="small"
+            size={ButtonSizes.small}
             onClick={onCheckedRight}
             disabled={leftChecked.length === 0}
             aria-label="move selected right"
@@ -173,7 +182,7 @@ const TransferList = styled((props) => {
           </Button>
           <Button
             variant="outlined"
-            size="small"
+            size={ButtonSizes.small}
             onClick={onCheckedLeft}
             disabled={rightChecked.length === 0}
             aria-label="move selected left"
@@ -237,6 +246,9 @@ TransferList.propTypes = {
   value: PropTypes.arrayOf(PropTypes.shape({})),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
+  not: PropTypes.func,
+  intersection: PropTypes.func,
+  union: PropTypes.func,
   onChange: PropTypes.func,
 };
 
@@ -246,6 +258,9 @@ TransferList.defaultProps = {
   value: {},
   leftTitle: 'Choices',
   rightTitle: 'Chosen',
+  not: PropTypes.func,
+  intersection: PropTypes.func,
+  union: PropTypes.func,
   onChange: onNoop,
 };
 
