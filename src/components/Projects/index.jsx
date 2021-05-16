@@ -5,93 +5,138 @@ import PathNames from '@/models/PathNames';
 
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 
-import { ButtonColors } from '+components/Button';
+import Button, { ButtonSizes, ButtonColors } from '+components/Button';
+import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import { Field, Controls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Link from '+components/Link';
 import Table from '+components/Table';
 
+import ButtonsContainer from './components/ButtonsContainer';
+import CellButtonsContainer from './components/CellButtonsContainer';
 import Container from './components/Container';
-
-const columns = [{
-  id: 'name',
-  accessor: 'name',
-  Header: 'Name',
-  Cell: ({ row: { original: { id, name } } }) => useMemo(
-    () => (
-      <Link to={`/${PathNames.project}/${id}`}>
-        {name}
-      </Link>
-    ),
-    [id, name],
-  ),
-}, {
-  id: 'description',
-  accessor: 'description',
-  Header: 'Description',
-}];
+import Row from './components/Row';
 
 const Projects = () => {
   const dispatch = useDispatch();
 
   const projects = useSelector(projectsSelectors.getProjects);
 
-  const [ addProjectModalOpen, setAddProjectModalOpen ] = useState(false);
+  const [ projectToManage, setProjectToManage ] = useState(null);
+  const [ projectToDelete, setProjectToDelete ] = useState(null);
 
-  const onProjectModalOpen = useCallback(
-    () => { setAddProjectModalOpen(true); },
+  const onManageProjectModalOpen = useCallback(
+    (project) => { setProjectToManage(project); },
     [],
   );
 
-  const onProjectModalClose = useCallback(
-    () => { setAddProjectModalOpen(false); },
+  const onManageProjectModalClose = useCallback(
+    () => { setProjectToManage(null); },
     [],
   );
 
-  const onProjectAdd = useCallback(
-    (newProject) => {
-      dispatch(projectsActions.createProject(newProject));
-      setAddProjectModalOpen(false);
+  const onManageProjectModalSubmit = useCallback(
+    (project) => {
+      if (project.id) {
+        dispatch(projectsActions.updateProject(project));
+      } else {
+        dispatch(projectsActions.createProject(project));
+      }
+      setProjectToManage(null);
     },
     [dispatch],
   );
 
-  const onProjectsDelete = useCallback(
-    (projectsToDelete) => {
-      projectsToDelete.forEach((el) => dispatch(projectsActions.deleteProject(el.id)));
-    },
-    [dispatch],
+  const onDeleteProjectModalOpen = useCallback(
+    (project) => { setProjectToDelete(project); },
+    [],
   );
 
-  const actions = useMemo(
+  const onDeleteProjectModalClose = useCallback(
+    () => { setProjectToDelete(null); },
+    [],
+  );
+
+  const onDeleteProjectModalSubmit = useCallback(
+    () => {
+      dispatch(projectsActions.deleteProject(projectToDelete.id));
+      setProjectToDelete(null);
+    },
+    [dispatch, projectToDelete],
+  );
+
+  const columns = useMemo(
     () => ([{
-      name: 'Delete Selected',
-      fn: onProjectsDelete,
-      color: ButtonColors.danger,
-      enabledOnlyWhenSelectedRows: true,
+      id: 'name',
+      accessor: 'name',
+      Header: 'Name',
+      Cell: ({ row: { original: { id, name } } }) => useMemo(
+        () => (
+          <Link to={`/${PathNames.project}/${id}`}>
+            {name}
+          </Link>
+        ),
+        [id, name],
+      ),
     }, {
-      name: 'Add Project',
-      fn: onProjectModalOpen,
-      color: ButtonColors.primary,
+      id: 'description',
+      accessor: 'description',
+      Header: 'Description',
+    }, {
+      id: 'actions',
+      Header: 'Actions',
+      minWidth: 80,
+      maxWidth: 80,
+      Cell: ({ row: { original } }) => useMemo(
+        () => (
+          <CellButtonsContainer>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => onDeleteProjectModalOpen(original)}
+            >
+              Delete
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => onManageProjectModalOpen(original)}
+            >
+              Edit
+            </Button>
+          </CellButtonsContainer>
+        ),
+        [original],
+      ),
     }]),
-    [onProjectModalOpen, onProjectsDelete],
+  [onDeleteProjectModalOpen, onManageProjectModalOpen],
   );
 
   return (
     <Container>
-      <Table
-        actions={actions}
-        columns={columns}
-        data={Object.values(projects)}
-        allowRowSelection
-      />
+      <Row>
+        <ButtonsContainer>
+          <Button onClick={() => onManageProjectModalOpen({})}>
+            Add Project
+          </Button>
+        </ButtonsContainer>
 
-      {addProjectModalOpen && (
+        <Table
+          columns={columns}
+          data={Object.values(projects)}
+          allowRowSelection
+        />
+      </Row>
+
+      {projectToManage && (
         <FormModal
-          header="Add Project"
-          open={addProjectModalOpen}
-          onClose={onProjectModalClose}
-          onSubmit={onProjectAdd}
+          header={`${projectToManage.id ? 'Edit' : 'Add'} Project`}
+          initialValues={projectToManage}
+          onClose={onManageProjectModalClose}
+          onSubmit={onManageProjectModalSubmit}
+          open
         >
           <Field
             name="name"
@@ -109,6 +154,16 @@ const Projects = () => {
             rows={6}
           />
         </FormModal>
+      )}
+
+      {projectToDelete && (
+        <ConfirmModal
+          action={ConfirmActions.delete}
+          item={projectToDelete.name}
+          onClose={onDeleteProjectModalClose}
+          onSubmit={onDeleteProjectModalSubmit}
+          open
+        />
       )}
     </Container>
   );
