@@ -14,10 +14,11 @@ const FormModal = styled((props) => {
   const {
     className,
     header,
-    open,
     children,
+    initialValues,
     closeButtonText,
     submitButtonText,
+    open,
     onClose,
     onSubmit,
   } = props;
@@ -69,8 +70,9 @@ const FormModal = styled((props) => {
 
   return (
     <Form
-      onSubmit={onSubmit}
+      initialValues={initialValues}
       render={render}
+      onSubmit={onSubmit}
     />
   );
 })`
@@ -91,13 +93,13 @@ FormModal.propTypes = {
    */
   header: PropTypes.string,
   /**
-   * If true, the modal is open.
-   */
-  open: PropTypes.bool,
-  /**
    * Form fields.
    */
   children: PropTypes.oneOfType([ PropTypes.node, PropTypes.object, PropTypes.func ]),
+  /**
+   * Initial values.
+   */
+  initialValues: PropTypes.shape({}),
   /**
    * Text for the close button.
    */
@@ -106,6 +108,10 @@ FormModal.propTypes = {
    * Text for the confirm button.
    */
   submitButtonText: PropTypes.string,
+  /**
+   * If true, the modal is open.
+   */
+  open: PropTypes.bool,
   /**
    * Callback fired when the component requests to be closed. .
    */
@@ -119,10 +125,11 @@ FormModal.propTypes = {
 FormModal.defaultProps = {
   className: '',
   header: '',
-  open: false,
   children: null,
+  initialValues: null,
   closeButtonText: 'Chancel',
   submitButtonText: 'Submit',
+  open: false,
   onClose: () => {},
   onSubmit: () => {},
 };
