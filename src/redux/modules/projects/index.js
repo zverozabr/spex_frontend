@@ -101,9 +101,7 @@ const slice = createSlice({
         try {
           const url = `${baseUrl}/${project.id}`;
           const { data } = yield call(api.put, url, project);
-          // TODO: Remove fixedData after issue with received id will be fixed
-          const fixedData = { ...data.data, id: project.id };
-          yield put(actions.updateProjectSuccess(fixedData));
+          yield put(actions.updateProjectSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
