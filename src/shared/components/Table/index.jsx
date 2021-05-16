@@ -593,7 +593,7 @@ const Table = (props) => {
       >
         <Caption>{caption}</Caption>
         <TableWrapper>
-          {allowRowSelection && selectedRowActions && (
+          {allowRowSelection && selectedRowActions.length > 0 && (
             <ActionsContainer className='selected-row-actions'>
               {selectedRowActions}
             </ActionsContainer>

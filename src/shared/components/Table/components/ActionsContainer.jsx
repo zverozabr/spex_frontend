@@ -21,4 +21,8 @@ export default styled.div `
   ${Button} + ${Button} {
     margin-left: 14px;
   }
+  
+  :empty {
+    display: none;
+  }
 `;

@@ -53,11 +53,14 @@ export default styled.div `
   }
   
   .rt-tbody {
+    display: flex;
+    flex-direction: column;
     position: relative;
     min-height: 2.625em;
     .rt-tr-group {
       display: flex;
       align-items: center;
+      width: 100%;
       height: 2.125em;
       &.double {
         height: 3.375em;
@@ -67,6 +70,9 @@ export default styled.div `
       }
       :nth-of-type(even) {
         background: #F1F1F1;        
+      }
+      :only-child {
+        margin: auto 0;
       }
     }
     .rt-td {
