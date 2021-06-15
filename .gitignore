@@ -36,5 +36,5 @@ package-lock.json
 *.iml
 *.ipr
 *.iws
-
+.vscode
 /tmp

@@ -71,10 +71,21 @@ const ManageImagesModal = styled((props) => {
 
   const emitSubmit = useCallback(
     () => {
-      const selected = value.map((el) => el?.id || el);
+      const selected = value.map((el) => String(el?.id) || String(el));
       onSubmit(selected);
     },
     [onSubmit, value],
+  );
+
+  const emitCancel = useCallback(
+    () => {
+      dispatch(omeroActions.fetchThumbnails({
+        groupId: project.id,
+        imageIds: project.omeroIds,
+      }));
+    onClose();
+    },
+    [onClose],
   );
 
   useEffect(
@@ -203,7 +214,7 @@ const ManageImagesModal = styled((props) => {
       <ModalFooter>
         <Button
           color={ButtonColors.secondary}
-          onClick={onClose}
+          onClick={emitCancel}
         >
           {closeButtonText}
         </Button>
@@ -216,11 +227,11 @@ const ManageImagesModal = styled((props) => {
       </ModalFooter>
     </Modal>
   );
-})`  
+})`
   ${Row} + ${Row} {
     margin-top: 20px;
   }
-  
+
   .transfer-list {
     height: 300px;
     margin: 0 auto;
@@ -262,7 +273,7 @@ ManageImagesModal.defaultProps = {
   className: '',
   header: '',
   open: false,
-  closeButtonText: 'Chancel',
+  closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
   onClose: () => {},
   onSubmit: () => {},

@@ -36,7 +36,7 @@ const Project = () => {
   const { omeroIds = [] } = project || {};
   const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
   const fixedThumbnails = useMemo(
-    () => (Object.keys(thumbnails || {}).map((id) =>({ id: +id, img: thumbnails[id] }))),
+    () => (Object.keys(thumbnails || {}).map((id) =>({ id: +id.toString(), img: thumbnails[id] }))),
     [thumbnails],
   );
 
@@ -47,7 +47,7 @@ const Project = () => {
     () => {
       const newProject = {
         ...project,
-        omeroIds: not(omeroIds, selectedThumbnails),
+        omeroIds: not(omeroIds, selectedThumbnails.map(String)),
       };
       dispatch(projectsActions.updateProject(newProject));
       setSelectedThumbnails([]);
@@ -111,12 +111,12 @@ const Project = () => {
     [dispatch, omeroIds.length, projectId],
   );
 
-  useEffect(
-    () => () => {
-      dispatch(omeroActions.clearThumbnails(projectId));
-    },
-    [dispatch, projectId],
-  );
+  // useEffect(
+  //   () => () => {
+  //     dispatch(omeroActions.clearThumbnails(projectId));
+  //   },
+  //   [dispatch, projectId],
+  // );
 
   return (
     <Container>

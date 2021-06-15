@@ -127,7 +127,7 @@ FormModal.defaultProps = {
   header: '',
   children: null,
   initialValues: null,
-  closeButtonText: 'Chancel',
+  closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
   open: false,
   onClose: () => {},

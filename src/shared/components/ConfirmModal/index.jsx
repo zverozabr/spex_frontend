@@ -114,7 +114,7 @@ ConfirmModal.defaultProps = {
   className: '',
   action: '',
   item: '',
-  closeButtonText: 'Chancel',
+  closeButtonText: 'Cancel',
   open: false,
   headerTemplate: defaultHeaderTemplate,
   bodyTemplate: defaultBodyTemplate,
