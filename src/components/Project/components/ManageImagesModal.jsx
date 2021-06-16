@@ -85,7 +85,7 @@ const ManageImagesModal = styled((props) => {
       }));
     onClose();
     },
-    [onClose],
+    [dispatch, onClose, project],
   );
 
   useEffect(
@@ -99,9 +99,9 @@ const ManageImagesModal = styled((props) => {
         imageIds: project.omeroIds,
       }));
 
-      return () => {
-        dispatch(omeroActions.clearThumbnails(project?.id));
-      };
+      // return () => {
+      //   dispatch(omeroActions.clearThumbnails(project?.id));
+      // };
     },
     [dispatch, project?.id, project?.omeroIds],
   );

@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
@@ -7,7 +8,16 @@ import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/mo
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 
 import Button, { ButtonColors } from '+components/Button';
+
+
+import ClickAwayListener from '+components/ClickAwayListener';
+import Grow from '+components/Grow';
+import MenuItem from '+components/MenuItems';
+import MenuList from '+components/MenuList';
+
 import NoData from '+components/NoData';
+import Paper from '+components/Paper';
+import Popper from '+components/Popper';
 import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import ButtonsContainer from './components/ButtonsContainer';
@@ -19,9 +29,36 @@ import ThumbnailsContainer from './components/ThumbnailsContainer';
 
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
 
+
 const Project = () => {
   const location = useLocation();
   const dispatch = useDispatch();
+  const [open, setOpen] = React.useState(false);
+  const anchorRef = React.useRef(null);
+
+  const onTogle = useCallback(() => {
+    setOpen((prevOpen) => !prevOpen);
+    },[setOpen],
+  );
+
+  const onTogleClose = useCallback((event) => {
+    if (anchorRef.current && anchorRef.current.contains(event.target))
+      {
+        return;
+      }
+    setOpen(false);
+    }, [setOpen],
+  );
+
+  const onKeyDownInMenu = useCallback(
+    (event) => {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        setOpen(false);
+      }
+    },
+    [setOpen],
+  );
 
   const { projectId } = useMemo(
     () => {
@@ -75,6 +112,7 @@ const Project = () => {
     [],
   );
 
+
   const onManageImagesClose = useCallback(
     () => { setManageImagesModalOpen(false); },
     [],
@@ -92,6 +130,15 @@ const Project = () => {
     [dispatch, project],
   );
 
+  const prevOpen = React.useRef(open);
+  useEffect(() => {
+    if (prevOpen.current === true && open === false) {
+      anchorRef.current.focus();
+    }
+
+    prevOpen.current = open;
+  }, [open]);
+
   useEffect(
     () => {
       if (!omeroIds.length) {
@@ -102,6 +149,7 @@ const Project = () => {
     [dispatch, omeroIds, omeroIds.length, projectId],
   );
 
+
   useEffect(
     () => {
       if (omeroIds.length === 0) {
@@ -111,12 +159,12 @@ const Project = () => {
     [dispatch, omeroIds.length, projectId],
   );
 
-  // useEffect(
-  //   () => () => {
-  //     dispatch(omeroActions.clearThumbnails(projectId));
-  //   },
-  //   [dispatch, projectId],
-  // );
+  useEffect(
+    () => () => {
+      dispatch(omeroActions.clearThumbnails(projectId));
+    },
+    [dispatch, projectId],
+  );
 
   return (
     <Container>
@@ -129,8 +177,34 @@ const Project = () => {
           >
             Remove Selected
           </Button>
+          <Button
+            ref={anchorRef}
+            aria-controls={open ? 'menu-list-grow' : undefined}
+            aria-haspopup="true"
+            onClick={onTogle}
+          >
+            Toggle Menu Grow
+          </Button>
+          <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
+            {({ TransitionProps, placement }) => (
+              <Grow
+                {...TransitionProps}
+                style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
+              >
+                <Paper>
+                  <ClickAwayListener onClickAway={onTogleClose}>
+                    <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
+                      <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
+                      <MenuItem onClick={onTogleClose}>My account</MenuItem>
+                      <MenuItem onClick={onTogleClose}>Logout</MenuItem>
+                    </MenuList>
+                  </ClickAwayListener>
+                </Paper>
+              </Grow>
+            )}
+          </Popper>
           <Button onClick={onManageImagesModalOpen}>
-            Manage Images
+            Manage items
           </Button>
         </ButtonsContainer>
 
