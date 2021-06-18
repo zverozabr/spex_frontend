@@ -12,7 +12,7 @@ import Button, { ButtonColors } from '+components/Button';
 
 import ClickAwayListener from '+components/ClickAwayListener';
 import Grow from '+components/Grow';
-import MenuItem from '+components/MenuItems';
+import MenuItem from '+components/MenuItem';
 import MenuList from '+components/MenuList';
 
 import NoData from '+components/NoData';
@@ -23,6 +23,7 @@ import ThumbnailsViewer from '+components/ThumbnailsViewer';
 import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
 import ManageImagesModal from './components/ManageImagesModal';
+import ManageJobsModal from './components/ManageJobsModal';
 import PipelineContainer from './components/PipelineContainer';
 import Row from './components/Row';
 import ThumbnailsContainer from './components/ThumbnailsContainer';
@@ -79,6 +80,7 @@ const Project = () => {
 
   const [selectedThumbnails, setSelectedThumbnails] = useState([]);
   const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
+  const [manageJobsModalOpen, setManageJobsModalOpen] = useState(false);
 
   const onRemoveImages = useCallback(
     () => {
@@ -118,6 +120,23 @@ const Project = () => {
     [],
   );
 
+  const onManageJobsModalOpen = useCallback(
+    () => { setManageJobsModalOpen(true); },
+    [],
+  );
+
+  const onManageJobsClose = useCallback(
+    () => { setManageJobsModalOpen(false); },
+    [],
+  );
+
+  const onJobsChanged = useCallback(
+    (values) => {
+      setManageJobsModalOpen(false);
+    },
+    [],
+  );
+
   const onImagesChanged = useCallback(
     (values) => {
       setManageImagesModalOpen(false);
@@ -129,6 +148,8 @@ const Project = () => {
     },
     [dispatch, project],
   );
+
+
 
   const prevOpen = React.useRef(open);
   useEffect(() => {
@@ -183,7 +204,7 @@ const Project = () => {
             aria-haspopup="true"
             onClick={onTogle}
           >
-            Toggle Menu Grow
+            Manage
           </Button>
           <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
             {({ TransitionProps, placement }) => (
@@ -195,17 +216,17 @@ const Project = () => {
                   <ClickAwayListener onClickAway={onTogleClose}>
                     <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
                       <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
-                      <MenuItem onClick={onTogleClose}>My account</MenuItem>
-                      <MenuItem onClick={onTogleClose}>Logout</MenuItem>
+                      <MenuItem onClick={onManageJobsModalOpen}>Tasks</MenuItem>
+                      <MenuItem onClick={onTogleClose}>Resourses</MenuItem>
                     </MenuList>
                   </ClickAwayListener>
                 </Paper>
               </Grow>
             )}
           </Popper>
-          <Button onClick={onManageImagesModalOpen}>
+          {/* <Button onClick={onManageImagesModalOpen}>
             Manage items
-          </Button>
+          </Button> */}
         </ButtonsContainer>
 
         <ThumbnailsContainer>
@@ -242,6 +263,15 @@ const Project = () => {
           project={project}
           onClose={onManageImagesClose}
           onSubmit={onImagesChanged}
+        />
+      )}
+      {manageJobsModalOpen && (
+        <ManageJobsModal
+          header="Manage Jobs"
+          open={manageJobsModalOpen}
+          project={project}
+          onClose={onManageJobsClose}
+          onSubmit={onJobsChanged}
         />
       )}
     </Container>
