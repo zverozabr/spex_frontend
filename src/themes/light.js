@@ -9,6 +9,7 @@ const lightTheme = {
     background: {
       default: '#fff',
       paper: '#ccc',
+      sidebarItemActive: '#fff',
     },
   },
 };
