@@ -1,5 +1,6 @@
 const PathNames = {
-  project: 'project',
+  projects: 'projects',
+  jobs: 'jobs',
   dataset: 'dataset',
   img: 'img',
 };

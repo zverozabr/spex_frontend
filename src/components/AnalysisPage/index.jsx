@@ -30,7 +30,7 @@ const AnalysisPage = () => {
   const { projectId, datasetId, imageId } = useMemo(
     () => {
       const pathArray = location.pathname.split('/');
-      const projectId = pathArray[1] === PathNames.project && pathArray[2] ? `${pathArray[2]}` : undefined;
+      const projectId = pathArray[1] === PathNames.projects && pathArray[2] ? `${pathArray[2]}` : undefined;
       const datasetId = pathArray[3] === PathNames.dataset && pathArray[4] ? `${pathArray[4]}` : undefined;
       const imageId = pathArray[5] === PathNames.img && pathArray[6] ? `${pathArray[6]}` : undefined;
       return { projectId, datasetId, imageId };
@@ -105,13 +105,13 @@ const AnalysisPage = () => {
     (ids) => {
       if (!ids || ids.length === 0 || ids.length > 1) {
         setImageIds(ids);
-        const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}`;
+        const url = `/${PathNames.projects}/${projectId}/${PathNames.dataset}/${datasetId}`;
         history.push(url);
         return;
       }
 
       setImageIds([]);
-      const url = `/${PathNames.project}/${projectId}/${PathNames.dataset}/${datasetId}/${PathNames.img}/${ids}`;
+      const url = `/${PathNames.projects}/${projectId}/${PathNames.dataset}/${datasetId}/${PathNames.img}/${ids}`;
       history.push(url);
 
       if (ids[0] !== imageId) {

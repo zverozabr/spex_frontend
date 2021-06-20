@@ -3,11 +3,13 @@ import { useDispatch } from 'react-redux';
 import { Switch, Route } from 'react-router-dom';
 
 import AnalysisPage from '@/components/AnalysisPage';
+import Jobs from '@/components/Jobs';
 import Layout from '@/components/Layout';
 import NotFound404 from '@/components/NotFound404';
 import Project from '@/components/Project';
 import Projects from '@/components/Projects';
 
+import PathNames from '@/models/PathNames';
 import { actions as authActions } from '@/redux/modules/users/auth';
 
 const PrivateRoutes = () => {
@@ -30,13 +32,23 @@ const PrivateRoutes = () => {
       <Switch>
         <Route
           exact
-          path={[ '/', '/project' ]}
+          path={[ '/' ]}
           component={Projects}
         />
         <Route
           exact
-          path={[ '/project/:id' ]}
+          path={[ `/${PathNames.projects}` ]}
+          component={Projects}
+        />
+        <Route
+          exact
+          path={[ `/${PathNames.projects}/:id` ]}
           component={Project}
+        />
+        <Route
+          exact
+          path={[ `/${PathNames.jobs}` ]}
+          component={Jobs}
         />
         <Route
           exact

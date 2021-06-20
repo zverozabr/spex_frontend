@@ -1,15 +1,13 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
+import { matchPath, useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 
 import Button, { ButtonColors } from '+components/Button';
-
-
 import ClickAwayListener from '+components/ClickAwayListener';
 import Grow from '+components/Grow';
 import MenuItem from '+components/MenuItem';
@@ -30,25 +28,27 @@ import ThumbnailsContainer from './components/ThumbnailsContainer';
 
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
 
-
 const Project = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const dispatch = useDispatch();
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
 
-  const onTogle = useCallback(() => {
-    setOpen((prevOpen) => !prevOpen);
-    },[setOpen],
+  const onToggle = useCallback(
+    () => {
+      setOpen((prevOpen) => !prevOpen);
+    },
+    [setOpen],
   );
 
-  const onTogleClose = useCallback((event) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target))
-      {
+  const onToggleClose = useCallback(
+    (event) => {
+      if (anchorRef.current && anchorRef.current.contains(event.target)) {
         return;
       }
-    setOpen(false);
-    }, [setOpen],
+      setOpen(false);
+    },
+    [setOpen],
   );
 
   const onKeyDownInMenu = useCallback(
@@ -61,13 +61,12 @@ const Project = () => {
     [setOpen],
   );
 
-  const { projectId } = useMemo(
+  const projectId = useMemo(
     () => {
-      const pathArray = location.pathname.split('/');
-      const projectId = pathArray[1] === PathNames.project && pathArray[2] ? `${pathArray[2]}` : undefined;
-      return { projectId };
+      const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
+      return match ? match.params.id : undefined;
     },
-    [location.pathname],
+    [pathname],
   );
 
   const project = useSelector(projectsSelectors.getProject(projectId));
@@ -202,9 +201,9 @@ const Project = () => {
             ref={anchorRef}
             aria-controls={open ? 'menu-list-grow' : undefined}
             aria-haspopup="true"
-            onClick={onTogle}
+            onClick={onToggle}
           >
-            Manage
+            Manage Resources
           </Button>
           <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
             {({ TransitionProps, placement }) => (
@@ -213,11 +212,10 @@ const Project = () => {
                 style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
               >
                 <Paper>
-                  <ClickAwayListener onClickAway={onTogleClose}>
+                  <ClickAwayListener onClickAway={onToggleClose}>
                     <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
                       <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
-                      <MenuItem onClick={onManageJobsModalOpen}>Tasks</MenuItem>
-                      <MenuItem onClick={onTogleClose}>Resourses</MenuItem>
+                      <MenuItem onClick={onManageJobsModalOpen}>Jobs</MenuItem>
                     </MenuList>
                   </ClickAwayListener>
                 </Paper>
