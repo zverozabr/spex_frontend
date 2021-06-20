@@ -93,6 +93,38 @@ const slice = createSlice({
         }
       },
     },
+
+    [actions.updateJob]: {
+      * saga({ payload: job }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/${job.id}`;
+          const { data } = yield call(api.put, url, job);
+          yield put(actions.updateJobSuccess(data.data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.deleteJob]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/${id}`;
+          yield call(api.delete, url);
+          yield put(actions.deleteJobSuccess(id));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
   }),
 
   selectors: (getState) => ({
