@@ -1,9 +1,11 @@
 import styled from 'styled-components';
 
 export default styled.div`
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: calc(100% - 64px);
+  height: 100%;
+
   box-sizing: border-box;
   overflow: hidden;
-  padding: 10px;
 `;
