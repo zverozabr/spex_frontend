@@ -59,9 +59,14 @@ export default styled.div `
     min-height: 2.625em;
     .rt-tr-group {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      justify-content: center;
       width: 100%;
-      height: 3.375em;
+      
+      >.rt-tr {
+        min-height: 3.375em;
+      }
+      
       :nth-of-type(odd) {
         background: white;
       }

@@ -43,204 +43,6 @@ import RowSelectionColumnHeader from './Headers/RowSelectionColumnHeader';
 import * as filterTypes from './Types/filterTypes';
 import * as sortTypes from './Types/sortTypes';
 
-const propTypes = {
-    /**
-     * Override component ID.
-     */
-    id: PropTypes.string,
-    /**
-     * Override or extend the styles applied to the component.
-     */
-    className: PropTypes.string,
-    /**
-     * Extend the styles applied to the component.
-     */
-    style: PropTypes.shape({}),
-    /**
-     * Table caption.
-     */
-    caption: PropTypes.string,
-    /**
-     * The column configuration.
-     */
-    columns: PropTypes.arrayOf(PropTypes.shape()),
-    /**
-     * If a column's ID is contained in this array, it will be hidden
-     */
-    hiddenColumns: PropTypes.arrayOf(PropTypes.string),
-    /**
-     * Group by this columns.
-     */
-    groupBy: PropTypes.arrayOf(PropTypes.string),
-    /**
-     * It's highly recommended that your data have a unique identifier (keyField).
-     * The default keyField is id. If you need to override this value then see keyField.
-     */
-    data: PropTypes.arrayOf(PropTypes.shape()),
-    /**
-     * Specifies text shown when the component does not display any data.
-     */
-    noDataText: PropTypes.string,
-    /**
-     * If true, column filters will be disabled.
-     */
-    disableFilters: PropTypes.bool,
-    /**
-     * If true, header will be hidden.
-     */
-    hideHeader: PropTypes.bool,
-    /**
-     * If true, footer will be displayed.
-     */
-    showFooter: PropTypes.bool,
-    /**
-     * If true, row size will be doubled.
-     */
-    doubleRowSize: PropTypes.bool,
-    /**
-     * If true, row checkbox will be shown.
-     */
-    allowRowSelection: PropTypes.bool,
-    /**
-     * Actions that are available inside the table with selected rows.
-     */
-    actions: PropTypes.arrayOf(PropTypes.shape({
-        /**
-         * Action name.
-         */
-        name: PropTypes.string.isRequired,
-        /**
-         * Action callback.
-         */
-        fn: PropTypes.func.isRequired,
-        /**
-         * Action icon.
-         */
-        icon: PropTypes.oneOfType([ PropTypes.string, PropTypes.shape({}) ]),
-        /**
-         * Action color type.
-         */
-        color: PropTypes.string,
-        /**
-         * Is the action disabled.
-         */
-        disabled: PropTypes.bool,
-        /**
-         * If true, action will be enabled only if there are selected rows.
-         */
-        enabledOnlyWhenSelectedRows: PropTypes.bool,
-    })),
-    /**
-     * Sets start page index.
-     */
-    pageIndex: PropTypes.number,
-    /**
-     * The default rows per page to use when the table initially loads.
-     */
-    pageSize: PropTypes.number,
-    /**
-     * Row page dropdown selection options.
-     */
-    pageSizeOptions: PropTypes.arrayOf(PropTypes.number),
-    /**
-     * Min rows count on the page.
-     */
-    minRows: PropTypes.number,
-    /**
-     * Default sorted columns.
-     */
-    defaultSorted: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.string.isRequired,
-    })),
-    /**
-     * Default filtered columns.
-     */
-    defaultFiltered: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        // eslint-disable-next-line react/forbid-prop-types
-        value: PropTypes.any,
-    })),
-    /**
-     * If true, expander will be shown in header.
-     */
-    expanderInHeader: PropTypes.bool,
-    /**
-     * This function is used to resolve any props needed for table wrapper.
-     */
-    getTableProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this column's header cell.
-     */
-    getHeaderProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this header group's row.
-     */
-    getHeaderGroupProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this column's footer cell.
-     */
-    getFooterProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this footer group's row.
-     */
-    getFooterGroupProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this row.
-     */
-    getRowProps: PropTypes.func,
-    /**
-     * This function is used to resolve any props needed for this cell.
-     */
-    getCellProps: PropTypes.func,
-    /**
-     * Sub component for expanded rows.
-     */
-    SubComponent: PropTypes.elementType,
-    /**
-     * Pagination component.
-     */
-    PaginationComponent: PropTypes.elementType,
-    /**
-     * A callback fired when cell value is changed.
-     */
-    onCellValueChange: PropTypes.func,
-};
-
-const defaultProps = {
-    id: null,
-    className: null,
-    style: null,
-    caption: null,
-    columns: [],
-    hiddenColumns: [],
-    groupBy: [],
-    data: [],
-    noDataText: 'No rows found',
-    disableFilters: true,
-    hideHeader: false,
-    showFooter: false,
-    doubleRowSize: false,
-    allowRowSelection: false,
-    actions: [],
-    pageIndex: null,
-    pageSize: 10,
-    pageSizeOptions: [ 10, 20, 50, 100 ],
-    minRows: 0,
-    defaultSorted: [],
-    defaultFiltered: [],
-    expanderInHeader: false,
-    getTableProps: null,
-    getHeaderProps: null,
-    getHeaderGroupProps: null,
-    getFooterProps: null,
-    getFooterGroupProps: null,
-    getRowProps: null,
-    getCellProps: null,
-    SubComponent: null,
-    PaginationComponent: Pagination,
-    onCellValueChange: null,
-};
-
 /**
  * Table displays sets of data.
  */
@@ -614,6 +416,204 @@ const Table = (props) => {
         </TableWrapper>
       </Container>
     );
+};
+
+const propTypes = {
+    /**
+     * Override component ID.
+     */
+    id: PropTypes.string,
+    /**
+     * Override or extend the styles applied to the component.
+     */
+    className: PropTypes.string,
+    /**
+     * Extend the styles applied to the component.
+     */
+    style: PropTypes.shape({}),
+    /**
+     * Table caption.
+     */
+    caption: PropTypes.string,
+    /**
+     * The column configuration.
+     */
+    columns: PropTypes.arrayOf(PropTypes.shape()),
+    /**
+     * If a column's ID is contained in this array, it will be hidden
+     */
+    hiddenColumns: PropTypes.arrayOf(PropTypes.string),
+    /**
+     * Group by this columns.
+     */
+    groupBy: PropTypes.arrayOf(PropTypes.string),
+    /**
+     * It's highly recommended that your data have a unique identifier (keyField).
+     * The default keyField is id. If you need to override this value then see keyField.
+     */
+    data: PropTypes.arrayOf(PropTypes.shape()),
+    /**
+     * Specifies text shown when the component does not display any data.
+     */
+    noDataText: PropTypes.string,
+    /**
+     * If true, column filters will be disabled.
+     */
+    disableFilters: PropTypes.bool,
+    /**
+     * If true, header will be hidden.
+     */
+    hideHeader: PropTypes.bool,
+    /**
+     * If true, footer will be displayed.
+     */
+    showFooter: PropTypes.bool,
+    /**
+     * If true, row size will be doubled.
+     */
+    doubleRowSize: PropTypes.bool,
+    /**
+     * If true, row checkbox will be shown.
+     */
+    allowRowSelection: PropTypes.bool,
+    /**
+     * Actions that are available inside the table with selected rows.
+     */
+    actions: PropTypes.arrayOf(PropTypes.shape({
+        /**
+         * Action name.
+         */
+        name: PropTypes.string.isRequired,
+        /**
+         * Action callback.
+         */
+        fn: PropTypes.func.isRequired,
+        /**
+         * Action icon.
+         */
+        icon: PropTypes.oneOfType([ PropTypes.string, PropTypes.shape({}) ]),
+        /**
+         * Action color type.
+         */
+        color: PropTypes.string,
+        /**
+         * Is the action disabled.
+         */
+        disabled: PropTypes.bool,
+        /**
+         * If true, action will be enabled only if there are selected rows.
+         */
+        enabledOnlyWhenSelectedRows: PropTypes.bool,
+    })),
+    /**
+     * Sets start page index.
+     */
+    pageIndex: PropTypes.number,
+    /**
+     * The default rows per page to use when the table initially loads.
+     */
+    pageSize: PropTypes.number,
+    /**
+     * Row page dropdown selection options.
+     */
+    pageSizeOptions: PropTypes.arrayOf(PropTypes.number),
+    /**
+     * Min rows count on the page.
+     */
+    minRows: PropTypes.number,
+    /**
+     * Default sorted columns.
+     */
+    defaultSorted: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+    })),
+    /**
+     * Default filtered columns.
+     */
+    defaultFiltered: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        // eslint-disable-next-line react/forbid-prop-types
+        value: PropTypes.any,
+    })),
+    /**
+     * If true, expander will be shown in header.
+     */
+    expanderInHeader: PropTypes.bool,
+    /**
+     * This function is used to resolve any props needed for table wrapper.
+     */
+    getTableProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this column's header cell.
+     */
+    getHeaderProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this header group's row.
+     */
+    getHeaderGroupProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this column's footer cell.
+     */
+    getFooterProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this footer group's row.
+     */
+    getFooterGroupProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this row.
+     */
+    getRowProps: PropTypes.func,
+    /**
+     * This function is used to resolve any props needed for this cell.
+     */
+    getCellProps: PropTypes.func,
+    /**
+     * Sub component for expanded rows.
+     */
+    SubComponent: PropTypes.elementType,
+    /**
+     * Pagination component.
+     */
+    PaginationComponent: PropTypes.elementType,
+    /**
+     * A callback fired when cell value is changed.
+     */
+    onCellValueChange: PropTypes.func,
+};
+
+const defaultProps = {
+    id: null,
+    className: null,
+    style: null,
+    caption: null,
+    columns: [],
+    hiddenColumns: [],
+    groupBy: [],
+    data: [],
+    noDataText: 'No rows found',
+    disableFilters: true,
+    hideHeader: false,
+    showFooter: false,
+    doubleRowSize: false,
+    allowRowSelection: false,
+    actions: [],
+    pageIndex: null,
+    pageSize: 10,
+    pageSizeOptions: [ 10, 20, 50, 100 ],
+    minRows: 0,
+    defaultSorted: [],
+    defaultFiltered: [],
+    expanderInHeader: false,
+    getTableProps: null,
+    getHeaderProps: null,
+    getHeaderGroupProps: null,
+    getFooterProps: null,
+    getFooterGroupProps: null,
+    getRowProps: null,
+    getCellProps: null,
+    SubComponent: null,
+    PaginationComponent: Pagination,
+    onCellValueChange: null,
 };
 
 Table.displayName = 'Table';
