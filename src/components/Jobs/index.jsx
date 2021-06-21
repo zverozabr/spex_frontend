@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import PathNames from '@/models/PathNames';
@@ -16,6 +16,21 @@ import ButtonsContainer from './components/ButtonsContainer';
 import CellButtonsContainer from './components/CellButtonsContainer';
 import Container from './components/Container';
 import Row from './components/Row';
+import SubComponent from './components/SubComponent';
+
+const fakeJob = {
+  name: 'fakeJob',
+  omeroIds: [ 1 ],
+  content: {
+    start: { x: 0, y: 0 },
+    stop: { x: 512, y: 512 },
+    c: 0,
+    size: 20,
+    slice: { x: 100, y: 100, margin: 31 },
+  },
+};
+
+const refreshInterval = 6e4; // 1 minute
 
 const Jobs = () => {
   const dispatch = useDispatch();
@@ -24,9 +39,10 @@ const Jobs = () => {
 
   const [ jobToManage, setJobToManage ] = useState(null);
   const [ jobToDelete, setJobToDelete ] = useState(null);
+  const [ refresher, setRefresher ] = useState(null);
 
   const onManageJobModalOpen = useCallback(
-    (job) => { setJobToManage(job); },
+    (job) => () => { setJobToManage(job); },
     [],
   );
 
@@ -37,10 +53,11 @@ const Jobs = () => {
 
   const onManageJobModalSubmit = useCallback(
     (job) => {
-      if (job.id) {
-        dispatch(jobsActions.updateJob(job));
+      const normalizedJob = { ...job, content: JSON.stringify(job.content) };
+      if (normalizedJob.id) {
+        dispatch(jobsActions.updateJob(normalizedJob));
       } else {
-        dispatch(jobsActions.createJob(job));
+        dispatch(jobsActions.createJob(normalizedJob));
       }
       setJobToManage(null);
     },
@@ -57,9 +74,9 @@ const Jobs = () => {
     [],
   );
 
-  const onDeleteProjectModalSubmit = useCallback(
+  const onDeleteJobModalSubmit = useCallback(
     () => {
-      dispatch(jobsActions.deleteProject(jobToDelete.id));
+      dispatch(jobsActions.deleteJob(jobToDelete.id));
       setJobToDelete(null);
     },
     [dispatch, jobToDelete],
@@ -67,21 +84,35 @@ const Jobs = () => {
 
   const columns = useMemo(
     () => ([{
+      id: 'status',
+      accessor: ({ tasks }) => {
+        if (!tasks.length) {
+          return undefined;
+        }
+        const sum = tasks.reduce((acc, el) => acc + el.status, 0);
+        return sum / tasks.length;
+      },
+      Header: 'Status',
+      Cell: ({ value: status }) => useMemo(
+        () => (status != null ? `In Progress (${Math.round(status * 100)}%)` : 'N/A'),
+        [status],
+      ),
+    }, {
       id: 'name',
       accessor: 'name',
       Header: 'Name',
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
-          <Link to={`/${PathNames.projects}/${id}`}>
+          <Link to={`/${PathNames.jobs}/${id}`}>
             {name}
           </Link>
         ),
         [id, name],
       ),
     }, {
-      id: 'description',
-      accessor: 'description',
-      Header: 'Description',
+      id: 'omeroIds',
+      accessor: 'omeroIds',
+      Header: 'Omero Image IDs',
     }, {
       id: 'actions',
       Header: 'Actions',
@@ -114,11 +145,33 @@ const Jobs = () => {
   [onDeleteJobModalOpen, onManageJobModalOpen],
   );
 
+  useEffect(
+    () => {
+      dispatch(jobsActions.fetchJobs());
+      return () => {
+        dispatch(jobsActions.clearJobs());
+      };
+    },
+    [dispatch, refresher],
+  );
+
+  useEffect(
+    () => {
+      const intervalId = setInterval(() => {
+        setRefresher(Date.now());
+      }, refreshInterval);
+      return () => {
+        clearInterval(intervalId);
+      };
+    },
+    [dispatch],
+  );
+
   return (
     <Container>
       <Row>
         <ButtonsContainer>
-          <Button onClick={() => onManageJobModalOpen({})}>
+          <Button onClick={onManageJobModalOpen(fakeJob)}>
             Add Job
           </Button>
         </ButtonsContainer>
@@ -126,6 +179,7 @@ const Jobs = () => {
         <Table
           columns={columns}
           data={Object.values(jobs)}
+          SubComponent={SubComponent}
           allowRowSelection
         />
       </Row>
@@ -147,11 +201,9 @@ const Jobs = () => {
           />
 
           <Field
-            name="description"
-            label="Description"
+            name="omeroIds"
+            label="omeroIds"
             component={Controls.TextField}
-            multiline
-            rows={6}
           />
         </FormModal>
       )}
@@ -161,7 +213,7 @@ const Jobs = () => {
           action={ConfirmActions.delete}
           item={jobToDelete.name}
           onClose={onDeleteJobModalClose}
-          onSubmit={onDeleteProjectModalSubmit}
+          onSubmit={onDeleteJobModalSubmit}
           open
         />
       )}
