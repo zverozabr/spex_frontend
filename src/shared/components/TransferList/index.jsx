@@ -37,21 +37,23 @@ const TransferList = styled((props) => {
   const {
     className,
     options,
-    value,
+    input,
     leftTitle,
     rightTitle,
-    onChange,
   } = props;
 
-  const [checked, setChecked] = useState([]);
+  const value = input?.value || props.value;
+  const onChange = input.onChange || props.onChange;
 
-  const leftChecked = intersection(checked, options);
-  const rightChecked = intersection(checked, value);
+  const [checked, setChecked] = useState([]);
 
   const fixedOptions = useMemo(
     () => (not(options, value)),
     [options, value],
   );
+
+  const leftChecked = intersection(checked, options);
+  const rightChecked = intersection(checked, value);
 
   const onCheckedLeft = useCallback(
     () => {
@@ -75,12 +77,12 @@ const TransferList = styled((props) => {
   );
 
   const onToggle = useCallback(
-    (value) => () => {
-      const currentIndex = checked.indexOf(value);
+    (newValue) => () => {
+      const currentIndex = checked.indexOf(newValue);
       const newChecked = [...checked];
 
       if (currentIndex === -1) {
-        newChecked.push(value);
+        newChecked.push(newValue);
       } else {
         newChecked.splice(currentIndex, 1);
       }
@@ -243,6 +245,10 @@ const TransferList = styled((props) => {
 TransferList.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.shape({})),
+  input: PropTypes.shape({
+    value: PropTypes.arrayOf(PropTypes.shape({})),
+    onChange: PropTypes.func,
+  }),
   value: PropTypes.arrayOf(PropTypes.shape({})),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
@@ -255,7 +261,8 @@ TransferList.propTypes = {
 TransferList.defaultProps = {
   className: '',
   options: {},
-  value: {},
+  input: null,
+  value: [],
   leftTitle: 'Choices',
   rightTitle: 'Chosen',
   not: PropTypes.func,

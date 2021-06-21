@@ -1,5 +1,4 @@
-import React, { useMemo, useCallback, useEffect, useState } from 'react';
-
+import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
@@ -12,7 +11,6 @@ import ClickAwayListener from '+components/ClickAwayListener';
 import Grow from '+components/Grow';
 import MenuItem from '+components/MenuItem';
 import MenuList from '+components/MenuList';
-
 import NoData from '+components/NoData';
 import Paper from '+components/Paper';
 import Popper from '+components/Popper';
@@ -20,7 +18,7 @@ import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
-import ManageImagesModal from './components/ManageImagesModal';
+import FormModalManageImages from './components/FormModalManageImages';
 import ManageJobsModal from './components/ManageJobsModal';
 import ManageResourcesModal from './components/ManageResourcesModal';
 import PipelineContainer from './components/PipelineContainer';
@@ -30,10 +28,37 @@ import ThumbnailsContainer from './components/ThumbnailsContainer';
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
 
 const Project = () => {
-  const { pathname } = useLocation();
   const dispatch = useDispatch();
-  const [open, setOpen] = React.useState(false);
-  const anchorRef = React.useRef(null);
+  const { pathname } = useLocation();
+
+  const projectId = useMemo(
+    () => {
+      const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
+      return match ? match.params.id : undefined;
+    },
+    [pathname],
+  );
+
+  const project = useSelector(projectsSelectors.getProject(projectId));
+  const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
+
+  const anchorRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const [selectedThumbnails, setSelectedThumbnails] = useState([]);
+  const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
+  const [manageJobsModalOpen, setManageJobsModalOpen] = useState(false);
+  const [manageResourcesModalOpen, setManageResourcesModalOpen] = useState(false);
+
+  const omeroIds = useMemo(
+    () => (project?.omeroIds || []),
+  [project],
+  );
+
+  const normalizedThumbnails = useMemo(
+    () => (Object.keys(thumbnails || {}).map((id) =>({ id, img: thumbnails[id] }))),
+    [thumbnails],
+  );
 
   const onToggle = useCallback(
     () => {
@@ -61,28 +86,6 @@ const Project = () => {
     },
     [setOpen],
   );
-
-  const projectId = useMemo(
-    () => {
-      const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
-      return match ? match.params.id : undefined;
-    },
-    [pathname],
-  );
-
-  const project = useSelector(projectsSelectors.getProject(projectId));
-  const { omeroIds = [] } = project || {};
-  const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
-  const fixedThumbnails = useMemo(
-    () => (Object.keys(thumbnails || {}).map((id) =>({ id: +id.toString(), img: thumbnails[id] }))),
-    [thumbnails],
-  );
-
-  const [selectedThumbnails, setSelectedThumbnails] = useState([]);
-  const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
-  const [manageJobsModalOpen, setManageJobsModalOpen] = useState(false);
-  const [ManageResourcesModalOpen, setManageResourcesModalOpen] = useState(false);
-
 
   const onRemoveImages = useCallback(
     () => {
@@ -112,14 +115,27 @@ const Project = () => {
   );
 
   const onManageImagesModalOpen = useCallback(
-    () => { setManageImagesModalOpen(true); },
+    () => {
+      setManageImagesModalOpen(true);
+    },
     [],
   );
 
-
-  const onManageImagesClose = useCallback(
-    () => { setManageImagesModalOpen(false); },
+  const onManageImagesModalClose = useCallback(
+    () => {
+      setManageImagesModalOpen(false);
+    },
     [],
+  );
+
+  const onManageImagesModalSubmit = useCallback(
+    (values) => {
+      setManageImagesModalOpen(false);
+      const omeroIds = values.omeroIds.map((el) => el.id || el);
+      const updateData = { ...values, omeroIds };
+      dispatch(projectsActions.updateProject(updateData));
+    },
+    [dispatch],
   );
 
   const onManageJobsModalOpen = useCallback(
@@ -156,20 +172,6 @@ const Project = () => {
     [],
   );
 
-  const onImagesChanged = useCallback(
-    (values) => {
-      setManageImagesModalOpen(false);
-      const newProject = {
-        ...project,
-        omeroIds: values,
-      };
-      dispatch(projectsActions.updateProject(newProject));
-    },
-    [dispatch, project],
-  );
-
-
-
   const prevOpen = React.useRef(open);
   useEffect(() => {
     if (prevOpen.current === true && open === false) {
@@ -181,29 +183,19 @@ const Project = () => {
 
   useEffect(
     () => {
-      if (!omeroIds.length) {
-        return;
-      }
-      dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: omeroIds }));
-    },
-    [dispatch, omeroIds, omeroIds.length, projectId],
-  );
-
-
-  useEffect(
-    () => {
       if (omeroIds.length === 0) {
         dispatch(omeroActions.clearThumbnails(projectId));
       }
-    },
-    [dispatch, omeroIds.length, projectId],
-  );
 
-  useEffect(
-    () => () => {
-      dispatch(omeroActions.clearThumbnails(projectId));
+      if (omeroIds.length > 0) {
+        dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: omeroIds }));
+      }
+
+      return () => {
+        dispatch(omeroActions.clearThumbnails(projectId));
+      };
     },
-    [dispatch, projectId],
+    [dispatch, omeroIds, projectId],
   );
 
   return (
@@ -249,10 +241,10 @@ const Project = () => {
         </ButtonsContainer>
 
         <ThumbnailsContainer>
-          {fixedThumbnails.length === 0 && <NoData>No Images To Display</NoData>}
-          {fixedThumbnails.length > 0 && (
+          {normalizedThumbnails.length === 0 && <NoData>No Images To Display</NoData>}
+          {normalizedThumbnails.length > 0 && (
             <ThumbnailsViewer
-              thumbnails={fixedThumbnails}
+              thumbnails={normalizedThumbnails}
               active={selectedThumbnails}
               onClick={onThumbnailClick}
               allowMultiSelect
@@ -276,30 +268,32 @@ const Project = () => {
       </Row>
 
       {manageImagesModalOpen && (
-        <ManageImagesModal
+        <FormModalManageImages
           header="Manage Images"
-          open={manageImagesModalOpen}
-          project={project}
-          onClose={onManageImagesClose}
-          onSubmit={onImagesChanged}
+          initialValues={{ ...project, omeroIds: normalizedThumbnails }}
+          onClose={onManageImagesModalClose}
+          onSubmit={onManageImagesModalSubmit}
+          open
         />
       )}
+
       {manageJobsModalOpen && (
         <ManageJobsModal
           header="Manage Jobs"
-          open={manageJobsModalOpen}
           project={project}
           onClose={onManageJobsClose}
           onSubmit={onJobsChanged}
+          open
         />
       )}
-      {ManageResourcesModalOpen && (
+
+      {manageResourcesModalOpen && (
         <ManageResourcesModal
           header="Manage Resources"
-          open={ManageResourcesModalOpen}
           project={project}
           onClose={onManageResourcesClose}
           onSubmit={onResourcesChanged}
+          open
         />
       )}
     </Container>
