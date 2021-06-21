@@ -4,8 +4,9 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
-import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as omeroActions } from '@/redux/modules/omero';
+import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
+
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import Link from '+components/Link';
@@ -20,7 +21,7 @@ import Row from './Row';
 
 const none = 'none';
 
-const ManageJobsModal = styled((props) => {
+const ManageResourcesModal = styled((props) => {
   const {
     className,
     header,
@@ -38,8 +39,8 @@ const ManageJobsModal = styled((props) => {
   const [value] = useState([]);
 
 
-  const isJobsFetching = useSelector(jobsSelectors.isFetching);
-  const jobs = useSelector(jobsSelectors.getJobs);
+  const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
+  const resources = useSelector(resourcesSelectors.getResources);
 
 
   const columns = useMemo(
@@ -55,17 +56,6 @@ const ManageJobsModal = styled((props) => {
         ),
         [id, name],
       ),
-    },
-    {
-      id: 'tasks',
-      header: 'tasks',
-      Cell: ({ row: { original: { tasks } } }) => useMemo(
-        () => (
-          [tasks]
-        ),
-        [tasks],
-      ),
-
     },
     {
       id: 'content',
@@ -130,12 +120,12 @@ const ManageJobsModal = styled((props) => {
 
   useEffect(
     () => {
-      if (Object.keys(jobs || {}).length) {
+      if (Object.keys(resources || {}).length) {
         return;
       }
-      dispatch(jobsActions.fetchJobs({}));
+      dispatch(resourcesActions.fetchResources());
     },
-    [dispatch, jobs],
+    [dispatch, resources],
   );
 
   return (
@@ -149,17 +139,15 @@ const ManageJobsModal = styled((props) => {
         <Row>
           <Select
             defaultValue={none}
-            disabled={isJobsFetching}
+            disabled={isResourcesFetching}
           >
-            <Option value={none}>Select jobs</Option>
-            {Object.values(jobs || {}).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+            <Option value={none}>Select resources</Option>
+            {Object.values(resources || {}).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
           </Select>
           <Table
             columns={columns}
-            data={Object.values(jobs)}
+            data={Object.values(resources)}
             allowRowSelection
-            hasExpander
-            groupBy={jobs['tasks']}
           />
         </Row>
       </ModalBody>
@@ -190,7 +178,7 @@ const ManageJobsModal = styled((props) => {
   }
 `;
 
-ManageJobsModal.propTypes = {
+ManageResourcesModal.propTypes = {
   /**
    * Override or extend the styles applied to the component.
    */
@@ -221,7 +209,7 @@ ManageJobsModal.propTypes = {
   onSubmit: PropTypes.func,
 };
 
-ManageJobsModal.defaultProps = {
+ManageResourcesModal.defaultProps = {
   className: '',
   header: '',
   open: false,
@@ -231,4 +219,4 @@ ManageJobsModal.defaultProps = {
   onSubmit: () => {},
 };
 
-export default ManageJobsModal;
+export default ManageResourcesModal;

@@ -22,6 +22,7 @@ import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
 import ManageImagesModal from './components/ManageImagesModal';
 import ManageJobsModal from './components/ManageJobsModal';
+import ManageResourcesModal from './components/ManageResourcesModal';
 import PipelineContainer from './components/PipelineContainer';
 import Row from './components/Row';
 import ThumbnailsContainer from './components/ThumbnailsContainer';
@@ -80,6 +81,8 @@ const Project = () => {
   const [selectedThumbnails, setSelectedThumbnails] = useState([]);
   const [manageImagesModalOpen, setManageImagesModalOpen] = useState(false);
   const [manageJobsModalOpen, setManageJobsModalOpen] = useState(false);
+  const [ManageResourcesModalOpen, setManageResourcesModalOpen] = useState(false);
+
 
   const onRemoveImages = useCallback(
     () => {
@@ -132,6 +135,23 @@ const Project = () => {
   const onJobsChanged = useCallback(
     (values) => {
       setManageJobsModalOpen(false);
+    },
+    [],
+  );
+
+  const onManageResourcesModalOpen = useCallback(
+    () => { setManageResourcesModalOpen(true); },
+    [],
+  );
+
+  const onManageResourcesClose = useCallback(
+    () => { setManageResourcesModalOpen(false); },
+    [],
+  );
+
+  const onResourcesChanged = useCallback(
+    (values) => {
+      setManageResourcesModalOpen(false);
     },
     [],
   );
@@ -203,7 +223,7 @@ const Project = () => {
             aria-haspopup="true"
             onClick={onToggle}
           >
-            Manage Resources
+            Manage
           </Button>
           <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
             {({ TransitionProps, placement }) => (
@@ -216,6 +236,7 @@ const Project = () => {
                     <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
                       <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
                       <MenuItem onClick={onManageJobsModalOpen}>Jobs</MenuItem>
+                      <MenuItem onClick={onManageResourcesModalOpen}>Resources</MenuItem>
                     </MenuList>
                   </ClickAwayListener>
                 </Paper>
@@ -270,6 +291,15 @@ const Project = () => {
           project={project}
           onClose={onManageJobsClose}
           onSubmit={onJobsChanged}
+        />
+      )}
+      {ManageResourcesModalOpen && (
+        <ManageResourcesModal
+          header="Manage Resources"
+          open={ManageResourcesModalOpen}
+          project={project}
+          onClose={onManageResourcesClose}
+          onSubmit={onResourcesChanged}
         />
       )}
     </Container>
