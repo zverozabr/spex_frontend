@@ -20,6 +20,19 @@ const initApi = () => {
 
 const baseUrl = '/jobs';
 
+const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
+
+const normalizeJob = (job) => {
+  let content;
+  try {
+    content = JSON.parse(job.content);
+  } catch(e) {
+    content = {};
+  }
+  content = isObject(content) ? content : {};
+  return { ...job, content };
+};
+
 const slice = createSlice({
   name: 'jobs',
   initialState,
@@ -31,17 +44,18 @@ const slice = createSlice({
 
     fetchJobsSuccess: (state, { payload: jobs }) => {
       stopFetching(state);
-      state.jobs = hash(jobs || [], 'id');
+      const normalizedJobs = jobs.map(normalizeJob);
+      state.jobs = hash(normalizedJobs || [], 'id');
     },
 
     updateJobSuccess: (state, { payload: job }) => {
       stopFetching(state);
-      state.jobs[job.id] = job;
+      state.jobs[job.id] = normalizeJob(job);
     },
 
     createJobSuccess: (state, { payload: job }) => {
       stopFetching(state);
-      state.jobs[job.id] = job;
+      state.jobs[job.id] = normalizeJob(job);
     },
 
     deleteJobSuccess(state, { payload: id }) {

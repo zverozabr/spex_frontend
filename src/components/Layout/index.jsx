@@ -204,7 +204,7 @@ const Layout = ({ children }) => {
               onChange={onProjectChange}
               $color="white"
             >
-              <Option value={none}>Select project</Option>
+              <Option value={none}>Select Project</Option>
               {Object.values(projects).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
             </Select>
           )}

@@ -7,26 +7,25 @@ import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modu
 
 import Button, { ButtonSizes, ButtonColors } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
-import { Field, Controls, Validators } from '+components/Form';
-import FormModal from '+components/FormModal';
 import Link from '+components/Link';
 import Table from '+components/Table';
 
 import ButtonsContainer from './components/ButtonsContainer';
 import CellButtonsContainer from './components/CellButtonsContainer';
 import Container from './components/Container';
+import JobFormModal from './components/JobFormModal';
 import Row from './components/Row';
 import SubComponent from './components/SubComponent';
 
-const fakeJob = {
-  name: 'fakeJob',
-  omeroIds: [ 1 ],
+const defaultJob = {
+  name: '',
+  omeroIds: [],
   content: {
-    start: { x: 0, y: 0 },
-    stop: { x: 512, y: 512 },
     c: 0,
     size: 20,
     slice: { x: 100, y: 100, margin: 31 },
+    start: { x: 0, y: 0 },
+    stop: { x: 512, y: 512 },
   },
 };
 
@@ -52,8 +51,9 @@ const Jobs = () => {
   );
 
   const onManageJobModalSubmit = useCallback(
-    (job) => {
-      const normalizedJob = { ...job, content: JSON.stringify(job.content) };
+    (values) => {
+      const omeroIds = values.omeroIds.map((el) => +(el.id || el));
+      const normalizedJob = { ...values, omeroIds, content: JSON.stringify(values.content) };
       if (normalizedJob.id) {
         dispatch(jobsActions.updateJob(normalizedJob));
       } else {
@@ -133,7 +133,7 @@ const Jobs = () => {
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
               variant="outlined"
-              onClick={() => onManageJobModalOpen(original)}
+              onClick={onManageJobModalOpen(original)}
             >
               Edit
             </Button>
@@ -142,7 +142,7 @@ const Jobs = () => {
         [original],
       ),
     }]),
-  [onDeleteJobModalOpen, onManageJobModalOpen],
+    [onDeleteJobModalOpen, onManageJobModalOpen],
   );
 
   useEffect(
@@ -171,7 +171,7 @@ const Jobs = () => {
     <Container>
       <Row>
         <ButtonsContainer>
-          <Button onClick={onManageJobModalOpen(fakeJob)}>
+          <Button onClick={onManageJobModalOpen(defaultJob)}>
             Add Job
           </Button>
         </ButtonsContainer>
@@ -185,27 +185,13 @@ const Jobs = () => {
       </Row>
 
       {jobToManage && (
-        <FormModal
+        <JobFormModal
           header={`${jobToManage.id ? 'Edit' : 'Add'} Job`}
           initialValues={jobToManage}
           onClose={onManageJobModalClose}
           onSubmit={onManageJobModalSubmit}
           open
-        >
-          <Field
-            name="name"
-            label="Name"
-            component={Controls.TextField}
-            validate={Validators.required}
-            required
-          />
-
-          <Field
-            name="omeroIds"
-            label="omeroIds"
-            component={Controls.TextField}
-          />
-        </FormModal>
+        />
       )}
 
       {jobToDelete && (
