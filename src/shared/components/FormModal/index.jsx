@@ -24,7 +24,7 @@ const FormModal = styled((props) => {
   } = props;
 
   const render = useCallback(
-    ({ handleSubmit, form, submitting, pristine }) => (
+    ({ handleSubmit, form, submitting }) => (
       <Modal
         className={className}
         open={open}
@@ -57,7 +57,7 @@ const FormModal = styled((props) => {
             <Button
               type="submit"
               color={ButtonColors.primary}
-              disabled={submitting || pristine}
+              disabled={submitting}
             >
               {submitButtonText}
             </Button>
