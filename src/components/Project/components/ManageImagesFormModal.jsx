@@ -14,7 +14,7 @@ import Row from './Row';
 
 const none = 'none';
 
-const FormModalManageImages = styled((props) => {
+const ManageImagesFormModal = styled((props) => {
   const {
     className,
     header,
@@ -33,18 +33,19 @@ const FormModalManageImages = styled((props) => {
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
-  const omeroDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
-  const omeroImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
-  const omeroThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
+  const omeroProjectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
+  const omeroDatasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
+  const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
 
   const options = useMemo(
-    () => (Object.keys(omeroThumbnails || {}).map((id) => ({ id, img: omeroThumbnails[id] }))),
-    [omeroThumbnails],
+    () => (Object.keys(omeroDatasetThumbnails || {}).map((id) => ({ id, img: omeroDatasetThumbnails[id] }))),
+    [omeroDatasetThumbnails],
   );
 
   const onProjectChange = useCallback(
     ({ target: { value } }) => {
       setOmeroProjectId(value);
+      setOmeroDatasetId(none);
     },
     [],
   );
@@ -97,17 +98,17 @@ const FormModalManageImages = styled((props) => {
 
   useEffect(
     () => {
-      if (!omeroImages?.length) {
+      if (!omeroDatasetImages?.length) {
         return undefined;
       }
 
-      const imageIds = omeroImages.map((item) => item.id);
+      const imageIds = omeroDatasetImages.map((item) => item.id);
       dispatch(omeroActions.fetchThumbnails({ groupId: omeroDatasetId, imageIds }));
       return () => {
         dispatch(omeroActions.clearThumbnails(omeroDatasetId));
       };
     },
-    [dispatch, omeroDatasetId, omeroImages],
+    [dispatch, omeroDatasetId, omeroDatasetImages],
   );
 
   return (
@@ -128,7 +129,7 @@ const FormModalManageImages = styled((props) => {
           onChange={onProjectChange}
           disabled={isOmeroFetching}
         >
-          <Option value={none}>Select project</Option>
+          <Option value={none}>Select Omero Project</Option>
           {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
         </Select>
 
@@ -138,8 +139,8 @@ const FormModalManageImages = styled((props) => {
           onChange={onDatasetChange}
           disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
         >
-          <Option value={none}>Select dataset</Option>
-          {omeroDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          <Option value={none}>Select Omero Dataset</Option>
+          {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
         </Select>
       </Row>
 
@@ -164,7 +165,7 @@ const FormModalManageImages = styled((props) => {
   }
 `;
 
-FormModalManageImages.propTypes = {
+ManageImagesFormModal.propTypes = {
   /**
    * Override or extend the styles applied to the component.
    */
@@ -203,7 +204,7 @@ FormModalManageImages.propTypes = {
   onSubmit: PropTypes.func,
 };
 
-FormModalManageImages.defaultProps = {
+ManageImagesFormModal.defaultProps = {
   className: '',
   header: '',
   initialValues: null,
@@ -214,4 +215,4 @@ FormModalManageImages.defaultProps = {
   onSubmit: () => {},
 };
 
-export default FormModalManageImages;
+export default ManageImagesFormModal;

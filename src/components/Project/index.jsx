@@ -18,7 +18,7 @@ import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
-import FormModalManageImages from './components/FormModalManageImages';
+import ManageImagesFormModal from './components/ManageImagesFormModal';
 import ManageJobsModal from './components/ManageJobsModal';
 import ManageResourcesModal from './components/ManageResourcesModal';
 import PipelineContainer from './components/PipelineContainer';
@@ -268,7 +268,7 @@ const Project = () => {
       </Row>
 
       {manageImagesModalOpen && (
-        <FormModalManageImages
+        <ManageImagesFormModal
           header="Manage Images"
           initialValues={{ ...project, omeroIds: normalizedThumbnails }}
           onClose={onManageImagesModalClose}
