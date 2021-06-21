@@ -161,20 +161,12 @@ const Layout = ({ children }) => {
     [],
   );
 
-  const projectLength = Object.keys(projects).length;
   useEffect(
     () => {
-      if (projectLength) {
-        return;
-      }
       dispatch(projectsActions.fetchProjects());
-    },
-    [dispatch, projectLength],
-  );
-
-  useEffect(
-    () => () => {
-      dispatch(projectsActions.clearProjects());
+      return () => {
+        dispatch(projectsActions.clearProjects());
+      };
     },
     [dispatch],
   );
@@ -204,7 +196,7 @@ const Layout = ({ children }) => {
           </IconButton>
           <Typography variant="h6"><Link to="/">Genentech</Link></Typography>
 
-          {projectLength > 0 && !isProjectsFetching && (
+          {Object.keys(projects).length > 0 && !isProjectsFetching && (
             <Select
               className={classes.projectSelect}
               defaultValue={none}
