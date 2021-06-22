@@ -23,6 +23,7 @@ const defaultJob = {
     c: 0,
     size: 20,
     slice: { x: 100, y: 100, margin: 31 },
+    segment: false,
     start: { x: 0, y: 0 },
     stop: { x: 512, y: 512 },
   },

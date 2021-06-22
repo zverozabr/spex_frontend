@@ -10,6 +10,7 @@ import { Field, Controls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
 
+import Col from './Col';
 import Group from './Group';
 import Row from './Row';
 
@@ -143,131 +144,154 @@ const JobFormModal = styled((props) => {
       onClose={onClose}
       onSubmit={onSubmit}
     >
-      <Field
-        name="name"
-        label="Name"
-        component={Controls.TextField}
-        validate={Validators.required}
-        required
-      />
-
-      <Row>
+      <Col>
         <Field
-          name="content.c"
-          label="Channel"
+          name="name"
+          label="Name"
           component={Controls.TextField}
-          InputProps={{
-            inputProps: {
-              type: 'number',
-              min: 0,
-            },
-          }}
           validate={Validators.required}
           required
         />
 
-        <Field
-          name="content.size"
-          label="Size"
-          component={Controls.TextField}
-          InputProps={{
-            inputProps: {
-              type: 'number',
-              min: 1, max: 25,
-            },
-          }}
-          validate={Validators.required}
-          required
-        />
-      </Row>
+        <Group>
+          <Row>
+            <Field
+              name="content.c"
+              label="Channel"
+              component={Controls.TextField}
+              InputProps={{
+              inputProps: {
+                type: 'number',
+                min: 0,
+              },
+              }}
+              validate={Validators.required}
+              required
+            />
 
-      <Group $label="Slice*">
-        <Row>
-          <Field
-            name="content.slice.x"
-            label="X"
-            component={Controls.TextField}
-            InputProps={{
+            <Field
+              name="content.size"
+              label="Size"
+              component={Controls.TextField}
+              InputProps={{
+              inputProps: {
+                type: 'number',
+                min: 1, max: 25,
+              },
+              }}
+              validate={Validators.required}
+              required
+            />
+          </Row>
+        </Group>
+
+        <Group $label="Slice*">
+          <Row>
+            <Field
+              name="content.slice.x"
+              label="X"
+              component={Controls.TextField}
+              InputProps={{
               inputProps: {
                 type: 'number',
                 min: 1,
               },
-            }}
-            validate={Validators.required}
-            required
-          />
+              }}
+              validate={Validators.required}
+              required
+            />
 
-          <Field
-            name="content.slice.y"
-            label="Y"
-            component={Controls.TextField}
-            InputProps={{
+            <Field
+              name="content.slice.y"
+              label="Y"
+              component={Controls.TextField}
+              InputProps={{
               inputProps: {
                 type: 'number',
                 min: 1,
               },
-            }}
-            validate={Validators.required}
-            required
-          />
+              }}
+              validate={Validators.required}
+              required
+            />
 
-          <Field
-            name="content.slice.margin"
-            label="Margin"
-            component={Controls.TextField}
-            InputProps={{
+            <Field
+              name="content.slice.margin"
+              label="Margin"
+              component={Controls.TextField}
+              InputProps={{
               inputProps: {
                 type: 'number',
                 min: 1,
               },
-            }}
-            validate={Validators.required}
-            required
-          />
-        </Row>
-      </Group>
+              }}
+              validate={Validators.required}
+              required
+            />
+          </Row>
+        </Group>
+      </Col>
 
-      <Group $label="Images*">
-        <Row>
-          <Select
-            defaultValue={none}
-            value={omeroProjectId}
-            onChange={onProjectChange}
-            disabled={isOmeroFetching}
-          >
-            <Option value={none}>Select Omero Project</Option>
-            {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-          </Select>
+      <Col>
+        <Group $label="Images*">
+          <Row>
+            <Select
+              defaultValue={none}
+              value={omeroProjectId}
+              onChange={onProjectChange}
+              disabled={isOmeroFetching}
+            >
+              <Option value={none}>Select Omero Project</Option>
+              {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+            </Select>
 
-          <Select
-            defaultValue={none}
-            value={omeroDatasetId}
-            onChange={onDatasetChange}
-            disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
-          >
-            <Option value={none}>Select Omero Dataset</Option>
-            {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-          </Select>
-        </Row>
+            <Select
+              defaultValue={none}
+              value={omeroDatasetId}
+              onChange={onDatasetChange}
+              disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
+            >
+              <Option value={none}>Select Omero Dataset</Option>
+              {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+            </Select>
+          </Row>
 
-        <Row>
-          <Field
-            name="omeroIds"
-            label="Omero IDs"
-            component={Controls.TransferList}
-            options={options}
-          />
-        </Row>
-      </Group>
+          <Row>
+            <Field
+              name="omeroIds"
+              label="Omero IDs"
+              component={Controls.TransferList}
+              options={options}
+            />
+          </Row>
+        </Group>
+      </Col>
     </FormModal>
   );
 })`
+  .modal-content {
+    width: 80%;
+    min-width: 840px;
+    max-width: 1200px;
+  }
+  
+  .modal-body {
+    display: flex;
+    flex-direction: row;
+  }
+
+  ${Col} + ${Col} {
+    margin-left: 20px;
+  }
+
   ${Row} + ${Row},
   ${Row} + ${Group},
   ${Group} + ${Row},
   ${Group} + ${Group},
   ${Row} + .MuiFormControl-root,
-  .MuiFormControl-root + ${Row} {
+  ${Group} + .MuiFormControl-root,
+  .MuiFormControl-root + ${Row},
+  .MuiFormControl-root + ${Group} {
     margin-top: 20px;
   }
 

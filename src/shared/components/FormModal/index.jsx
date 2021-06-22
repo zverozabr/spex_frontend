@@ -19,13 +19,16 @@ const FormModal = styled((props) => {
     closeButtonText,
     submitButtonText,
     open,
+    modalProps,
     onClose,
     onSubmit,
+    ...tail
   } = props;
 
   const render = useCallback(
     ({ handleSubmit, form, submitting }) => (
       <Modal
+        {...modalProps}
         className={className}
         open={open}
         onClose={(event) => {
@@ -65,11 +68,12 @@ const FormModal = styled((props) => {
         </FormRenderer>
       </Modal>
     ),
-    [children, className, closeButtonText, header, onClose, open, submitButtonText],
+    [children, className, closeButtonText, header, onClose, open, submitButtonText, modalProps],
   );
 
   return (
     <Form
+      {...tail}
       initialValues={initialValues}
       render={render}
       onSubmit={onSubmit}
@@ -113,6 +117,10 @@ FormModal.propTypes = {
    */
   open: PropTypes.bool,
   /**
+   * Modal props.
+   */
+  modalProps: PropTypes.shape({}),
+  /**
    * Callback fired when the component requests to be closed. .
    */
   onClose: PropTypes.func,
@@ -130,6 +138,7 @@ FormModal.defaultProps = {
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
   open: false,
+  modalProps: null,
   onClose: () => {},
   onSubmit: () => {},
 };

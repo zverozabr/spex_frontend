@@ -1,6 +1,9 @@
+import classNames from 'classnames';
 import styled from 'styled-components';
 
-export default styled.div`
+export default styled.div.attrs((props) => ({
+  className: classNames('modal-body', props.className || ''),
+}))`
   display: flex;
   flex-direction: column;
 
