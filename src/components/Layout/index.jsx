@@ -36,6 +36,8 @@ const drawerWidth = 240;
 const useStyles = makeStyles((theme) => ({
   root: {
     display: 'flex',
+    width: '100%',
+    position: 'relative',
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -261,6 +263,7 @@ const Layout = ({ children }) => {
           </ListItem>
         </List>
       </Drawer>
+
       <main className={classes.content}>
         <div className={classes.toolbar} />
         {children}

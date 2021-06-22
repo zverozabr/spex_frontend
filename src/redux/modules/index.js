@@ -2,7 +2,6 @@ import { all } from 'redux-saga/effects';
 import jobsSlice from './jobs';
 import omeroSlice from './omero';
 import pipelinesSlice from './pipelines';
-import progress from './progress';
 import projectsSlice from './projects';
 import authSlice from './users/auth';
 
@@ -13,7 +12,6 @@ const nestedSlices = [];
 // Put modules whose reducers you want in the root tree in this array.
 const rootSlices = [
   authSlice,
-  progress,
   omeroSlice,
   projectsSlice,
   pipelinesSlice,
