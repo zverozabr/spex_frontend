@@ -41,7 +41,7 @@ const Jobs = () => {
   const [ refresher, setRefresher ] = useState(null);
 
   const onManageJobModalOpen = useCallback(
-    (job) => () => { setJobToManage(job); },
+    (job) => { setJobToManage(job); },
     [],
   );
 
@@ -116,8 +116,8 @@ const Jobs = () => {
     }, {
       id: 'actions',
       Header: 'Actions',
-      minWidth: 80,
-      maxWidth: 80,
+      minWidth: 110,
+      maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
           <CellButtonsContainer>
@@ -133,9 +133,20 @@ const Jobs = () => {
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
               variant="outlined"
-              onClick={onManageJobModalOpen(original)}
+              onClick={() => onManageJobModalOpen(original)}
             >
               Edit
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => {
+                const { id, ...copy } = original;
+                onManageJobModalOpen(copy);
+              }}
+            >
+              Copy
             </Button>
           </CellButtonsContainer>
         ),
@@ -170,7 +181,7 @@ const Jobs = () => {
   return (
     <Container>
       <ButtonsContainer>
-        <Button onClick={onManageJobModalOpen(defaultJob)}>
+        <Button onClick={() => onManageJobModalOpen(defaultJob)}>
           Add Job
         </Button>
       </ButtonsContainer>
