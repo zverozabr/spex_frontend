@@ -14,7 +14,6 @@ import ButtonsContainer from './components/ButtonsContainer';
 import CellButtonsContainer from './components/CellButtonsContainer';
 import Container from './components/Container';
 import JobFormModal from './components/JobFormModal';
-import Row from './components/Row';
 import SubComponent from './components/SubComponent';
 
 const defaultJob = {
@@ -169,20 +168,18 @@ const Jobs = () => {
 
   return (
     <Container>
-      <Row>
-        <ButtonsContainer>
-          <Button onClick={onManageJobModalOpen(defaultJob)}>
-            Add Job
-          </Button>
-        </ButtonsContainer>
+      <ButtonsContainer>
+        <Button onClick={onManageJobModalOpen(defaultJob)}>
+          Add Job
+        </Button>
+      </ButtonsContainer>
 
-        <Table
-          columns={columns}
-          data={Object.values(jobs)}
-          SubComponent={SubComponent}
-          allowRowSelection
-        />
-      </Row>
+      <Table
+        columns={columns}
+        data={Object.values(jobs)}
+        SubComponent={SubComponent}
+        allowRowSelection
+      />
 
       {jobToManage && (
         <JobFormModal

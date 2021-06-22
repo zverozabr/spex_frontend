@@ -151,35 +151,83 @@ const JobFormModal = styled((props) => {
         required
       />
 
-      <Field
-        name="с"
-        label="Channel"
-        component={Controls.TextField}
-        InputProps={{
-          inputProps: {
-            type: 'number',
-            min: 0, max: 25,
-          },
-        }}
-        validate={Validators.required}
-        required
-      />
+      <Row>
+        <Field
+          name="content.c"
+          label="Channel"
+          component={Controls.TextField}
+          InputProps={{
+            inputProps: {
+              type: 'number',
+              min: 0,
+            },
+          }}
+          validate={Validators.required}
+          required
+        />
 
-      <Field
-        name="size"
-        label="Size"
-        component={Controls.TextField}
-        InputProps={{
-          inputProps: {
-            type: 'number',
-            min: 1, max: 25,
-          },
-        }}
-        validate={Validators.required}
-        required
-      />
+        <Field
+          name="content.size"
+          label="Size"
+          component={Controls.TextField}
+          InputProps={{
+            inputProps: {
+              type: 'number',
+              min: 1, max: 25,
+            },
+          }}
+          validate={Validators.required}
+          required
+        />
+      </Row>
 
-      <Group>
+      <Group $label="Slice*">
+        <Row>
+          <Field
+            name="content.slice.x"
+            label="X"
+            component={Controls.TextField}
+            InputProps={{
+              inputProps: {
+                type: 'number',
+                min: 1,
+              },
+            }}
+            validate={Validators.required}
+            required
+          />
+
+          <Field
+            name="content.slice.y"
+            label="Y"
+            component={Controls.TextField}
+            InputProps={{
+              inputProps: {
+                type: 'number',
+                min: 1,
+              },
+            }}
+            validate={Validators.required}
+            required
+          />
+
+          <Field
+            name="content.slice.margin"
+            label="Margin"
+            component={Controls.TextField}
+            InputProps={{
+              inputProps: {
+                type: 'number',
+                min: 1,
+              },
+            }}
+            validate={Validators.required}
+            required
+          />
+        </Row>
+      </Group>
+
+      <Group $label="Images*">
         <Row>
           <Select
             defaultValue={none}
@@ -214,7 +262,12 @@ const JobFormModal = styled((props) => {
     </FormModal>
   );
 })`
-  ${Row} + ${Row} {
+  ${Row} + ${Row},
+  ${Row} + ${Group},
+  ${Group} + ${Row},
+  ${Group} + ${Group},
+  ${Row} + .MuiFormControl-root,
+  .MuiFormControl-root + ${Row} {
     margin-top: 20px;
   }
 

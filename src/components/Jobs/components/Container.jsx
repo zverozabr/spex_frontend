@@ -8,4 +8,8 @@ export default styled.div`
 
   box-sizing: border-box;
   overflow: hidden;
+
+  > div + div {
+    margin-top: 14px;
+  }
 `;
