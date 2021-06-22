@@ -117,7 +117,7 @@ const TransferList = styled((props) => {
             />
           }
           title={title}
-          subheader={`${numberOfChecked(items)}/${items.length} selected`}
+          subheader={`${numberOfChecked(items)}/${items.length}`}
         />
         <Divider />
         <List dense component="div" role="list">
@@ -166,7 +166,7 @@ const TransferList = styled((props) => {
         {customList(leftTitle, fixedOptions)}
       </Grid>
 
-      <Grid item>
+      <Grid item zeroMinWidth>
         <Grid
           className="buttons-container"
           direction="column"
@@ -219,6 +219,21 @@ const TransferList = styled((props) => {
       height: 100%;
       max-height: 100%;
       overflow: hidden;
+      
+      .MuiCardHeader-root {
+        padding: 8px;
+
+        .MuiCardHeader-content {
+          display: flex;
+          flex-direction: row;
+          span {
+            white-space: nowrap;
+          }
+          span + span {
+            margin-left: auto;
+          }
+        }
+      }
     }
     
     .MuiList-root {
@@ -227,17 +242,33 @@ const TransferList = styled((props) => {
       max-height: 100%;
 
       ${ScrollBarMixin};
-    }
 
-    .MuiListItemIcon-root {
-      min-width: unset;
-      margin-right: 16px;
+      .MuiListItem-root {
+        padding: 2px 8px;
+      }
+
+      .MuiListItemIcon-root {
+        min-width: unset;
+        margin-right: 16px;
+      }
     }
+  }
+  
+  .MuiGrid-zeroMinWidth {
+    overflow: hidden;
+    min-width: 60px;
+    max-width: 60px;
+    padding: 4px;
   }
 
   .buttons-container {
     ${Button} + ${Button} {
       margin-top: 8px;
+    }
+
+    ${Button} {
+      min-width: unset;
+      max-width: 100%;
     }
   }
 
