@@ -230,6 +230,31 @@ const JobFormModal = styled((props) => {
             />
           </Row>
         </Group>
+
+        <Group>
+          <label>
+            <Field
+              name="content.segment"
+              component={Controls.Radio}
+              type="radio"
+              value="true" // eslint-disable-line react/jsx-boolean-value
+              parse={(val) => val === 'true'}
+              format={(val) => String(val || false)}
+            />{' '}
+            One Picture
+          </label>
+          <label>
+            <Field
+              name="content.segment"
+              component={Controls.Radio}
+              type="radio"
+              value="false"
+              parse={(val) => val === 'true'}
+              format={(val) => String(val || false)}
+            />{' '}
+            Multi Picture
+          </label>
+        </Group>
       </Col>
 
       <Col>
@@ -256,14 +281,14 @@ const JobFormModal = styled((props) => {
             </Select>
           </Row>
 
-          <Row>
-            <Field
-              name="omeroIds"
-              label="Omero IDs"
-              component={Controls.TransferList}
-              options={options}
-            />
-          </Row>
+          <Field
+            name="omeroIds"
+            label="Omero IDs"
+            component={Controls.TransferList}
+            options={options}
+            validate={Validators.required}
+            required
+          />
         </Group>
       </Col>
     </FormModal>
@@ -296,8 +321,8 @@ const JobFormModal = styled((props) => {
   }
 
   .transfer-list {
-    height: 300px;
-    margin: 0 auto;
+    height: 100%;
+    margin: 20px auto 0 auto;
   }
 `;
 
