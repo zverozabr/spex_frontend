@@ -38,11 +38,11 @@ const FormModal = styled((props) => {
       >
         <FormRenderer
           onSubmit={async (event) => {
-              const error = await handleSubmit(event);
-              if (error) {
-                return error;
-              }
-              form.reset();
+            const error = await handleSubmit(event);
+            if (error) {
+              return error;
+            }
+            form.reset();
           }}
         >
           <ModalHeader>{header}</ModalHeader>

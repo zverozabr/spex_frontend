@@ -6,7 +6,7 @@ import styled from 'styled-components';
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
-import { Field, Controls, Validators } from '+components/Form';
+import { Field, Controls, Validators, FormSpy } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
 
@@ -32,6 +32,7 @@ const JobFormModal = styled((props) => {
 
   const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
+  const [formValues, setFormValues] = useState({});
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
@@ -62,6 +63,15 @@ const JobFormModal = styled((props) => {
   const onDatasetChange = useCallback(
     ({ target: { value } }) => {
       setOmeroDatasetId(value);
+    },
+    [],
+  );
+
+  const onChange = useCallback(
+    ({ values }) => {
+      // Workaround for FormSpy - Cannot update a component while rendering a different component
+      // @see: https://github.com/final-form/react-final-form/issues/809
+      setTimeout(() => setFormValues(values), 0);
     },
     [],
   );
@@ -144,6 +154,11 @@ const JobFormModal = styled((props) => {
       onClose={onClose}
       onSubmit={onSubmit}
     >
+      <FormSpy
+        subscription={{ values: true }}
+        onChange={onChange}
+      />
+
       <Col>
         <Field
           name="name"
@@ -234,7 +249,7 @@ const JobFormModal = styled((props) => {
         <Group>
           <label>
             <Field
-              name="content.segment"
+              name="single"
               component={Controls.Radio}
               type="radio"
               value="true" // eslint-disable-line react/jsx-boolean-value
@@ -245,7 +260,7 @@ const JobFormModal = styled((props) => {
           </label>
           <label>
             <Field
-              name="content.segment"
+              name="single"
               component={Controls.Radio}
               type="radio"
               value="false"
@@ -255,10 +270,23 @@ const JobFormModal = styled((props) => {
             Multi Picture
           </label>
         </Group>
+
+        {formValues.single && (
+          <Group>
+            <label>
+              <Field
+                name="content.segment"
+                component={Controls.Checkbox}
+                type="checkbox"
+              />{' '}
+              Segment
+            </label>
+          </Group>
+        )}
       </Col>
 
       <Col>
-        <Group $label="Images*">
+        <Group $label="Images" $height="100%">
           <Row>
             <Select
               defaultValue={none}
@@ -281,14 +309,16 @@ const JobFormModal = styled((props) => {
             </Select>
           </Row>
 
-          <Field
-            name="omeroIds"
-            label="Omero IDs"
-            component={Controls.TransferList}
-            options={options}
-            validate={Validators.required}
-            required
-          />
+          {!formValues.single && (
+            <Field
+              name="omeroIds"
+              label="Omero IDs"
+              component={Controls.TransferList}
+              options={options}
+              // validate={Validators.required}
+              // required
+            />
+          )}
         </Group>
       </Col>
     </FormModal>
@@ -303,6 +333,7 @@ const JobFormModal = styled((props) => {
   .modal-body {
     display: flex;
     flex-direction: row;
+    min-height: 540px;
   }
 
   ${Col} + ${Col} {

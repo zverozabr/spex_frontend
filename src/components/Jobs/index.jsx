@@ -49,7 +49,8 @@ const Jobs = () => {
   );
 
   const onManageJobModalSubmit = useCallback(
-    (values) => {
+    // Omit single field
+    ({ single, ...values }) => {
       const omeroIds = values.omeroIds.map((el) => +(el.id || el));
       const normalizedJob = { ...values, omeroIds, content: JSON.stringify(values.content) };
       if (normalizedJob.id) {
@@ -188,7 +189,6 @@ const Jobs = () => {
         columns={columns}
         data={Object.values(jobs)}
         SubComponent={SubComponent}
-        allowRowSelection
       />
 
       {jobToManage && (

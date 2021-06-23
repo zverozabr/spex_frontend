@@ -122,7 +122,6 @@ const Projects = () => {
       <Table
         columns={columns}
         data={Object.values(projects)}
-        allowRowSelection
       />
 
       {projectToManage && (

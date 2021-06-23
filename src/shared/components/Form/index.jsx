@@ -1,6 +1,6 @@
 import { FormControlLabel as Label } from '@material-ui/core';
 import { TextField as TextFieldOrigin, Checkbox, Radio, Select } from 'final-form-material-ui';
-import { Form, Field } from 'react-final-form';
+import { Form, Field, FormSpy } from 'react-final-form';
 import styled from 'styled-components';
 
 import Slider from '+components/Slider';
@@ -29,6 +29,7 @@ export {
   Form as default,
   Field,
   FormRenderer,
+  FormSpy,
   Controls,
   Validators,
   Normalizers,
