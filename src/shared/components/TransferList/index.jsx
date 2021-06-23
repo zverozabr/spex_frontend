@@ -40,8 +40,10 @@ const TransferList = styled((props) => {
     input,
     leftTitle,
     rightTitle,
+    meta,
   } = props;
 
+  const invalid = meta.error && meta.touched;
   const value = input?.value || props.value;
   const onChange = input.onChange || props.onChange;
 
@@ -152,21 +154,18 @@ const TransferList = styled((props) => {
 
   return (
     <Grid
-      className={classNames('transfer-list', className || '')}
+      className={classNames('transfer-list', className || '', { invalid })}
       spacing={3}
       justify="center"
       alignItems="center"
-      wrap="nowrap"
+      // wrap="nowrap"
       container
     >
-      <Grid
-        className={classNames('list', 'list-left')}
-        item
-      >
+      <Grid className={classNames('list', 'list-left')} xs={5} item>
         {customList(leftTitle, fixedOptions)}
       </Grid>
 
-      <Grid item zeroMinWidth>
+      <Grid item xs={2}>
         <Grid
           className="buttons-container"
           direction="column"
@@ -194,17 +193,21 @@ const TransferList = styled((props) => {
         </Grid>
       </Grid>
 
-      <Grid
-        className={classNames('list', 'list-right')}
-        item
-      >
+      <Grid className={classNames('list', 'list-right')} xs={5} item>
         {customList(rightTitle, value)}
       </Grid>
+
+      {meta.error && meta.touched && (
+        <Grid className="error" xs={12} item>
+          <p className="MuiFormHelperText-root MuiFormHelperText-contained Mui-error">{meta.error}</p>
+        </Grid>
+      )}
     </Grid>
   );
 })`
   width: 100%;
   height: 100%;
+  position: relative;
 
   .list {
     width: 100%;
@@ -219,7 +222,7 @@ const TransferList = styled((props) => {
       height: 100%;
       max-height: 100%;
       overflow: hidden;
-      
+
       .MuiCardHeader-root {
         padding: 8px;
 
@@ -235,7 +238,7 @@ const TransferList = styled((props) => {
         }
       }
     }
-    
+
     .MuiList-root {
       overflow-y: auto;
       height: 100%;
@@ -253,7 +256,7 @@ const TransferList = styled((props) => {
       }
     }
   }
-  
+
   .MuiGrid-zeroMinWidth {
     overflow: hidden;
     min-width: 60px;
@@ -272,6 +275,14 @@ const TransferList = styled((props) => {
     }
   }
 
+  &.invalid .list {
+    border: 1px solid #f44336;
+    border-radius: 4px;
+  }
+
+  .error {
+    padding: unset;
+  }
 `;
 
 TransferList.propTypes = {
