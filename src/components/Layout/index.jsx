@@ -29,6 +29,9 @@ import Select, { Option } from '+components/Select';
 import Typography from '+components/Typography';
 import { getFromStorage, saveToStorage } from '+utils/localStorage';
 
+import Body from './components/Body';
+import Container from './components/Container';
+
 const none = 'none';
 
 const drawerWidth = 240;
@@ -38,6 +41,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     width: '100%',
     position: 'relative',
+    height: '100%',
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -92,9 +96,13 @@ const useStyles = makeStyles((theme) => ({
     // necessary for content to be below app bar
     ...theme.mixins.toolbar,
   },
-  content: {
+  body: {
     flexGrow: 1,
+    marginTop: '64px',
     padding: theme.spacing(3),
+    height: 'calc(100% - 64px)',
+    overflowX: 'hidden',
+    overflowY: 'scroll',
   },
   projectSelect: {
     width: '300px !important',
@@ -174,7 +182,7 @@ const Layout = ({ children }) => {
   );
 
   return (
-    <div className={classes.root}>
+    <Container className={classes.root}>
       <CssBaseline />
       <Progress />
 
@@ -264,11 +272,10 @@ const Layout = ({ children }) => {
         </List>
       </Drawer>
 
-      <main className={classes.content}>
-        <div className={classes.toolbar} />
+      <Body className={classes.body}>
         {children}
-      </main>
-    </div>
+      </Body>
+    </Container>
   );
 };
 

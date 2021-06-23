@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { Fragment, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import PathNames from '@/models/PathNames';
@@ -10,12 +10,9 @@ import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import { Field, Controls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Link from '+components/Link';
-import Table from '+components/Table';
+import Table, { ButtonsCell } from '+components/Table';
 
 import ButtonsContainer from './components/ButtonsContainer';
-import CellButtonsContainer from './components/CellButtonsContainer';
-import Container from './components/Container';
-import Row from './components/Row';
 
 const Projects = () => {
   const dispatch = useDispatch();
@@ -89,7 +86,7 @@ const Projects = () => {
       maxWidth: 80,
       Cell: ({ row: { original } }) => useMemo(
         () => (
-          <CellButtonsContainer>
+          <ButtonsCell>
             <Button
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
@@ -106,7 +103,7 @@ const Projects = () => {
             >
               Edit
             </Button>
-          </CellButtonsContainer>
+          </ButtonsCell>
         ),
         [original],
       ),
@@ -115,20 +112,18 @@ const Projects = () => {
   );
 
   return (
-    <Container>
-      <Row>
-        <ButtonsContainer>
-          <Button onClick={() => onManageProjectModalOpen({})}>
-            Add Project
-          </Button>
-        </ButtonsContainer>
+    <Fragment>
+      <ButtonsContainer>
+        <Button onClick={() => onManageProjectModalOpen({})}>
+          Add Project
+        </Button>
+      </ButtonsContainer>
 
-        <Table
-          columns={columns}
-          data={Object.values(projects)}
-          allowRowSelection
-        />
-      </Row>
+      <Table
+        columns={columns}
+        data={Object.values(projects)}
+        allowRowSelection
+      />
 
       {projectToManage && (
         <FormModal
@@ -165,7 +160,7 @@ const Projects = () => {
           open
         />
       )}
-    </Container>
+    </Fragment>
   );
 };
 

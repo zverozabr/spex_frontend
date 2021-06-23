@@ -8,16 +8,12 @@ import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modu
 import { actions as omeroActions } from '@/redux/modules/omero';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
-import Link from '+components/Link';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Select, { Option } from '+components/Select';
-import Table from '+components/Table';
-import SubComponent from './SubComponent';
-import CellButtonsContainer from './CellButtonsContainer';
-
+import Table, { ButtonsCell } from '+components/Table';
 
 import Row from './Row';
-
+import SubComponent from './SubComponent';
 
 const none = 'none';
 
@@ -30,18 +26,15 @@ const ManageJobsModal = styled((props) => {
     submitButtonText,
     onClose,
     open,
-    onSubmit
+    onSubmit,
   } = props;
 
   const dispatch = useDispatch();
 
-
   const [value] = useState([]);
-
 
   const isJobsFetching = useSelector(jobsSelectors.isFetching);
   const jobs = useSelector(jobsSelectors.getJobs);
-
 
   const columns = useMemo(
     () => ([{
@@ -81,7 +74,7 @@ const ManageJobsModal = styled((props) => {
       maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
-          <CellButtonsContainer>
+          <ButtonsCell>
             <Button
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
@@ -104,7 +97,7 @@ const ManageJobsModal = styled((props) => {
             >
               Copy
             </Button>
-          </CellButtonsContainer>
+          </ButtonsCell>
         ),
         [original],
         ),
@@ -130,7 +123,6 @@ const ManageJobsModal = styled((props) => {
     },
     [dispatch, onClose, project],
   );
-
 
   useEffect(
     () => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { Fragment, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import PathNames from '@/models/PathNames';
@@ -8,11 +8,9 @@ import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modu
 import Button, { ButtonSizes, ButtonColors } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import Link from '+components/Link';
-import Table from '+components/Table';
+import Table, { ButtonsCell } from '+components/Table';
 
 import ButtonsContainer from './components/ButtonsContainer';
-import CellButtonsContainer from './components/CellButtonsContainer';
-import Container from './components/Container';
 import JobFormModal from './components/JobFormModal';
 import SubComponent from './components/SubComponent';
 
@@ -120,7 +118,7 @@ const Jobs = () => {
       maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
-          <CellButtonsContainer>
+          <ButtonsCell>
             <Button
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
@@ -148,7 +146,7 @@ const Jobs = () => {
             >
               Copy
             </Button>
-          </CellButtonsContainer>
+          </ButtonsCell>
         ),
         [original],
       ),
@@ -179,7 +177,7 @@ const Jobs = () => {
   );
 
   return (
-    <Container>
+    <Fragment>
       <ButtonsContainer>
         <Button onClick={() => onManageJobModalOpen(defaultJob)}>
           Add Job
@@ -212,7 +210,7 @@ const Jobs = () => {
           open
         />
       )}
-    </Container>
+    </Fragment>
   );
 };
 

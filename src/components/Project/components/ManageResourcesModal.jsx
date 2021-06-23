@@ -4,20 +4,17 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
-import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 import { actions as omeroActions } from '@/redux/modules/omero';
+import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import Link from '+components/Link';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Select, { Option } from '+components/Select';
-import Table from '+components/Table';
-import SubComponent from './SubComponent';
-import CellButtonsContainer from './CellButtonsContainer';
-
+import Table, { ButtonsCell } from '+components/Table';
 
 import Row from './Row';
-
+import SubComponent from './SubComponent';
 
 const none = 'none';
 
@@ -30,7 +27,7 @@ const ManageResourcesModal = styled((props) => {
     submitButtonText,
     onClose,
     open,
-    onSubmit
+    onSubmit,
   } = props;
 
   const dispatch = useDispatch();
@@ -38,10 +35,8 @@ const ManageResourcesModal = styled((props) => {
 
   const [value] = useState([]);
 
-
   const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
   const resources = useSelector(resourcesSelectors.getResources);
-
 
   const columns = useMemo(
     () => ([
@@ -69,7 +64,7 @@ const ManageResourcesModal = styled((props) => {
       maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
-          <CellButtonsContainer>
+          <ButtonsCell>
             <Button
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
@@ -92,7 +87,7 @@ const ManageResourcesModal = styled((props) => {
             >
               Copy
             </Button>
-          </CellButtonsContainer>
+          </ButtonsCell>
         ),
         [original],
         ),
