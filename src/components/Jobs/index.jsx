@@ -54,8 +54,6 @@ const Jobs = () => {
     (values) => {
       const omeroIds = values.omeroIds.map((el) => +(el.id || el));
       const normalizedJob = { ...values, omeroIds, content: JSON.stringify(values.content) };
-      console.log(normalizedJob);
-      return;
       if (normalizedJob.id) {
         dispatch(jobsActions.updateJob(normalizedJob));
       } else {
@@ -88,7 +86,7 @@ const Jobs = () => {
     () => ([{
       id: 'status',
       accessor: ({ tasks }) => {
-        if (!tasks.length) {
+        if (!tasks?.length) {
           return undefined;
         }
         const sum = tasks.reduce((acc, el) => acc + el.status, 0);
