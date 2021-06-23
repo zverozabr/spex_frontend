@@ -58,8 +58,8 @@ const Table = (props) => {
         groupBy,
         data,
         noDataText,
-        disableFilters,
-        hideHeader,
+        showHeader,
+        showFilters,
         showFooter,
         doubleRowSize,
         allowRowSelection,
@@ -186,7 +186,7 @@ const Table = (props) => {
             defaultColumn,
             filterTypes,
             sortTypes,
-            disableFilters,
+            disableFilters: !showFilters,
             autoResetFilters: false,
             autoResetSortBy: false,
             onCellValueChange,
@@ -409,7 +409,7 @@ const Table = (props) => {
             className='rt-table'
             {...getTableProps(getUserTableProps || {})}
           >
-            {!hideHeader && <Header {...headerProps} />}
+            {showHeader && <Header {...headerProps} />}
             <Body {...bodyProps} />
             {showFooter && <Footer {...footerProps} />}
           </TableContainer>
@@ -462,13 +462,13 @@ const propTypes = {
      */
     noDataText: PropTypes.string,
     /**
+     * If true, header will be displayed.
+     */
+    showHeader: PropTypes.bool,
+    /**
      * If true, column filters will be disabled.
      */
-    disableFilters: PropTypes.bool,
-    /**
-     * If true, header will be hidden.
-     */
-    hideHeader: PropTypes.bool,
+    showFilters: PropTypes.bool,
     /**
      * If true, footer will be displayed.
      */
@@ -596,8 +596,8 @@ const defaultProps = {
     groupBy: [],
     data: [],
     noDataText: 'No rows found',
-    disableFilters: true,
-    hideHeader: false,
+    showHeader: true,
+    showFilters: false,
     showFooter: false,
     doubleRowSize: false,
     allowRowSelection: false,
