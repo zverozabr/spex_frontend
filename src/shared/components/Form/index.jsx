@@ -7,7 +7,8 @@ import Slider from '+components/Slider';
 import TransferList from '+components/TransferList';
 
 import FormRenderer from './components/FormRenderer';
-import Normalizers from './utils/Normalizers';
+import WhenFieldChanges from './components/WhenFieldChanges';
+import Parsers from './utils/Parsers';
 import Validators from './utils/Validators';
 
 const TextField = styled(TextFieldOrigin).attrs((props) => ({
@@ -29,8 +30,9 @@ export {
   Form as default,
   Field,
   FormRenderer,
+  WhenFieldChanges,
   FormSpy,
   Controls,
   Validators,
-  Normalizers,
+  Parsers,
 };
