@@ -6,6 +6,7 @@ import { actions as authActions, selectors as authSelectors } from '@/redux/modu
 
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Field, FormRenderer, Controls, Validators } from '+components/Form';
+import Progress from '+components/Progress';
 
 import Alert from './components/Alert';
 import Container from './components/Container';
@@ -71,6 +72,7 @@ const Auth = () => {
 
   return (
     <Container>
+      <Progress />
       <Form
         onSubmit={onLogin}
         render={render}
