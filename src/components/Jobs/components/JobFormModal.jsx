@@ -6,7 +6,10 @@ import styled from 'styled-components';
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
-import { Field, Controls, Validators, FormSpy } from '+components/Form';
+import {
+  Field, Controls, Validators,
+  Parsers, FormSpy, WhenFieldChanges,
+} from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
 
@@ -71,7 +74,7 @@ const JobFormModal = styled((props) => {
     ({ values }) => {
       // Workaround for FormSpy - Cannot update a component while rendering a different component
       // @see: https://github.com/final-form/react-final-form/issues/809
-      setTimeout(() => setFormValues(values), 0);
+      setTimeout(() => { setFormValues(values); }, 0);
     },
     [],
   );
@@ -159,13 +162,54 @@ const JobFormModal = styled((props) => {
         onChange={onChange}
       />
 
+      <WhenFieldChanges
+        field="single"
+        becomes={true} //eslint-disable-line react/jsx-boolean-value
+        set="omeroIds"
+        to={[]}
+      />
+
+      <WhenFieldChanges
+        field="single"
+        becomes={false}
+        set="content.segment"
+        to={false}
+      />
+
+      <WhenFieldChanges
+        field="content.segment"
+        becomes={false}
+        set="content.start.x"
+        to={undefined}
+      />
+
+      <WhenFieldChanges
+        field="content.segment"
+        becomes={false}
+        set="content.start.y"
+        to={undefined}
+      />
+
+      <WhenFieldChanges
+        field="content.segment"
+        becomes={false}
+        set="content.stop.x"
+        to={undefined}
+      />
+
+      <WhenFieldChanges
+        field="content.segment"
+        becomes={false}
+        set="content.stop.y"
+        to={undefined}
+      />
+
       <Col>
         <Field
           name="name"
           label="Name"
           component={Controls.TextField}
           validate={Validators.required}
-          required
         />
 
         <Group>
@@ -180,8 +224,8 @@ const JobFormModal = styled((props) => {
                 min: 0,
               },
               }}
+              parse={Parsers.number}
               validate={Validators.required}
-              required
             />
 
             <Field
@@ -194,8 +238,8 @@ const JobFormModal = styled((props) => {
                 min: 1, max: 25,
               },
               }}
+              parse={Parsers.number}
               validate={Validators.required}
-              required
             />
           </Row>
         </Group>
@@ -212,8 +256,8 @@ const JobFormModal = styled((props) => {
                 min: 1,
               },
               }}
+              parse={Parsers.number}
               validate={Validators.required}
-              required
             />
 
             <Field
@@ -226,8 +270,8 @@ const JobFormModal = styled((props) => {
                 min: 1,
               },
               }}
+              parse={Parsers.number}
               validate={Validators.required}
-              required
             />
 
             <Field
@@ -240,8 +284,8 @@ const JobFormModal = styled((props) => {
                 min: 1,
               },
               }}
+              parse={Parsers.number}
               validate={Validators.required}
-              required
             />
           </Row>
         </Group>
@@ -271,18 +315,81 @@ const JobFormModal = styled((props) => {
           </label>
         </Group>
 
-        {formValues.single && (
-          <Group>
+        <Group $disabled={!formValues.single}>
+          <Row>
             <label>
               <Field
                 name="content.segment"
                 component={Controls.Checkbox}
                 type="checkbox"
+                disabled={!formValues.single}
               />{' '}
               Segment
             </label>
-          </Group>
-        )}
+          </Row>
+
+          <Row>
+            <Field
+              name="content.start.x"
+              label="StartX"
+              component={Controls.TextField}
+              InputProps={{
+                inputProps: {
+                  type: 'number',
+                  min: 0,
+                },
+              }}
+              parse={Parsers.number}
+              disabled={!formValues.content?.segment}
+              validate={formValues.content?.segment ? Validators.required : null}
+            />
+
+            <Field
+              name="content.start.y"
+              label="StartY"
+              component={Controls.TextField}
+              InputProps={{
+                inputProps: {
+                  type: 'number',
+                  min: 0,
+                },
+              }}
+              parse={Parsers.number}
+              disabled={!formValues.content?.segment}
+              validate={formValues.content?.segment ? Validators.required : undefined}
+            />
+
+            <Field
+              name="content.stop.x"
+              label="StopX"
+              component={Controls.TextField}
+              InputProps={{
+                inputProps: {
+                  type: 'number',
+                  min: 0,
+                },
+              }}
+              parse={Parsers.number}
+              disabled={!formValues.content?.segment}
+              validate={formValues.content?.segment ? Validators.required : undefined}
+            />
+
+            <Field
+              name="content.stop.y"
+              label="StopY"
+              component={Controls.TextField}
+              InputProps={{
+                inputProps: {
+                  type: 'number',
+                  min: 0,
+                },
+              }}
+              parse={Parsers.number}
+              disabled={!formValues.content?.segment}
+              validate={formValues.content?.segment ? Validators.required : undefined}
+            />
+          </Row>
+        </Group>
       </Col>
 
       <Col>
@@ -315,8 +422,7 @@ const JobFormModal = styled((props) => {
               label="Omero IDs"
               component={Controls.TransferList}
               options={options}
-              // validate={Validators.required}
-              // required
+              validate={Validators.required}
             />
           )}
         </Group>
@@ -327,7 +433,7 @@ const JobFormModal = styled((props) => {
   .modal-content {
     width: 80%;
     min-width: 840px;
-    max-width: 1200px;
+    max-width: 1280px;
   }
   
   .modal-body {
@@ -354,6 +460,10 @@ const JobFormModal = styled((props) => {
   .transfer-list {
     height: 100%;
     margin: 20px auto 0 auto;
+  }
+
+  label {
+    white-space: nowrap;
   }
 `;
 

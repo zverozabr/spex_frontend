@@ -11,7 +11,7 @@ export default styled.div`
   border-radius: 4px;
   
   :hover {
-    border: 1px solid rgba(0, 0, 0, 0.87);
+    border-color: rgba(0, 0, 0, 0.87);
   }
 
   ${(props) => props.$label && css`
@@ -24,6 +24,14 @@ export default styled.div`
       font-size: 0.85em;
       background-color: white;
       padding: 0 8px;
+    }
+  `};
+
+  ${(props) => props.$disabled && css`
+    pointer-events: none;
+    opacity: 0.5;
+    :hover {
+      border-color: rgba(0, 0, 0, 0.27);
     }
   `};
 `;

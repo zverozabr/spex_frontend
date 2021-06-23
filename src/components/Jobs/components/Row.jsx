@@ -9,11 +9,13 @@ export default styled.div`
     width: 100%;
   }
   
-  > div:not(:last-child) {
+  > :not(:last-child) {
     margin-right: 7px !important;
   }
   
-  > div + div {
+  > div + div,
+  > div + label,
+  > label + div {
     margin-left: 7px !important;
   }
 `;
