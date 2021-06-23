@@ -16,6 +16,7 @@ import { closest } from '+utils/closest';
 import isFunction from '+utils/isFunction';
 
 // Cells
+import ButtonsCell from './Cells/ButtonsCell';
 import DefaultCell from './Cells/DefaultCell';
 import ExpanderCell from './Cells/ExpanderCell';
 import RowSelectionCell from './Cells/RowSelectionCell';
@@ -64,7 +65,6 @@ const Table = (props) => {
         allowRowSelection,
         actions,
         pageIndex,
-        pageSize,
         pageSizeOptions,
         defaultSorted,
         defaultFiltered,
@@ -83,6 +83,7 @@ const Table = (props) => {
     } = props;
 
     const [ doubleRowSpacing ] = useState(doubleRowSize);
+    const [ pageSize, setCurrentPageSize ] = useState(props.pageSize);
 
     const defaultColumn = useMemo(
         () => ({
@@ -379,12 +380,16 @@ const Table = (props) => {
     };
 
     const paginatorProps = {
+        component: 'div',
         count: pageCount,
-        page: currentPageIndex + 1,
-        pageSizeOptions,
-        condensed: true,
-        groupNav: true,
-        onChange: ({ value }) => gotoPage(value - 1),
+        page: currentPageIndex,
+        rowsPerPage: pageSize,
+        rowsPerPageOptions: pageSizeOptions,
+        onChangePage: (_, newPage) => gotoPage(newPage),
+        onChangeRowsPerPage: (event) => {
+            setCurrentPageSize(parseInt(event.target.value, 10));
+            gotoPage(0);
+        },
     };
 
     return (
@@ -599,7 +604,7 @@ const defaultProps = {
     actions: [],
     pageIndex: null,
     pageSize: 10,
-    pageSizeOptions: [ 10, 20, 50, 100 ],
+    pageSizeOptions: [ 10, 25, 50, 100 ],
     minRows: 0,
     defaultSorted: [],
     defaultFiltered: [],
@@ -624,6 +629,7 @@ export {
     propTypes,
     defaultProps,
     DefaultCell,
+    ButtonsCell,
 };
 
 export default React.memo(Table, isEqual);
