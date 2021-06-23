@@ -26,54 +26,59 @@ const FormModal = styled((props) => {
   } = props;
 
   const render = useCallback(
-    ({ handleSubmit, form, submitting }) => (
-      <Modal
-        {...modalProps}
-        className={className}
-        open={open}
-        onClose={(event) => {
-            form.reset();
-            onClose(event);
-        }}
-      >
-        <FormRenderer
-          onSubmit={async (event) => {
-            const error = await handleSubmit(event);
-            if (error) {
-              return error;
-            }
-            form.reset();
+    ({ handleSubmit, form, submitting }) => {
+      if (!window.setFormValue) window.setFormValue = form.mutators.setValue;
+      return (
+        <Modal
+          {...modalProps}
+          className={className}
+          open={open}
+          onClose={(event) => {
+              form.restart();
+              onClose(event);
           }}
         >
-          <ModalHeader>{header}</ModalHeader>
-          <ModalBody>{children}</ModalBody>
-          <ModalFooter>
-            <Button
-              color={ButtonColors.secondary}
-              onClick={(event) => {
-                form.reset();
-                onClose(event);
-              }}
-            >
-              {closeButtonText}
-            </Button>
-            <Button
-              type="submit"
-              color={ButtonColors.primary}
-              disabled={submitting}
-            >
-              {submitButtonText}
-            </Button>
-          </ModalFooter>
-        </FormRenderer>
-      </Modal>
-    ),
+          <FormRenderer
+            onSubmit={(event) => {
+              // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
+              handleSubmit(event)?.then(() => form.restart());
+            }}
+          >
+            <ModalHeader>{header}</ModalHeader>
+            <ModalBody>{children}</ModalBody>
+            <ModalFooter>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
+                  form.restart();
+                  onClose(event);
+                }}
+              >
+                {closeButtonText}
+              </Button>
+              <Button
+                type="submit"
+                color={ButtonColors.primary}
+                disabled={submitting}
+              >
+                {submitButtonText}
+              </Button>
+            </ModalFooter>
+          </FormRenderer>
+        </Modal>
+      );
+    },
     [children, className, closeButtonText, header, onClose, open, submitButtonText, modalProps],
   );
 
   return (
     <Form
       {...tail}
+      mutators={{
+        setValue: ([field, value], state, { changeValue }) => {
+          changeValue(state, field, () => value);
+        },
+      }}
       initialValues={initialValues}
       render={render}
       onSubmit={onSubmit}
