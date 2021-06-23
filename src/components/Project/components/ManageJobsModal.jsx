@@ -12,6 +12,7 @@ import Link from '+components/Link';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Select, { Option } from '+components/Select';
 import Table from '+components/Table';
+import SubComponent from './SubComponent';
 import CellButtonsContainer from './CellButtonsContainer';
 
 
@@ -29,7 +30,7 @@ const ManageJobsModal = styled((props) => {
     submitButtonText,
     onClose,
     open,
-    onSubmit,
+    onSubmit
   } = props;
 
   const dispatch = useDispatch();
@@ -44,39 +45,40 @@ const ManageJobsModal = styled((props) => {
 
   const columns = useMemo(
     () => ([{
+      id: 'status',
+      accessor: ({ tasks }) => {
+        if (!tasks.length) {
+          return undefined;
+        }
+        const sum = tasks.reduce((acc, el) => acc + el.status, 0);
+        return sum / tasks.length;
+      },
+      Header: 'Status',
+      Cell: ({ value: status }) => useMemo(
+        () => (status != null ? `In Progress (${Math.round(status * 100)}%)` : 'N/A'),
+        [status],
+      ),
+    }, {
       id: 'name',
       accessor: 'name',
       Header: 'Name',
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
-          <Link to={`/${id}`}>
-            {name}
-          </Link>
+          // <Link to={`/${PathNames.jobs}/${id}`}>
+          <div> {name} </div>
+          // </Link>
         ),
         [id, name],
       ),
-    },
-    {
-      id: 'tasks',
-      header: 'tasks',
-      Cell: ({ row: { original: { tasks } } }) => useMemo(
-        () => (
-          [tasks]
-        ),
-        [tasks],
-      ),
-
-    },
-    {
-      id: 'content',
-      accessor: 'content',
-      Header: 'Content',
-    },
-    {
+    }, {
+      id: 'omeroIds',
+      accessor: 'omeroIds',
+      Header: 'Omero Image IDs',
+    }, {
       id: 'actions',
       Header: 'Actions',
-      minWidth: 80,
-      maxWidth: 80,
+      minWidth: 110,
+      maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
           <CellButtonsContainer>
@@ -84,16 +86,31 @@ const ManageJobsModal = styled((props) => {
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
               variant="outlined"
+
+            >
+              Delete
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
             >
               Edit
             </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+            >
+              Copy
+            </Button>
           </CellButtonsContainer>
         ),
-        [],
-      ),
-    }]),
-  [],
-  );
+        [original],
+        ),
+      }]),
+      [],
+    );
 
   const emitSubmit = useCallback(
     () => {
@@ -113,6 +130,7 @@ const ManageJobsModal = styled((props) => {
     },
     [dispatch, onClose, project],
   );
+
 
   useEffect(
     () => {
@@ -157,9 +175,7 @@ const ManageJobsModal = styled((props) => {
           <Table
             columns={columns}
             data={Object.values(jobs)}
-            allowRowSelection
-            hasExpander
-            groupBy={jobs['tasks']}
+            SubComponent={SubComponent}
           />
         </Row>
       </ModalBody>

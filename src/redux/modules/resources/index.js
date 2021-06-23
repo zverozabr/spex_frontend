@@ -20,6 +20,20 @@ const initApi = () => {
 
 const baseUrl = '/resource';
 
+const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
+
+const normalizedResource = (job) => {
+  let content;
+  try {
+    content = JSON.parse(job.content);
+  } catch(e) {
+    content = {};
+  }
+  content = isObject(content) ? content : {};
+  return { ...job, content };
+};
+
+
 const slice = createSlice({
   name: 'resources',
   initialState,
@@ -31,17 +45,18 @@ const slice = createSlice({
 
     fetchResourcesSuccess: (state, { payload: resources }) => {
       stopFetching(state);
-      state.resources = hash(resources || [], 'id');
+      const normalizedResources = resources.map(normalizedResource);
+      state.resources = hash(normalizedResources || [], 'id');
     },
 
     updateResourceSuccess: (state, { payload: resource }) => {
       stopFetching(state);
-      state.resources[resource.id] = resource;
+      state.resources[resource.id] = normalizedResource(resource);
     },
 
     createResourceSuccess: (state, { payload: resource }) => {
       stopFetching(state);
-      state.resources[resource.id] = resource;
+      state.resources[resource.id] = normalizedResource(resource);
     },
 
     deleteResourceSuccess(state, { payload: id }) {
@@ -110,7 +125,7 @@ const slice = createSlice({
       },
     },
 
-    [actions.deleteResource]: {
+    [actions.deleteJob]: {
       * saga({ payload: id }) {
         initApi();
 

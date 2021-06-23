@@ -1,5 +1,6 @@
 import { all } from 'redux-saga/effects';
 import jobsSlice from './jobs';
+import resourcesSlice from './resources';
 import omeroSlice from './omero';
 import pipelinesSlice from './pipelines';
 import projectsSlice from './projects';
@@ -16,6 +17,7 @@ const rootSlices = [
   projectsSlice,
   pipelinesSlice,
   jobsSlice,
+  resourcesSlice,
 ];
 
 const sagas = [...rootSlices, ...nestedSlices]

@@ -4,15 +4,15 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
-import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
-
+import { actions as omeroActions } from '@/redux/modules/omero';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import Link from '+components/Link';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Select, { Option } from '+components/Select';
 import Table from '+components/Table';
+import SubComponent from './SubComponent';
 import CellButtonsContainer from './CellButtonsContainer';
 
 
@@ -30,7 +30,7 @@ const ManageResourcesModal = styled((props) => {
     submitButtonText,
     onClose,
     open,
-    onSubmit,
+    onSubmit
   } = props;
 
   const dispatch = useDispatch();
@@ -44,29 +44,29 @@ const ManageResourcesModal = styled((props) => {
 
 
   const columns = useMemo(
-    () => ([{
+    () => ([
+      {
       id: 'name',
       accessor: 'name',
       Header: 'Name',
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
-          <Link to={`/${id}`}>
-            {name}
-          </Link>
+          // <Link to={`/${PathNames.resources}/${id}`}>
+          <div onClick={onChange}> {name} </div>
+
+          // </Link>
         ),
         [id, name],
       ),
-    },
-    {
-      id: 'content',
-      accessor: 'content',
-      Header: 'Content',
-    },
-    {
+    }, {
+      id: 'omeroIds',
+      accessor: 'omeroIds',
+      Header: 'Omero Image IDs',
+    }, {
       id: 'actions',
       Header: 'Actions',
-      minWidth: 80,
-      maxWidth: 80,
+      minWidth: 110,
+      maxWidth: 110,
       Cell: ({ row: { original } }) => useMemo(
         () => (
           <CellButtonsContainer>
@@ -74,16 +74,33 @@ const ManageResourcesModal = styled((props) => {
               size={ButtonSizes.small}
               color={ButtonColors.secondary}
               variant="outlined"
+
+            >
+              Delete
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
             >
               Edit
             </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+            >
+              Copy
+            </Button>
           </CellButtonsContainer>
         ),
-        [],
-      ),
-    }]),
-  [],
-  );
+        [original],
+        ),
+      }]),
+      [],
+    );
+
+
 
   const emitSubmit = useCallback(
     () => {
@@ -102,6 +119,11 @@ const ManageResourcesModal = styled((props) => {
     onClose();
     },
     [dispatch, onClose, project],
+  );
+
+  const onChange = useCallback(
+    (event) => console.log(123),
+    [],
   );
 
   useEffect(
@@ -123,7 +145,7 @@ const ManageResourcesModal = styled((props) => {
       if (Object.keys(resources || {}).length) {
         return;
       }
-      dispatch(resourcesActions.fetchResources());
+      dispatch(resourcesActions.fetchResources({}));
     },
     [dispatch, resources],
   );
@@ -137,13 +159,6 @@ const ManageResourcesModal = styled((props) => {
       <ModalHeader>{header}</ModalHeader>
       <ModalBody>
         <Row>
-          <Select
-            defaultValue={none}
-            disabled={isResourcesFetching}
-          >
-            <Option value={none}>Select resources</Option>
-            {Object.values(resources || {}).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-          </Select>
           <Table
             columns={columns}
             data={Object.values(resources)}
@@ -217,6 +232,7 @@ ManageResourcesModal.defaultProps = {
   submitButtonText: 'Submit',
   onClose: () => {},
   onSubmit: () => {},
+  onChange: () => {},
 };
 
 export default ManageResourcesModal;
