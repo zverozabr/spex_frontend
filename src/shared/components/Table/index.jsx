@@ -1,6 +1,7 @@
 /* eslint-disable import/no-namespace, react/jsx-sort-default-props */
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Pagination from '@material-ui/core/TablePagination';
+import ldEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 import isEqual from 'react-fast-compare';
 import {
@@ -10,7 +11,6 @@ import {
     useFlexLayout, useResizeColumns,
     useRowSelect,
 } from 'react-table';
-import ldEqual from 'lodash/isEqual';
 
 import Button from '+components/Button';
 import { closest } from '+utils/closest';
@@ -81,11 +81,13 @@ const Table = (props) => {
         SubComponent,
         PaginationComponent,
         onCellValueChange,
-        onSelectedRowsChange
+        onSelectedRowsChange,
     } = props;
 
     const [ doubleRowSpacing ] = useState(doubleRowSize);
     const [ pageSize, setCurrentPageSize ] = useState(props.pageSize);
+    const [ selectedRows, setSelectedRows ] = useState([]);
+
 
     const defaultColumn = useMemo(
         () => ({
@@ -232,13 +234,6 @@ const Table = (props) => {
         pageSize: currentPageSize,
         // selectedRowIds,
     } = state;
-
-    // const selectedRows = useMemo(
-    //     () => selectedFlatRows.map((d) => d.original),
-    //     [ selectedFlatRows ],
-    // );
-
-    const [selectedRows, setSelectedRows] = useState([]);
 
     const onActionClick = useCallback(
         (action) => (event) => {
@@ -396,29 +391,24 @@ const Table = (props) => {
         },
     };
 
-
-    useEffect(() => {
-        setSelectedRows(prevValue => {
+    useEffect(
+      () => {
+        setSelectedRows((prevValue) => {
             const newSelectedRows = selectedFlatRows.map((d) => d.original);
-
-            if (!ldEqual(newSelectedRows, selectedRows)) {
-                return newSelectedRows;
-            }
-            else {
-                return prevValue;
-            };
-
+            return ldEqual(newSelectedRows, prevValue) ? prevValue : newSelectedRows;
         });
+      },
+      [selectedFlatRows],
+    );
 
-      }, [selectedFlatRows, onSelectedRowsChange]);
-
-      useEffect(() => {
-
-        if (onSelectedRowsChange) {
-            onSelectedRowsChange(selectedRows);
-        }
-
-      }, [selectedRows ,onSelectedRowsChange]);
+    useEffect(
+      () => {
+          if (onSelectedRowsChange) {
+              onSelectedRowsChange(selectedRows);
+          }
+      },
+      [selectedRows, onSelectedRowsChange],
+    );
 
     return (
       <Container
@@ -613,7 +603,7 @@ const propTypes = {
      */
     onCellValueChange: PropTypes.func,
     /**
-     * array
+     * A callback fired when selected rows changed.
      */
     onSelectedRowsChange: PropTypes.func,
 };
