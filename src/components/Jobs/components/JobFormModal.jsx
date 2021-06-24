@@ -416,6 +416,16 @@ const JobFormModal = styled((props) => {
             </Select>
           </Row>
 
+          {formValues.single && (
+            <Field
+              name="omeroIds"
+              label="Omero IDs"
+              component={Controls.ImagePicker}
+              options={options}
+              validate={Validators.required}
+            />
+          )}
+
           {!formValues.single && (
             <Field
               name="omeroIds"
@@ -457,7 +467,8 @@ const JobFormModal = styled((props) => {
     margin-top: 20px;
   }
 
-  .transfer-list {
+  .transfer-list,
+  .image-picker {
     height: 100%;
     margin: 20px auto 0 auto;
   }
