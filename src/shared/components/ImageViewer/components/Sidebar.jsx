@@ -5,7 +5,7 @@ export default styled.div`
 
   z-index: 9999;
   position: absolute;
-  top: 10px;
+  top: 0;
   left: 0;
   width: var(--width);
   height: calc(100% - 10px);
