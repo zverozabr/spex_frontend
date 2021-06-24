@@ -3,6 +3,7 @@ import { TextField as TextFieldOrigin, Checkbox, Radio, Select } from 'final-for
 import { Form, Field, FormSpy } from 'react-final-form';
 import styled from 'styled-components';
 
+import ImagePicker from '+components/ImagePicker';
 import Slider from '+components/Slider';
 import TransferList from '+components/TransferList';
 
@@ -24,6 +25,7 @@ const Controls = {
   Select,
   Slider,
   TransferList,
+  ImagePicker,
 };
 
 export {
