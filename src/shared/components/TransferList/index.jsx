@@ -161,13 +161,12 @@ const TransferList = styled((props) => {
       // wrap="nowrap"
       container
     >
-      <Grid className={classNames('list', 'list-left')} xs={5} item>
+      <Grid className={classNames('list', 'list-left')} item>
         {customList(leftTitle, fixedOptions)}
       </Grid>
 
-      <Grid item xs={2}>
+      <Grid className="buttons-container" item>
         <Grid
-          className="buttons-container"
           direction="column"
           alignItems="center"
           container
@@ -193,7 +192,7 @@ const TransferList = styled((props) => {
         </Grid>
       </Grid>
 
-      <Grid className={classNames('list', 'list-right')} xs={5} item>
+      <Grid className={classNames('list', 'list-right')} item>
         {customList(rightTitle, value)}
       </Grid>
 
@@ -214,6 +213,8 @@ const TransferList = styled((props) => {
     height: 100%;
     padding: 0;
     overflow: hidden;
+    max-width: calc(50% - 30px) !important;
+    flex-basis: calc(50% - 30px) !important;
 
     .MuiCard-root {
       display: flex;
@@ -224,7 +225,7 @@ const TransferList = styled((props) => {
       overflow: hidden;
 
       .MuiCardHeader-root {
-        padding: 8px;
+        padding: 10px;
 
         .MuiCardHeader-content {
           display: flex;
@@ -247,7 +248,7 @@ const TransferList = styled((props) => {
       ${ScrollBarMixin};
 
       .MuiListItem-root {
-        padding: 2px 8px;
+        padding: 2px 10px;
       }
 
       .MuiListItemIcon-root {
@@ -265,13 +266,14 @@ const TransferList = styled((props) => {
   }
 
   .buttons-container {
+    width: 60px;
     ${Button} + ${Button} {
       margin-top: 8px;
     }
 
     ${Button} {
       min-width: unset;
-      max-width: 100%;
+      width: 100%;
     }
   }
 
