@@ -8,15 +8,10 @@ import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
-import Link from '+components/Link';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
-import Select, { Option } from '+components/Select';
 import Table, { ButtonsCell } from '+components/Table';
-
 import Row from './Row';
-import SubComponent from './SubComponent';
 
-const none = 'none';
 
 const ManageResourcesModal = styled((props) => {
   const {
@@ -31,12 +26,16 @@ const ManageResourcesModal = styled((props) => {
   } = props;
 
   const dispatch = useDispatch();
+  const none = 'none';
 
-
-  const [value] = useState([]);
+  const [value, setValue] = useState([]);
 
   const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
   const resources = useSelector(resourcesSelectors.getResources);
+
+  const actions = [
+    { name: 'Submit', fn: rows => emitSubmit(rows) },
+    { name: 'Cancel', fn: rows => emitCancel() }];
 
   const columns = useMemo(
     () => ([
@@ -47,8 +46,7 @@ const ManageResourcesModal = styled((props) => {
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
           // <Link to={`/${PathNames.resources}/${id}`}>
-          <div onClick={onChange}> {name} </div>
-
+          <div> {name} </div>
           // </Link>
         ),
         [id, name],
@@ -57,50 +55,16 @@ const ManageResourcesModal = styled((props) => {
       id: 'omeroIds',
       accessor: 'omeroIds',
       Header: 'Omero Image IDs',
-    }, {
-      id: 'actions',
-      Header: 'Actions',
-      minWidth: 110,
-      maxWidth: 110,
-      Cell: ({ row: { original } }) => useMemo(
-        () => (
-          <ButtonsCell>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-
-            >
-              Delete
-            </Button>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-            >
-              Edit
-            </Button>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-            >
-              Copy
-            </Button>
-          </ButtonsCell>
-        ),
-        [original],
-        ),
-      }]),
+    }]),
       [],
     );
 
 
 
   const emitSubmit = useCallback(
-    () => {
+    (value) => {
       const selected = value.map((el) => String(el?.id) || String(el));
-      onSubmit(selected);
+      onSubmit(project ,selected);
     },
     [onSubmit, value],
   );
@@ -114,11 +78,6 @@ const ManageResourcesModal = styled((props) => {
     onClose();
     },
     [dispatch, onClose, project],
-  );
-
-  const onChange = useCallback(
-    (event) => console.log(123),
-    [],
   );
 
   useEffect(
@@ -158,6 +117,8 @@ const ManageResourcesModal = styled((props) => {
             columns={columns}
             data={Object.values(resources)}
             allowRowSelection
+            onSelectedRowsChange={setValue}
+            actions={actions}
           />
         </Row>
       </ModalBody>

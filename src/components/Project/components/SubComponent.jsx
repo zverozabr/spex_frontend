@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import Table from '+components/Table';
 
 export default styled((props) => {
-  const { className, original: row } = props;
+  const { className, actions, original: row } = props;
   const columns = useMemo(
     () => ([{
       id: 'status',
@@ -28,6 +28,7 @@ export default styled((props) => {
       noDataText="No tasks found"
       data={row.tasks || []}
       allowRowSelection
+      actions={actions}
     />
   );
 })`

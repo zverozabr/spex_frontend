@@ -35,6 +35,7 @@ const ManageJobsModal = styled((props) => {
 
   const isJobsFetching = useSelector(jobsSelectors.isFetching);
   const jobs = useSelector(jobsSelectors.getJobs);
+  const actions = [{name: 'Submit', fn: rows => emitSubmit(rows)}];
 
   const columns = useMemo(
     () => ([{
@@ -67,41 +68,7 @@ const ManageJobsModal = styled((props) => {
       id: 'omeroIds',
       accessor: 'omeroIds',
       Header: 'Omero Image IDs',
-    }, {
-      id: 'actions',
-      Header: 'Actions',
-      minWidth: 110,
-      maxWidth: 110,
-      Cell: ({ row: { original } }) => useMemo(
-        () => (
-          <ButtonsCell>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-
-            >
-              Delete
-            </Button>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-            >
-              Edit
-            </Button>
-            <Button
-              size={ButtonSizes.small}
-              color={ButtonColors.secondary}
-              variant="outlined"
-            >
-              Copy
-            </Button>
-          </ButtonsCell>
-        ),
-        [original],
-        ),
-      }]),
+    }]),
       [],
     );
 
@@ -168,6 +135,7 @@ const ManageJobsModal = styled((props) => {
             columns={columns}
             data={Object.values(jobs)}
             SubComponent={SubComponent}
+            actions={actions}
           />
         </Row>
       </ModalBody>

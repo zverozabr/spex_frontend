@@ -10,6 +10,7 @@ import {
     useFlexLayout, useResizeColumns,
     useRowSelect,
 } from 'react-table';
+import ldEqual from 'lodash/isEqual';
 
 import Button from '+components/Button';
 import { closest } from '+utils/closest';
@@ -80,6 +81,7 @@ const Table = (props) => {
         SubComponent,
         PaginationComponent,
         onCellValueChange,
+        onSelectedRowsChange
     } = props;
 
     const [ doubleRowSpacing ] = useState(doubleRowSize);
@@ -231,10 +233,12 @@ const Table = (props) => {
         // selectedRowIds,
     } = state;
 
-    const selectedRows = useMemo(
-        () => selectedFlatRows.map((d) => d.original),
-        [ selectedFlatRows ],
-    );
+    // const selectedRows = useMemo(
+    //     () => selectedFlatRows.map((d) => d.original),
+    //     [ selectedFlatRows ],
+    // );
+
+    const [selectedRows, setSelectedRows] = useState([]);
 
     const onActionClick = useCallback(
         (action) => (event) => {
@@ -391,6 +395,30 @@ const Table = (props) => {
             gotoPage(0);
         },
     };
+
+
+    useEffect(() => {
+        setSelectedRows(prevValue => {
+            const newSelectedRows = selectedFlatRows.map((d) => d.original);
+
+            if (!ldEqual(newSelectedRows, selectedRows)) {
+                return newSelectedRows;
+            }
+            else {
+                return prevValue;
+            };
+
+        });
+
+      }, [selectedFlatRows, onSelectedRowsChange]);
+
+      useEffect(() => {
+
+        if (onSelectedRowsChange) {
+            onSelectedRowsChange(selectedRows);
+        }
+
+      }, [selectedRows ,onSelectedRowsChange]);
 
     return (
       <Container
@@ -584,6 +612,10 @@ const propTypes = {
      * A callback fired when cell value is changed.
      */
     onCellValueChange: PropTypes.func,
+    /**
+     * array
+     */
+    onSelectedRowsChange: PropTypes.func,
 };
 
 const defaultProps = {
@@ -619,6 +651,7 @@ const defaultProps = {
     SubComponent: null,
     PaginationComponent: Pagination,
     onCellValueChange: null,
+    onSelectedRowsChange: null,
 };
 
 Table.displayName = 'Table';

@@ -166,10 +166,13 @@ const Project = () => {
   );
 
   const onResourcesChanged = useCallback(
-    (values) => {
+    (project, values) => {
       setManageResourcesModalOpen(false);
+      const resource_ids = values.map((el) => el.id || el);
+      const updateData = { ...project, resource_ids: resource_ids };
+      dispatch(projectsActions.updateProject(updateData));
     },
-    [],
+    [dispatch],
   );
 
   const prevOpen = React.useRef(open);
@@ -235,9 +238,6 @@ const Project = () => {
               </Grow>
             )}
           </Popper>
-          {/* <Button onClick={onManageImagesModalOpen}>
-            Manage items
-          </Button> */}
         </ButtonsContainer>
 
         <ThumbnailsContainer>
