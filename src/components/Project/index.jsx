@@ -9,8 +9,7 @@ import { actions as projectsActions, selectors as projectsSelectors } from '@/re
 import Button, { ButtonColors } from '+components/Button';
 import ClickAwayListener from '+components/ClickAwayListener';
 import Grow from '+components/Grow';
-import MenuItem from '+components/MenuItem';
-import MenuList from '+components/MenuList';
+import MenuList, { MenuItem } from '+components/MenuList';
 import NoData from '+components/NoData';
 import Paper from '+components/Paper';
 import Popper from '+components/Popper';
