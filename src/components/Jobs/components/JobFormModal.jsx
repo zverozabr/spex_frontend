@@ -204,7 +204,7 @@ const JobFormModal = styled((props) => {
         to={undefined}
       />
 
-      <Col>
+      <Col $maxWidth="390px">
         <Field
           name="name"
           label="Name"
@@ -341,7 +341,7 @@ const JobFormModal = styled((props) => {
               }}
               parse={Parsers.number}
               disabled={!formValues.content?.segment}
-              validate={formValues.content?.segment ? Validators.required : null}
+              validate={Validators.requiredConditional('content.segment')}
             />
 
             <Field
@@ -356,7 +356,7 @@ const JobFormModal = styled((props) => {
               }}
               parse={Parsers.number}
               disabled={!formValues.content?.segment}
-              validate={formValues.content?.segment ? Validators.required : undefined}
+              validate={Validators.requiredConditional('content.segment')}
             />
 
             <Field
@@ -371,7 +371,7 @@ const JobFormModal = styled((props) => {
               }}
               parse={Parsers.number}
               disabled={!formValues.content?.segment}
-              validate={formValues.content?.segment ? Validators.required : undefined}
+              validate={Validators.requiredConditional('content.segment')}
             />
 
             <Field
@@ -386,7 +386,7 @@ const JobFormModal = styled((props) => {
               }}
               parse={Parsers.number}
               disabled={!formValues.content?.segment}
-              validate={formValues.content?.segment ? Validators.required : undefined}
+              validate={Validators.requiredConditional('content.segment')}
             />
           </Row>
         </Group>

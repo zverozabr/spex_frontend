@@ -5,5 +5,6 @@ export default styled.div`
   flex-direction: column;
   justify-content: flex-start;
   width: ${(props) => props.$width || '100%'};
+  max-width: ${(props) => props.$maxWidth};
   min-height: 100%;
 `;
