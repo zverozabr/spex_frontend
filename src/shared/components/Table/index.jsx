@@ -45,6 +45,8 @@ import RowSelectionColumnHeader from './Headers/RowSelectionColumnHeader';
 import * as filterTypes from './Types/filterTypes';
 import * as sortTypes from './Types/sortTypes';
 
+const getRowId = (row, relativeIndex, parent) => parent ? [parent.id, row?.id ?? relativeIndex].join('.') : (row?.id ?? relativeIndex);
+
 /**
  * Table displays sets of data.
  */
@@ -82,11 +84,14 @@ const Table = (props) => {
         PaginationComponent,
         onCellValueChange,
         onSelectedRowsChange,
+        selectedRowIds,
+        onExpandedChange,
     } = props;
 
     const [ doubleRowSpacing ] = useState(doubleRowSize);
     const [ pageSize, setCurrentPageSize ] = useState(props.pageSize);
     const [ selectedRows, setSelectedRows ] = useState([]);
+    const [ expanded, setExpandedRows ] = useState([]);
 
 
     const defaultColumn = useMemo(
@@ -177,6 +182,14 @@ const Table = (props) => {
         [ allowRowSelection ],
     );
 
+    const _selectedRowIds = useMemo(
+      () => (selectedRowIds || []).reduce((acc, id) => ({
+        ...acc,
+        [id]: true,
+      }), {}),
+      [selectedRowIds],
+    );
+
     const instance = useTable(
         {
             columns: columns || [],
@@ -186,6 +199,7 @@ const Table = (props) => {
                 groupBy: groupBy || [],
                 filters: defaultFiltered || [],
                 hiddenColumns: initialHiddenColumns,
+                selectedRowIds: _selectedRowIds,
             },
             defaultColumn,
             filterTypes,
@@ -194,6 +208,8 @@ const Table = (props) => {
             autoResetFilters: false,
             autoResetSortBy: false,
             onCellValueChange,
+            getRowId,
+            autoResetSelectedRows: false,
         },
         useFilters,
         useGroupBy,
@@ -394,8 +410,8 @@ const Table = (props) => {
     useEffect(
       () => {
         setSelectedRows((prevValue) => {
-            const newSelectedRows = selectedFlatRows.map((d) => d.original);
-            return ldEqual(newSelectedRows, prevValue) ? prevValue : newSelectedRows;
+          const newSelectedRows = selectedFlatRows.map((d) => d.original);
+          return ldEqual(newSelectedRows, prevValue) ? prevValue : newSelectedRows;
         });
       },
       [selectedFlatRows],
@@ -403,11 +419,30 @@ const Table = (props) => {
 
     useEffect(
       () => {
-          if (onSelectedRowsChange) {
-              onSelectedRowsChange(selectedRows);
-          }
+        if (onSelectedRowsChange) {
+            onSelectedRowsChange(selectedRows);
+        }
       },
       [selectedRows, onSelectedRowsChange],
+    );
+
+    useEffect(
+      () => {
+        setExpandedRows(() => {
+          return expanded;
+        });
+      },
+      [expanded],
+    );
+
+
+    useEffect(
+      () => {
+        if (onExpandedChange) {
+            onExpandedChange(expanded);
+        }
+      },
+      [expanded, onExpandedChange],
     );
 
     return (
@@ -606,6 +641,12 @@ const propTypes = {
      * A callback fired when selected rows changed.
      */
     onSelectedRowsChange: PropTypes.func,
+    selectedRowIds: PropTypes.arrayOf(PropTypes.string),
+    onExpandedChange: PropTypes.func,
+    expanded: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.string.isRequired,
+  })),
+
 };
 
 const defaultProps = {
@@ -642,6 +683,8 @@ const defaultProps = {
     PaginationComponent: Pagination,
     onCellValueChange: null,
     onSelectedRowsChange: null,
+    selectedRowIds: null,
+    onExpandedChange: null,
 };
 
 Table.displayName = 'Table';

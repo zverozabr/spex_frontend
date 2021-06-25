@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import Table from '+components/Table';
 
 export default styled((props) => {
-  const { className, actions, original: row } = props;
+  const { className, actions, original: row, onSelectedRowsChange, selectedRowIds } = props;
   const columns = useMemo(
     () => ([{
       id: 'status',
@@ -29,6 +29,8 @@ export default styled((props) => {
       data={row.tasks || []}
       allowRowSelection
       actions={actions}
+      selectedRowIds={selectedRowIds}
+      onSelectedRowsChange={onSelectedRowsChange}
     />
   );
 })`

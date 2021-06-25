@@ -148,10 +148,13 @@ const Project = () => {
   );
 
   const onJobsChanged = useCallback(
-    (values) => {
+    (project, values) => {
       setManageJobsModalOpen(false);
+      const taskIds = values.map((el) => el.id || el);
+      const updateData = { ...project, taskIds };
+      dispatch(projectsActions.updateProject(updateData));
     },
-    [],
+    [dispatch],
   );
 
   const onManageResourcesModalOpen = useCallback(
@@ -168,7 +171,7 @@ const Project = () => {
     (project, values) => {
       setManageResourcesModalOpen(false);
       const resource_ids = values.map((el) => el.id || el);
-      const updateData = { ...project, resource_ids: resource_ids };
+      const updateData = { ...project, resource_ids };
       dispatch(projectsActions.updateProject(updateData));
     },
     [dispatch],

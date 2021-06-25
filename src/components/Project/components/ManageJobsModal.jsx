@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -9,7 +9,6 @@ import { actions as omeroActions } from '@/redux/modules/omero';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
-import Select, { Option } from '+components/Select';
 import Table, { ButtonsCell } from '+components/Table';
 
 import Row from './Row';
@@ -35,7 +34,7 @@ const ManageJobsModal = styled((props) => {
 
   const isJobsFetching = useSelector(jobsSelectors.isFetching);
   const jobs = useSelector(jobsSelectors.getJobs);
-  const actions = [{name: 'Submit', fn: rows => emitSubmit(rows)}];
+  const selectedRef = useRef({});
 
   const columns = useMemo(
     () => ([{
@@ -72,12 +71,16 @@ const ManageJobsModal = styled((props) => {
       [],
     );
 
+  const data = useMemo(
+    () => Object.values(jobs),
+    [jobs],
+  );
   const emitSubmit = useCallback(
     () => {
-      const selected = value.map((el) => String(el?.id) || String(el));
-      onSubmit(selected);
+      const selected = Object.values(selectedRef.current).flat();
+      onSubmit(project, selected);
     },
-    [onSubmit, value],
+    [onSubmit],
   );
 
   const emitCancel = useCallback(
@@ -115,6 +118,29 @@ const ManageJobsModal = styled((props) => {
     [dispatch, jobs],
   );
 
+  const onSelectedRowsChange = useCallback(
+    (selected, parent) => {
+      // console.log({ selected, parent });
+      selectedRef.current[parent.id] = selected.map(({ id }) => id);
+    },
+    [],
+  );
+
+  const WithSelected = useCallback(
+    (subProbs) => {
+      // console.log({ subProbs });
+
+      return (
+        <SubComponent
+          {...subProbs}
+          selectedRowIds={project.taskIds}
+          onSelectedRowsChange={(selected) => onSelectedRowsChange(selected, subProbs)}
+        />
+      );
+    },
+    [onSelectedRowsChange],
+  );
+
   return (
     <Modal
       className={className}
@@ -124,18 +150,10 @@ const ManageJobsModal = styled((props) => {
       <ModalHeader>{header}</ModalHeader>
       <ModalBody>
         <Row>
-          <Select
-            defaultValue={none}
-            disabled={isJobsFetching}
-          >
-            <Option value={none}>Select jobs</Option>
-            {Object.values(jobs || {}).map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-          </Select>
           <Table
             columns={columns}
-            data={Object.values(jobs)}
-            SubComponent={SubComponent}
-            actions={actions}
+            data={data}
+            SubComponent={WithSelected}
           />
         </Row>
       </ModalBody>

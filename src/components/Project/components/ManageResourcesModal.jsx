@@ -12,6 +12,7 @@ import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Table, { ButtonsCell } from '+components/Table';
 import Row from './Row';
 
+const testSelected = ['1556474', '1780853'];
 
 const ManageResourcesModal = styled((props) => {
   const {
@@ -28,7 +29,7 @@ const ManageResourcesModal = styled((props) => {
   const dispatch = useDispatch();
   const none = 'none';
 
-  const [value, setValue] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
 
   const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
   const resources = useSelector(resourcesSelectors.getResources);
@@ -40,33 +41,37 @@ const ManageResourcesModal = styled((props) => {
   const columns = useMemo(
     () => ([
       {
-      id: 'name',
-      accessor: 'name',
-      Header: 'Name',
-      Cell: ({ row: { original: { id, name } } }) => useMemo(
-        () => (
-          // <Link to={`/${PathNames.resources}/${id}`}>
-          <div> {name} </div>
-          // </Link>
+        id: 'name',
+        accessor: 'name',
+        Header: 'Name',
+        Cell: ({ row: { original: { id, name } } }) => useMemo(
+          () => (
+            // <Link to={`/${PathNames.resources}/${id}`}>
+            <div> {id} </div>
+            // </Link>
+          ),
+          [id, name],
         ),
-        [id, name],
-      ),
-    }, {
-      id: 'omeroIds',
-      accessor: 'omeroIds',
-      Header: 'Omero Image IDs',
-    }]),
-      [],
-    );
+      }, {
+        id: 'omeroIds',
+        accessor: 'omeroIds',
+        Header: 'Omero Image IDs',
+      }
+    ]),
+    [],
+  );
 
-
+  const data = useMemo(
+    () => Object.values(resources),
+    [resources],
+  );
 
   const emitSubmit = useCallback(
-    (value) => {
-      const selected = value.map((el) => String(el?.id) || String(el));
-      onSubmit(project ,selected);
+    () => {
+      const selected = selectedRows.map((el) => String(el?.id) || String(el));
+      onSubmit(project , selected);
     },
-    [onSubmit, value],
+    [onSubmit, selectedRows],
   );
 
   const emitCancel = useCallback(
@@ -75,7 +80,7 @@ const ManageResourcesModal = styled((props) => {
         groupId: project.id,
         imageIds: project.omeroIds,
       }));
-    onClose();
+      onClose();
     },
     [dispatch, onClose, project],
   );
@@ -115,10 +120,11 @@ const ManageResourcesModal = styled((props) => {
         <Row>
           <Table
             columns={columns}
-            data={Object.values(resources)}
+            data={data}
             allowRowSelection
-            onSelectedRowsChange={setValue}
+            onSelectedRowsChange={setSelectedRows}
             actions={actions}
+            selectedRowIds={project?.resource_ids}
           />
         </Row>
       </ModalBody>
