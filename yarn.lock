@@ -11035,10 +11035,10 @@ react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.1.tgz#5b3531bd76a645a4c9fb6e693ed36419e3301339"
   integrity sha512-NAnt2iGDXohE5LI7uBnLnqvLQMtzhkiAOLXTmv+qnF9Ky7xAPcX8Up/xWIhxvLVGJvuLiNc4xQLtuqDRzb4fSA==
 
-react-leaflet-draw@^0.19.7:
-  version "0.19.7"
-  resolved "https://registry.yarnpkg.com/react-leaflet-draw/-/react-leaflet-draw-0.19.7.tgz#54704af709d967e5b1534729b75aac7dd5ad45e8"
-  integrity sha512-wPjsoUYUrdwKX6zLcVdJmmqs18Nsdqy0VhsI5fvYvmTPTp5ZE4MSU9Zdyeion6lUaP8pEkWRizmLHCwbt1b5Mg==
+react-leaflet-draw@^0.19.8:
+  version "0.19.8"
+  resolved "https://registry.yarnpkg.com/react-leaflet-draw/-/react-leaflet-draw-0.19.8.tgz#5590635ea18b0d7dbaf18c0214cb8606da2189ff"
+  integrity sha512-6e3KhDov++6QKR80ixohzZdESlqSiloYspZklT1qY5oxIOYmF+/Io830Yyd0RvUEMFCt6GirszalLrzuL2GP6A==
   dependencies:
     fast-deep-equal "^2.0.1"
     lodash-es "^4.17.15"

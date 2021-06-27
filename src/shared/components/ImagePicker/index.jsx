@@ -29,6 +29,7 @@ const ImagePicker = styled((props) => {
     options,
     input,
     meta,
+    editable,
   } = props;
 
   const dispatch = useDispatch();
@@ -82,7 +83,12 @@ const ImagePicker = styled((props) => {
 
       <Grid className="image" item>
         {!imageDetails && <NoData>Please, select image</NoData>}
-        {imageDetails && <ImageViewer data={imageDetails} />}
+        {imageDetails && (
+          <ImageViewer
+            data={imageDetails}
+            editable={editable}
+          />
+        )}
       </Grid>
 
       {meta.error && meta.touched && (
@@ -167,6 +173,7 @@ ImagePicker.propTypes = {
     onChange: PropTypes.func,
   }),
   value: PropTypes.arrayOf(PropTypes.shape({})),
+  editable: PropTypes.bool,
   onChange: PropTypes.func,
 };
 
@@ -175,6 +182,7 @@ ImagePicker.defaultProps = {
   options: {},
   input: null,
   value: [],
+  editable: false,
   onChange: onNoop,
 };
 

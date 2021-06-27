@@ -17,6 +17,7 @@ import SubComponent from './components/SubComponent';
 const defaultJob = {
   name: '',
   omeroIds: [],
+  single: true,
   content: {
     c: 0,
     size: 20,

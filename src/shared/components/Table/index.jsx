@@ -643,10 +643,6 @@ const propTypes = {
     onSelectedRowsChange: PropTypes.func,
     selectedRowIds: PropTypes.arrayOf(PropTypes.string),
     onExpandedChange: PropTypes.func,
-    expanded: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.string.isRequired,
-  })),
-
 };
 
 const defaultProps = {

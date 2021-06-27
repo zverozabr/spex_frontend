@@ -36,7 +36,7 @@ L.Control.ResetZoom = L.Control.extend({
   },
 });
 
-const FullscreenControl = (props) => {
+const ResetZoomControl = (props) => {
   const { position } = props;
   const map = useMap();
 
@@ -52,4 +52,4 @@ const FullscreenControl = (props) => {
   return null;
 };
 
-export default FullscreenControl;
+export default ResetZoomControl;

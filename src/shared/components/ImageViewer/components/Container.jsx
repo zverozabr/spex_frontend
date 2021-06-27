@@ -61,6 +61,14 @@ export default styled.div`
   }
 
   // Draw
+  .leaflet-draw {
+    display: none;
+  }
+
+  &.editable .leaflet-draw {
+    display: block;
+  }
+
   .sr-only {
     display: none;
   }

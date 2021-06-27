@@ -30,7 +30,7 @@ const {
 const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/webgateway/render_image_region`;
 
 const ImageViewer = (props) => {
-  const { className, data } = props;
+  const { className, data, editable } = props;
 
   const [map, setMap] = useState(null);
   const [channels, setChannels] = useState(cloneDeep(data.channels));
@@ -120,7 +120,7 @@ const ImageViewer = (props) => {
   );
 
   return (
-    <Container className={classNames(className, { pathCreated })}>
+    <Container className={classNames(className, { pathCreated, editable })}>
       <MapContainer
         crs={L.CRS.Simple}
         center={[0, 0]}
@@ -144,9 +144,6 @@ const ImageViewer = (props) => {
         <FeatureGroup>
           <EditControl
             position="topright"
-            onEdited={onEditPath}
-            onCreated={onCreatePath}
-            onDeleted={onDeletedPath}
             draw={{
               // see: https://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html#drawoptions
               polyline: false,
@@ -156,6 +153,10 @@ const ImageViewer = (props) => {
               marker: false,
               circlemarker: false,
             }}
+            edit={{ edit: true, remove: true }}
+            onEdited={onEditPath}
+            onCreated={onCreatePath}
+            onDeleted={onDeletedPath}
           />
         </FeatureGroup>
 
@@ -204,15 +205,26 @@ const ImageViewer = (props) => {
 };
 
 ImageViewer.propTypes = {
+  /**
+   * Override or extend the styles applied to the component.
+   */
   className: PropTypes.string,
+  /**
+   * Omero image data object
+   */
   data: PropTypes.shape({
     channels: PropTypes.arrayOf(PropTypes.shape({})),
   }),
+  /**
+   * If true, edit controls will be displayed (selection of an area on the image).
+   */
+  editable: PropTypes.bool,
 };
 
 ImageViewer.defaultProps = {
   className: '',
   data: {},
+  editable: false,
 };
 
 export default ImageViewer;

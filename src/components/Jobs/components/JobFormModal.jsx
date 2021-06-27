@@ -45,7 +45,7 @@ const JobFormModal = styled((props) => {
 
   const jobThumbnails = useSelector(omeroSelectors.getThumbnails(initialValues.id));
 
-  const normalizedJobThumbnails = useMemo(
+  const normalizedOmeroIds = useMemo(
     () => (Object.keys(jobThumbnails || {}).map((id) =>({ id, img: jobThumbnails[id] }))),
     [jobThumbnails],
   );
@@ -150,7 +150,11 @@ const JobFormModal = styled((props) => {
     <FormModal
       className={className}
       header={header}
-      initialValues={{ ...initialValues, omeroIds: normalizedJobThumbnails }}
+      initialValues={{
+        ...initialValues,
+        single: initialValues.single ?? normalizedOmeroIds.length <= 1,
+        omeroIds: normalizedOmeroIds,
+      }}
       closeButtonText={closeButtonText}
       submitButtonText={submitButtonText}
       open={open}
@@ -421,6 +425,7 @@ const JobFormModal = styled((props) => {
               name="omeroIds"
               label="Omero IDs"
               component={Controls.ImagePicker}
+              editable={formValues?.content?.segment}
               options={options}
               validate={Validators.required}
             />
