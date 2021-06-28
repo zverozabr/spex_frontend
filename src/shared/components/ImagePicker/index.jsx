@@ -29,7 +29,7 @@ const ImagePicker = styled((props) => {
     options,
     input,
     meta,
-    areaValue,
+    area,
     editable,
     onAreaChange,
   } = props;
@@ -90,7 +90,7 @@ const ImagePicker = styled((props) => {
         {imageDetails && (
           <ImageViewer
             data={imageDetails}
-            value={areaValue}
+            value={area}
             editable={editable}
             onChange={onAreaChange}
           />
@@ -185,7 +185,7 @@ ImagePicker.propTypes = {
     onChange: PropTypes.func,
   }),
   value: PropTypes.arrayOf(PropTypes.shape({})),
-  areaValue: PropTypes.arrayOf(PropTypes.shape({ x: PropTypes.number, y: PropTypes.number })),
+  area: PropTypes.arrayOf(PropTypes.shape({ x: PropTypes.number, y: PropTypes.number })),
   editable: PropTypes.bool,
   onChange: PropTypes.func,
   onAreaChange: PropTypes.func,
@@ -196,7 +196,7 @@ ImagePicker.defaultProps = {
   options: {},
   input: null,
   value: [],
-  areaValue: null,
+  area: null,
   editable: false,
   onChange: onNoop,
   onAreaChange: null,

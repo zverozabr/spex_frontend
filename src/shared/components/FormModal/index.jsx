@@ -22,50 +22,57 @@ const FormModal = styled((props) => {
     modalProps,
     onClose,
     onSubmit,
+    onForm,
     ...tail
   } = props;
 
   const render = useCallback(
-    ({ handleSubmit, form, submitting }) => (
-      <Modal
-        {...modalProps}
-        className={className}
-        open={open}
-        onClose={(event) => {
-            form.restart();
-            onClose(event);
-        }}
-      >
-        <FormRenderer
-          onSubmit={(event) => {
-            // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
-            handleSubmit(event)?.then(() => form.restart());
+    ({ handleSubmit, form, submitting }) => {
+      if (onForm) {
+        onForm(form);
+      }
+
+      return (
+        <Modal
+          {...modalProps}
+          className={className}
+          open={open}
+          onClose={(event) => {
+              form.restart();
+              onClose(event);
           }}
         >
-          <ModalHeader>{header}</ModalHeader>
-          <ModalBody>{children}</ModalBody>
-          <ModalFooter>
-            <Button
-              color={ButtonColors.secondary}
-              onClick={(event) => {
-                form.restart();
-                onClose(event);
-              }}
-            >
-              {closeButtonText}
-            </Button>
-            <Button
-              type="submit"
-              color={ButtonColors.primary}
-              disabled={submitting}
-            >
-              {submitButtonText}
-            </Button>
-          </ModalFooter>
-        </FormRenderer>
-      </Modal>
-    ),
-    [children, className, closeButtonText, header, onClose, open, submitButtonText, modalProps],
+          <FormRenderer
+            onSubmit={(event) => {
+              // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
+              handleSubmit(event)?.then(() => form.restart());
+            }}
+          >
+            <ModalHeader>{header}</ModalHeader>
+            <ModalBody>{children}</ModalBody>
+            <ModalFooter>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
+                  form.restart();
+                  onClose(event);
+                }}
+              >
+                {closeButtonText}
+              </Button>
+              <Button
+                type="submit"
+                color={ButtonColors.primary}
+                disabled={submitting}
+              >
+                {submitButtonText}
+              </Button>
+            </ModalFooter>
+          </FormRenderer>
+        </Modal>
+      );
+      },
+    [onForm, modalProps, className, open, header, children, closeButtonText, submitButtonText, onClose],
   );
 
   return (

@@ -80,8 +80,10 @@ const ImageViewer = (props) => {
   );
 
   const onPathChange = useCallback(
-    (_map, layer) => {
-      if (onChange && _map && layer) {
+    (event) => {
+      if (onChange) {
+        const { sourceTarget: _map } = event;
+        const [ layer ] = featureGroup.current.getLayers();
         const [ latLngs ] = layer.getLatLngs();
         const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
         const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
@@ -94,32 +96,25 @@ const ImageViewer = (props) => {
         }];
         onChange(region);
       }
-      featureGroup.current.clearLayers();
     },
     [onChange],
   );
 
   const onPathCreate = useCallback(
     (event) => {
-      const { sourceTarget: _map } = event;
-      const { layer } = event;
-      onPathChange(_map, layer);
+      onPathChange(event);
+      featureGroup.current.clearLayers();
     },
     [onPathChange],
   );
 
-  const onPathEdit = useCallback(
-    (event) => {
-      const { sourceTarget: _map } = event;
-      const [ layer ] = event.layers.getLayers();
-      onPathChange(_map, layer);
-    },
-    [onPathChange],
-  );
+  const onPathEdit = onPathChange;
 
   const onPathDeleted = useCallback(
     () => {
-      onChange(null);
+      if (onChange) {
+        onChange(null);
+      }
     },
     [onChange],
   );
@@ -143,7 +138,8 @@ const ImageViewer = (props) => {
         return;
       }
 
-      if (value?.filter((el) => el?.x >= 0 && el?.y >=0).length !== 2) {
+      const fixedValue = (value || []).filter((el) => el?.x >= 0 && el?.y >=0);
+      if (fixedValue.length !== 2) {
         featureGroup.current.clearLayers();
         setRectangleBounds(null);
         return;

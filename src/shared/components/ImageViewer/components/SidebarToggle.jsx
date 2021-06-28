@@ -14,4 +14,6 @@ export default styled.div`
   transform: translateX(100%);
   background-color: #ccc;
   cursor: pointer;
+
+  box-shadow: 1px 1px 1px 1px rgba(0,0,0,0.25);
 `;

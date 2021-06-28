@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -8,8 +8,7 @@ import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/mo
 
 import {
   Field, Controls, Validators,
-  Parsers, FormSpy,
-  WhenFieldChanges, WhenValueChanges,
+  Parsers, FormSpy, WhenFieldChanges,
 } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
@@ -36,8 +35,8 @@ const JobFormModal = styled((props) => {
 
   const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
+  const formRef = useRef(null);
   const [formValues, setFormValues] = useState({});
-  const [tempArea, setTempArea] = useState(null);
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
@@ -57,7 +56,7 @@ const JobFormModal = styled((props) => {
     [omeroDatasetThumbnails],
   );
 
-  const areaValue = useMemo(
+  const segmentationArea = useMemo(
     () => {
       if (!formValues?.content?.segment) {
         return null;
@@ -88,6 +87,13 @@ const JobFormModal = styled((props) => {
     [],
   );
 
+  const onForm = useCallback(
+    (form) => {
+      formRef.current = form;
+    },
+    [],
+  );
+
   const onFormChange = useCallback(
     ({ values }) => {
       // Workaround for FormSpy - Cannot update a component while rendering a different component
@@ -99,7 +105,16 @@ const JobFormModal = styled((props) => {
 
   const onAreaChange = useCallback(
     (area) => {
-      setTempArea(area);
+      const { current: form } = formRef;
+
+      if (!area) {
+        form.change('content.start', {});
+        form.change('content.stop', {});
+        return;
+      }
+
+      form.change('content.start', { x: area[0].x, y: area[0].y });
+      form.change('content.stop', { x: area[1].x, y: area[1].y });
     },
     [],
   );
@@ -183,6 +198,7 @@ const JobFormModal = styled((props) => {
       closeButtonText={closeButtonText}
       submitButtonText={submitButtonText}
       open={open}
+      onForm={onForm}
       onClose={onClose}
       onSubmit={onSubmit}
     >
@@ -231,30 +247,6 @@ const JobFormModal = styled((props) => {
         becomes={false}
         set="content.stop.y"
         to={undefined}
-      />
-
-      <WhenValueChanges
-        value={tempArea?.[0]?.x}
-        set="content.start.x"
-        to={tempArea?.[0]?.x}
-      />
-
-      <WhenValueChanges
-        value={tempArea?.[0]?.y}
-        set="content.start.y"
-        to={tempArea?.[0]?.y}
-      />
-
-      <WhenValueChanges
-        value={tempArea?.[1]?.x}
-        set="content.stop.x"
-        to={tempArea?.[1]?.x}
-      />
-
-      <WhenValueChanges
-        value={tempArea?.[1]?.y}
-        set="content.stop.y"
-        to={tempArea?.[1]?.y}
       />
 
       <Col $maxWidth="390px">
@@ -475,7 +467,7 @@ const JobFormModal = styled((props) => {
               label="Omero IDs"
               component={Controls.ImagePicker}
               editable={formValues?.content?.segment}
-              areaValue={areaValue}
+              area={segmentationArea}
               options={options}
               validate={Validators.required}
               onAreaChange={onAreaChange}
