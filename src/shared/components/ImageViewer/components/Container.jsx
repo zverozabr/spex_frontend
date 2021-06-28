@@ -69,13 +69,13 @@ export default styled.div`
     display: block;
   }
 
-  .sr-only {
-    display: none;
-  }
-  
-  &.pathCreated .leaflet-draw-draw-rectangle {
+  &.with-rectangle .leaflet-draw-draw-rectangle {
     pointer-events: none;
     opacity: 0.5;
+  }
+
+  .sr-only {
+    display: none;
   }
 
   .leaflet-disabled {

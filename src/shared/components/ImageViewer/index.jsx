@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+/* eslint-disable react/jsx-sort-default-props */
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import classNames from 'classnames';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -6,7 +7,7 @@ import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import SideBarToggleIcon from 'mdi-react/MenuRightIcon';
 import PropTypes from 'prop-types';
-import { MapContainer, ZoomControl, FeatureGroup } from 'react-leaflet';
+import { MapContainer, ZoomControl, FeatureGroup, Rectangle } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import { useToggle } from 'react-use';
 
@@ -30,12 +31,20 @@ const {
 const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/webgateway/render_image_region`;
 
 const ImageViewer = (props) => {
-  const { className, data, editable } = props;
+  const {
+    className,
+    data,
+    value,
+    editable,
+    onChange,
+  } = props;
 
   const [map, setMap] = useState(null);
+  const featureGroup = useRef(null);
+
   const [channels, setChannels] = useState(cloneDeep(data.channels));
   const [sidebarCollapsed, toggleSidebar] = useToggle(true);
-  const [pathCreated, togglePath] = useToggle(false);
+  const [rectangleBounds, setRectangleBounds] = useState(null);
 
   const onSidebarMouseEnter = useCallback(
     () => {
@@ -70,57 +79,89 @@ const ImageViewer = (props) => {
     [channels],
   );
 
-  const onCreatePath = useCallback(
-    (event) => {
-      const [ latLngs ] = event.layer.getLatLngs();
-      const { sourceTarget: _map } = event;
-      const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
-      const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
-      const region = [Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y)];
-      // eslint-disable-next-line no-console
-      console.log('region:', region.join(', '));
-      togglePath();
+  const onPathChange = useCallback(
+    (_map, layer) => {
+      if (onChange && _map && layer) {
+        const [ latLngs ] = layer.getLatLngs();
+        const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
+        const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
+        const region = [{
+          x: Math.max(0, Math.round(p1.x)),
+          y: Math.max(0, Math.round(p1.y)),
+        }, {
+          x: Math.max(0, Math.round(p2.x)),
+          y: Math.max(0, Math.round(p2.y)),
+        }];
+        onChange(region);
+      }
+      featureGroup.current.clearLayers();
     },
-    [togglePath],
+    [onChange],
   );
 
-  const onEditPath = useCallback(
+  const onPathCreate = useCallback(
     (event) => {
-      const [ latLngs ] = event.layer.getLatLngs();
       const { sourceTarget: _map } = event;
-      const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
-      const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
-      const region = [Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y)];
-      // eslint-disable-next-line no-console
-      console.log('region:', region.join(', '));
+      const { layer } = event;
+      onPathChange(_map, layer);
     },
-    [],
+    [onPathChange],
   );
 
-  const onDeletedPath = useCallback(
+  const onPathEdit = useCallback(
+    (event) => {
+      const { sourceTarget: _map } = event;
+      const [ layer ] = event.layers.getLayers();
+      onPathChange(_map, layer);
+    },
+    [onPathChange],
+  );
+
+  const onPathDeleted = useCallback(
     () => {
-      // eslint-disable-next-line no-console
-      console.log('path deleted');
-      togglePath();
+      onChange(null);
     },
-    [togglePath],
+    [onChange],
   );
 
   useEffect(
     () => {
       L.EditToolbar.Delete.include({
-        enable: function () {
+        enable: () => {
           // eslint-disable-next-line react/no-this-in-sfc
-          this.options.featureGroup.clearLayers();
-          onDeletedPath();
+          featureGroup.current.clearLayers();
+          onPathDeleted();
         },
       });
     },
-    [onDeletedPath, togglePath],
+    [onPathDeleted],
+  );
+
+  useEffect(
+    () => {
+      if (!map?.options?.crs) {
+        return;
+      }
+
+      if (value?.filter((el) => el?.x >= 0 && el?.y >=0).length !== 2) {
+        featureGroup.current.clearLayers();
+        setRectangleBounds(null);
+        return;
+      }
+
+      const p1 = L.point(value[0].x, value[0].y);
+      const latlng1 = map.options.crs.pointToLatLng(p1);
+      const p2 = L.point(value[1].x, value[1].y);
+      const latlng2 = map.options.crs.pointToLatLng(p2);
+      const bounds = [latlng1, latlng2];
+
+      setRectangleBounds(bounds);
+    },
+    [map, value],
   );
 
   return (
-    <Container className={classNames(className, { pathCreated, editable })}>
+    <Container className={classNames(className, { editable, 'with-rectangle': rectangleBounds })}>
       <MapContainer
         crs={L.CRS.Simple}
         center={[0, 0]}
@@ -141,7 +182,7 @@ const ImageViewer = (props) => {
 
         <FullscreenControl position="topright" />
 
-        <FeatureGroup>
+        <FeatureGroup ref={featureGroup}>
           <EditControl
             position="topright"
             draw={{
@@ -154,10 +195,11 @@ const ImageViewer = (props) => {
               circlemarker: false,
             }}
             edit={{ edit: true, remove: true }}
-            onEdited={onEditPath}
-            onCreated={onCreatePath}
-            onDeleted={onDeletedPath}
+            onEdited={onPathEdit}
+            onCreated={onPathCreate}
+            onDeleted={onPathDeleted}
           />
+          {rectangleBounds && <Rectangle bounds={rectangleBounds} />}
         </FeatureGroup>
 
         <ZoomControl position="bottomright" />
@@ -216,15 +258,25 @@ ImageViewer.propTypes = {
     channels: PropTypes.arrayOf(PropTypes.shape({})),
   }),
   /**
+   * Selected area value [{ x1, y1 }, { x2, y2 }]
+   */
+  value: PropTypes.arrayOf(PropTypes.shape({ x: PropTypes.number, y: PropTypes.number })),
+  /**
    * If true, edit controls will be displayed (selection of an area on the image).
    */
   editable: PropTypes.bool,
+  /**
+   * A callback fired when selected area changed.
+   */
+  onChange: PropTypes.func,
 };
 
 ImageViewer.defaultProps = {
   className: '',
   data: {},
+  value: null,
   editable: false,
+  onChange: null,
 };
 
 export default ImageViewer;
