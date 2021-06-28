@@ -5,7 +5,21 @@ import Table from '+components/Table';
 export default styled((props) => {
   const { className, actions, original: row, onSelectedRowsChange, selectedRowIds } = props;
   const columns = useMemo(
-    () => ([{
+    () => ([
+      {
+        id: 'id',
+        accessor: 'id',
+        Header: 'id',
+        Cell: ({ row: { original: { id } } }) => useMemo(
+          () => (
+            // <Link to={`/${PathNames.jobs}/${id}`}>
+            <div> {id} </div>
+            // </Link>
+          ),
+          [id],
+        ),
+      },
+      {
       id: 'status',
       accessor: 'status',
       Header: 'Status',

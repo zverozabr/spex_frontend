@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import { actions as omeroActions } from '@/redux/modules/omero';
 
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
@@ -32,8 +33,10 @@ const ManageJobsModal = styled((props) => {
 
   const [value] = useState([]);
 
-  const isJobsFetching = useSelector(jobsSelectors.isFetching);
+
   const jobs = useSelector(jobsSelectors.getJobs);
+  const isTasksFetching = useSelector(tasksSelectors.isFetching);
+  const tasks = useSelector(tasksSelectors.getTasks);
   const selectedRef = useRef({});
 
   const columns = useMemo(
@@ -71,11 +74,35 @@ const ManageJobsModal = styled((props) => {
       [],
     );
 
+    const taskscolumns = useMemo(
+      () => ([
+        {
+          id: 'id',
+          accessor: 'id',
+          Header: 'id',
+        },
+        {
+          id: 'name',
+          accessor: 'name',
+          Header: 'name',
+        }
+        ,]),
+        [],
+      );
+
   const data = useMemo(
     () => Object.values(jobs),
     [jobs],
   );
-  const emitSubmit = useCallback(
+
+  const t_data = useMemo(
+    () => {
+      return Object.values(tasks);
+      },
+    [tasks],
+  );
+
+ const emitSubmit = useCallback(
     () => {
       const selected = Object.values(selectedRef.current).flat();
       onSubmit(project, selected);
@@ -118,10 +145,33 @@ const ManageJobsModal = styled((props) => {
     [dispatch, jobs],
   );
 
+  useEffect(
+    () => {
+      if (Object.keys(jobs || {}).length) {
+        return;
+      }
+      dispatch(jobsActions.fetchJobs({}));
+    },
+    [dispatch, jobs],
+  );
+
+  // TODO add filter fetched tasks
+  useEffect(
+    () => {
+      if (project.taskIds.length)  {
+        return;
+      }
+      dispatch(tasksActions.fetchTasks({}));
+    },
+    [dispatch, tasks],
+  );
+
   const onSelectedRowsChange = useCallback(
     (selected, parent) => {
-      // console.log({ selected, parent });
+
       selectedRef.current[parent.id] = selected.map(({ id }) => id);
+      const selected2 = Object.values(selectedRef.current).flat();
+      console.log(selected2);
     },
     [],
   );
@@ -155,7 +205,14 @@ const ManageJobsModal = styled((props) => {
             data={data}
             SubComponent={WithSelected}
           />
+          <Table
+            columns={taskscolumns}
+            data={t_data}
+          />
         </Row>
+        {/* <Row> */}
+
+        {/* </Row> */}
       </ModalBody>
       <ModalFooter>
         <Button

@@ -12,7 +12,6 @@ import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Table, { ButtonsCell } from '+components/Table';
 import Row from './Row';
 
-const testSelected = ['1556474', '1780853'];
 
 const ManageResourcesModal = styled((props) => {
   const {
@@ -33,10 +32,6 @@ const ManageResourcesModal = styled((props) => {
 
   const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
   const resources = useSelector(resourcesSelectors.getResources);
-
-  const actions = [
-    { name: 'Submit', fn: rows => emitSubmit(rows) },
-    { name: 'Cancel', fn: rows => emitCancel() }];
 
   const columns = useMemo(
     () => ([
@@ -123,7 +118,6 @@ const ManageResourcesModal = styled((props) => {
             data={data}
             allowRowSelection
             onSelectedRowsChange={setSelectedRows}
-            actions={actions}
             selectedRowIds={project?.resource_ids}
           />
         </Row>

@@ -7,7 +7,7 @@ import hash from '+utils/hash';
 const initialState = {
   isFetching: false,
   error: '',
-  jobs: {},
+  tasks: {},
 };
 
 let api;
@@ -18,53 +18,53 @@ const initApi = () => {
   }
 };
 
-const baseUrl = '/jobs';
+const baseUrl = '/tasks';
 
 const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
 
-const normalizeJob = (job) => {
+const normalizeTask = (task) => {
   let content;
   try {
-    content = JSON.parse(job.content);
+    content = JSON.parse(task.content);
   } catch(e) {
     content = {};
   }
   content = isObject(content) ? content : {};
-  return { ...job, content };
+  return { ...task, content };
 };
 
 const slice = createSlice({
-  name: 'jobs',
+  name: 'tasks',
   initialState,
   reducers: {
-    fetchJobs: startFetching,
-    createJob: startFetching,
-    updateJob: startFetching,
-    deleteJob: startFetching,
+    fetchTasks: startFetching,
+    createTask: startFetching,
+    updateTask: startFetching,
+    deleteTask: startFetching,
 
-    fetchJobsSuccess: (state, { payload: jobs }) => {
+    fetchTasksSuccess: (state, { payload: tasks }) => {
       stopFetching(state);
-      const normalizedJobs = jobs.map(normalizeJob);
-      state.jobs = hash(normalizedJobs || [], 'id');
+      const normalizedTasks = tasks.map(normalizeTask);
+      state.tasks = hash(normalizedTasks || [], 'id');
     },
 
-    updateJobSuccess: (state, { payload: job }) => {
+    updateTaskSuccess: (state, { payload: task }) => {
       stopFetching(state);
-      state.jobs[job.id] = normalizeJob(job);
+      state.tasks[task.id] = normalizeTask(task);
     },
 
-    createJobSuccess: (state, { payload: job }) => {
+    createTaskSuccess: (state, { payload: task }) => {
       stopFetching(state);
-      state.jobs[job.id] = normalizeJob(job);
+      state.tasks[task.id] = normalizeTask(task);
     },
 
-    deleteJobSuccess(state, { payload: id }) {
+    deleteTaskSuccess(state, { payload: id }) {
       stopFetching(state);
-      delete state.jobs[id];
+      delete state.tasks[id];
     },
 
-    clearJobs: (state) => {
-      state.jobs = {};
+    clearTasks: (state) => {
+      state.tasks = {};
     },
 
     requestFail(state, { payload: { message } }) {
@@ -76,15 +76,14 @@ const slice = createSlice({
   },
 
   sagas: (actions) => ({
-    [actions.fetchJobs]: {
+    [actions.fetchTasks]: {
       * saga() {
         initApi();
 
         try {
           const url = `${baseUrl}`;
           const { data } = yield call(api.get, url);
-          const result = data.data.filter((job) => job.tasks.length > 0);
-          yield put(actions.fetchJobsSuccess(result));
+          yield put(actions.fetchTasksSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -93,14 +92,14 @@ const slice = createSlice({
       },
     },
 
-    [actions.createJob]: {
-      * saga({ payload: job }) {
+    [actions.createTask]: {
+      * saga({ payload: task }) {
         initApi();
 
         try {
           const url = `${baseUrl}`;
-          const { data } = yield call(api.post, url, job);
-          yield put(actions.createJobSuccess(data.data));
+          const { data } = yield call(api.post, url, task);
+          yield put(actions.createTaskSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -109,14 +108,14 @@ const slice = createSlice({
       },
     },
 
-    [actions.updateJob]: {
-      * saga({ payload: job }) {
+    [actions.updateTask]: {
+      * saga({ payload: task }) {
         initApi();
 
         try {
-          const url = `${baseUrl}/${job.id}`;
-          const { data } = yield call(api.put, url, job);
-          yield put(actions.updateJobSuccess(data.data));
+          const url = `${baseUrl}/${task.id}`;
+          const { data } = yield call(api.put, url, task);
+          yield put(actions.updateTaskSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -125,14 +124,14 @@ const slice = createSlice({
       },
     },
 
-    [actions.deleteJob]: {
+    [actions.deleteTask]: {
       * saga({ payload: id }) {
         initApi();
 
         try {
           const url = `${baseUrl}/${id}`;
           yield call(api.delete, url);
-          yield put(actions.deleteJobSuccess(id));
+          yield put(actions.deleteTaskSuccess(id));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -148,14 +147,14 @@ const slice = createSlice({
       (state) => state?.isFetching,
     ),
 
-    getJobs: createSelector(
+    getTasks: createSelector(
       [getState],
-      (state) => state?.jobs,
+      (state) => state?.tasks,
     ),
 
-    getJob: (id) => createSelector(
+    getTask: (id) => createSelector(
       [getState],
-      (state) => state?.jobs[id],
+      (state) => state?.tasks[id],
     ),
   }),
 });
