@@ -29,7 +29,9 @@ const ImagePicker = styled((props) => {
     options,
     input,
     meta,
+    areaValue,
     editable,
+    onAreaChange,
   } = props;
 
   const dispatch = useDispatch();
@@ -61,32 +63,36 @@ const ImagePicker = styled((props) => {
       // wrap="nowrap"
       container
     >
-      <Grid className="list" item>
-        <Card>
-          <List dense component="div" role="list">
-            {options.map((el) => (
-              <ListItem
-                key={el.id}
-                role="listitem"
-                selected={include(value, el)}
-                onClick={() => onChange([el])}
-                button
-              >
-                {el.img && <ListItemIcon><img src={el.img} alt={el.title || 'Image'} /></ListItemIcon>}
-                {el.title && <ListItemText id={`image-picker-item-${el.id}-label`} primary={el.title} />}
-              </ListItem>
-            ))}
-            <ListItem />
-          </List>
-        </Card>
-      </Grid>
+      {options.length > 0 && (
+        <Grid className="list" item>
+          <Card>
+            <List dense component="div" role="list">
+              {options.map((el) => (
+                <ListItem
+                  key={el.id}
+                  role="listitem"
+                  selected={include(value, el)}
+                  onClick={() => onChange([el])}
+                  button
+                >
+                  {el.img && <ListItemIcon><img src={el.img} alt={el.title || 'Image'} /></ListItemIcon>}
+                  {el.title && <ListItemText id={`image-picker-item-${el.id}-label`} primary={el.title} />}
+                </ListItem>
+              ))}
+              <ListItem />
+            </List>
+          </Card>
+        </Grid>
+      )}
 
       <Grid className="image" item>
-        {!imageDetails && <NoData>Please, select image</NoData>}
+        {!imageDetails && <NoData>No image to display</NoData>}
         {imageDetails && (
           <ImageViewer
             data={imageDetails}
+            value={areaValue}
             editable={editable}
+            onChange={onAreaChange}
           />
         )}
       </Grid>
@@ -154,6 +160,12 @@ const ImagePicker = styled((props) => {
     
     border-radius: 4px;
   }
+
+  .image:only-child {
+    margin-left: unset;
+    max-width: 100% !important;
+    flex-basis: 100% !important;
+  }
   
   &.invalid .list {
     border: 1px solid #f44336;
@@ -173,8 +185,10 @@ ImagePicker.propTypes = {
     onChange: PropTypes.func,
   }),
   value: PropTypes.arrayOf(PropTypes.shape({})),
+  areaValue: PropTypes.arrayOf(PropTypes.shape({ x: PropTypes.number, y: PropTypes.number })),
   editable: PropTypes.bool,
   onChange: PropTypes.func,
+  onAreaChange: PropTypes.func,
 };
 
 ImagePicker.defaultProps = {
@@ -182,8 +196,10 @@ ImagePicker.defaultProps = {
   options: {},
   input: null,
   value: [],
+  areaValue: null,
   editable: false,
   onChange: onNoop,
+  onAreaChange: null,
 };
 
 export default ImagePicker;
