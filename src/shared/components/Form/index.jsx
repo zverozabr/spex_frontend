@@ -9,6 +9,7 @@ import TransferList from '+components/TransferList';
 
 import FormRenderer from './components/FormRenderer';
 import WhenFieldChanges from './components/WhenFieldChanges';
+import WhenValueChanges from './components/WhenValueChanges';
 import Parsers from './utils/Parsers';
 import Validators from './utils/Validators';
 
@@ -33,6 +34,7 @@ export {
   Field,
   FormRenderer,
   WhenFieldChanges,
+  WhenValueChanges,
   FormSpy,
   Controls,
   Validators,

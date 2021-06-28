@@ -1,4 +1,4 @@
-const number = (value) => (isNaN(parseFloat(value)) ? '' : parseFloat(value));
+const number = (value) => (isNaN(parseFloat(value)) ? null : parseFloat(value));
 
 const Parsers = {
   number,
