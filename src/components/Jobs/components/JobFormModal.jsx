@@ -8,7 +8,8 @@ import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/mo
 
 import {
   Field, Controls, Validators,
-  Parsers, FormSpy, WhenFieldChanges,
+  Parsers, FormSpy,
+  WhenFieldChanges, WhenValueChanges,
 } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
@@ -36,6 +37,7 @@ const JobFormModal = styled((props) => {
   const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
   const [formValues, setFormValues] = useState({});
+  const [tempArea, setTempArea] = useState(null);
 
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
   const omeroProjects = useSelector(omeroSelectors.getProjects);
@@ -55,6 +57,22 @@ const JobFormModal = styled((props) => {
     [omeroDatasetThumbnails],
   );
 
+  const areaValue = useMemo(
+    () => {
+      if (!formValues?.content?.segment) {
+        return null;
+      }
+
+      const val = [formValues.content.start, formValues.content.stop];
+      if (val.filter((el) => el?.x >= 0 && el?.y >=0).length !== 2) {
+        return null;
+      }
+
+      return val;
+    },
+    [formValues],
+  );
+
   const onProjectChange = useCallback(
     ({ target: { value } }) => {
       setOmeroProjectId(value);
@@ -70,11 +88,18 @@ const JobFormModal = styled((props) => {
     [],
   );
 
-  const onChange = useCallback(
+  const onFormChange = useCallback(
     ({ values }) => {
       // Workaround for FormSpy - Cannot update a component while rendering a different component
       // @see: https://github.com/final-form/react-final-form/issues/809
       setTimeout(() => { setFormValues(values); }, 0);
+    },
+    [],
+  );
+
+  const onAreaChange = useCallback(
+    (area) => {
+      setTempArea(area);
     },
     [],
   );
@@ -163,7 +188,7 @@ const JobFormModal = styled((props) => {
     >
       <FormSpy
         subscription={{ values: true }}
-        onChange={onChange}
+        onChange={onFormChange}
       />
 
       <WhenFieldChanges
@@ -206,6 +231,30 @@ const JobFormModal = styled((props) => {
         becomes={false}
         set="content.stop.y"
         to={undefined}
+      />
+
+      <WhenValueChanges
+        value={tempArea?.[0]?.x}
+        set="content.start.x"
+        to={tempArea?.[0]?.x}
+      />
+
+      <WhenValueChanges
+        value={tempArea?.[0]?.y}
+        set="content.start.y"
+        to={tempArea?.[0]?.y}
+      />
+
+      <WhenValueChanges
+        value={tempArea?.[1]?.x}
+        set="content.stop.x"
+        to={tempArea?.[1]?.x}
+      />
+
+      <WhenValueChanges
+        value={tempArea?.[1]?.y}
+        set="content.stop.y"
+        to={tempArea?.[1]?.y}
       />
 
       <Col $maxWidth="390px">
@@ -426,8 +475,10 @@ const JobFormModal = styled((props) => {
               label="Omero IDs"
               component={Controls.ImagePicker}
               editable={formValues?.content?.segment}
+              areaValue={areaValue}
               options={options}
               validate={Validators.required}
+              onAreaChange={onAreaChange}
             />
           )}
 
