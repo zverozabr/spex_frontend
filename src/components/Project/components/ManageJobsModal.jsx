@@ -61,7 +61,7 @@ const ManageJobsModal = styled((props) => {
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
           // <Link to={`/${PathNames.jobs}/${id}`}>
-          <div> {name} </div>
+          <div> {id} </div>
           // </Link>
         ),
         [id, name],
@@ -145,23 +145,31 @@ const ManageJobsModal = styled((props) => {
     [dispatch, jobs],
   );
 
-  useEffect(
-    () => {
-      if (Object.keys(jobs || {}).length) {
-        return;
-      }
-      dispatch(jobsActions.fetchJobs({}));
-    },
-    [dispatch, jobs],
-  );
-
   // TODO add filter fetched tasks
   useEffect(
     () => {
-      if (project.taskIds.length)  {
+      if (project.taskIds.length && Object.keys(tasks || {}).length != 0 && Object.keys(jobs || {}).length != 0 && Object.values(selectedRef.current).flat() == 0) {
+        let curr = {};
+        let job = Object.values(jobs).map(function(o) {
+          for (let key in tasks) {
+            if (o.tasks.find(task => task.id === key))
+              curr[o.id] = [tasks[key].id];
+              return o;
+          };
+        });
+        selectedRef.current = curr;
+      }
+    },
+    [dispatch, selectedRef],
+  );
+
+
+  useEffect(
+    () => {
+      if (project.taskIds.length == 0 || Object.keys(tasks || {}).length != 0) {
         return;
       }
-      dispatch(tasksActions.fetchTasks({}));
+      dispatch(tasksActions.fetchTasksByIds(project.taskIds));
     },
     [dispatch, tasks],
   );
@@ -170,16 +178,14 @@ const ManageJobsModal = styled((props) => {
     (selected, parent) => {
 
       selectedRef.current[parent.id] = selected.map(({ id }) => id);
-      const selected2 = Object.values(selectedRef.current).flat();
-      console.log(selected2);
+      dispatch(tasksActions.fetchTasksByIds(Object.values(selectedRef.current).flat()));
+
     },
     [],
   );
 
   const WithSelected = useCallback(
     (subProbs) => {
-      // console.log({ subProbs });
-
       return (
         <SubComponent
           {...subProbs}
@@ -205,6 +211,8 @@ const ManageJobsModal = styled((props) => {
             data={data}
             SubComponent={WithSelected}
           />
+        </Row>
+        <Row>
           <Table
             columns={taskscolumns}
             data={t_data}

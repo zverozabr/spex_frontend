@@ -37,6 +37,7 @@ const slice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
+    fetchTasksByIds: startFetching,
     fetchTasks: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
@@ -83,6 +84,22 @@ const slice = createSlice({
         try {
           const url = `${baseUrl}`;
           const { data } = yield call(api.get, url);
+          yield put(actions.fetchTasksSuccess(data.data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchTasksByIds]: {
+      * saga({ payload: ids }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/list`;
+          const { data } = yield call(api.post, url, { ids });
           yield put(actions.fetchTasksSuccess(data.data));
         } catch (error) {
           yield put(actions.requestFail(error));
