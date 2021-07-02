@@ -361,7 +361,7 @@ const Project = () => {
           <Tab label="Tasks" />
         </Tabs>
         <TabPanel value={activeDataTab} index={0}>
-          <ButtonsContainer style={{ 'margin-bottom': '5px' }}>
+          <ButtonsContainer style={{ 'padding': '14px', 'background': '#ccc' }}>
             <Button
               color={ButtonColors.danger}
               onClick={onRemoveImages}
