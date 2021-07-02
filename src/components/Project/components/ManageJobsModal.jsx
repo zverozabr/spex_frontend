@@ -5,17 +5,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
-import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import { actions as omeroActions } from '@/redux/modules/omero';
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
-import Button, { ButtonColors, ButtonSizes } from '+components/Button';
+import Button, { ButtonColors } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
-import Table, { ButtonsCell } from '+components/Table';
+import Table from '+components/Table';
 
+import Col from './Col';
 import Row from './Row';
 import SubComponent from './SubComponent';
-
-const none = 'none';
 
 const ManageJobsModal = styled((props) => {
   const {
@@ -30,14 +29,11 @@ const ManageJobsModal = styled((props) => {
   } = props;
 
   const dispatch = useDispatch();
-
-  const [value] = useState([]);
-
-
   const jobs = useSelector(jobsSelectors.getJobs);
-  const isTasksFetching = useSelector(tasksSelectors.isFetching);
   const tasks = useSelector(tasksSelectors.getTasks);
   const selectedRef = useRef({});
+  const [selectedRows, setSelectedRows] = useState([]);
+
 
   const columns = useMemo(
     () => ([{
@@ -64,7 +60,7 @@ const ManageJobsModal = styled((props) => {
           <div> {id} </div>
           // </Link>
         ),
-        [id, name],
+        [id],
       ),
     }, {
       id: 'omeroIds',
@@ -85,8 +81,8 @@ const ManageJobsModal = styled((props) => {
           id: 'name',
           accessor: 'name',
           Header: 'name',
-        }
-        ,]),
+        },
+        ]),
         [],
       );
 
@@ -97,17 +93,26 @@ const ManageJobsModal = styled((props) => {
 
   const t_data = useMemo(
     () => {
-      return Object.values(tasks);
+      if (project.taskIds.length === 0 || tasks.length === 0) {
+        return [];
+      };
+      if (selectedRows.length === 0) {
+        setSelectedRows(project.taskIds);
+        return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
+      } else {
+        return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
+      };
       },
-    [tasks],
+
+    [tasks, selectedRows, project.taskIds],
   );
 
  const emitSubmit = useCallback(
     () => {
-      const selected = Object.values(selectedRef.current).flat();
+      const selected = Object.values(selectedRows).flat();
       onSubmit(project, selected);
     },
-    [onSubmit],
+    [onSubmit, selectedRows, project],
   );
 
   const emitCancel = useCallback(
@@ -145,41 +150,38 @@ const ManageJobsModal = styled((props) => {
     [dispatch, jobs],
   );
 
-  // TODO add filter fetched tasks
   useEffect(
     () => {
-      if (project.taskIds.length && Object.keys(tasks || {}).length != 0 && Object.keys(jobs || {}).length != 0 && Object.values(selectedRef.current).flat() == 0) {
-        let curr = {};
-        let job = Object.values(jobs).map(function(o) {
-          for (let key in tasks) {
-            if (o.tasks.find(task => task.id === key))
-              curr[o.id] = [tasks[key].id];
-              return o;
-          };
-        });
-        selectedRef.current = curr;
-      }
-    },
-    [dispatch, selectedRef],
-  );
-
-
-  useEffect(
-    () => {
-      if (project.taskIds.length == 0 || Object.keys(tasks || {}).length != 0) {
+      if (project.taskIds.length === 0 || Object.keys(tasks || {}).length !== 0) {
         return;
       }
-      dispatch(tasksActions.fetchTasksByIds(project.taskIds));
+      dispatch(tasksActions.fetchTasks({}));
     },
-    [dispatch, tasks],
+    [dispatch, tasks, project.taskIds.length],
+  );
+
+  useEffect(
+    () => {
+      if (project.taskIds.length > 0 && Object.keys(tasks || {}).length !== 0 && Object.keys(jobs || {}).length !== 0) {
+        let curr = {};
+        Object.values(jobs).forEach(function(o) {
+          curr[o.id] = [];
+          project.taskIds.forEach(function(tid) {
+            if (o.tasks.find((task) => task.id === tid))
+              curr[o.id].push(tasks[tid].id);
+          });
+        });
+        selectedRef.current = curr;
+      };
+    },
+    [jobs, project.taskIds, tasks],
   );
 
   const onSelectedRowsChange = useCallback(
     (selected, parent) => {
-
       selectedRef.current[parent.id] = selected.map(({ id }) => id);
-      dispatch(tasksActions.fetchTasksByIds(Object.values(selectedRef.current).flat()));
-
+      const unqAr = Array.from(new Set(Object.values(selectedRef.current).flat()));
+      setSelectedRows(unqAr);
     },
     [],
   );
@@ -194,7 +196,7 @@ const ManageJobsModal = styled((props) => {
         />
       );
     },
-    [onSelectedRowsChange],
+    [onSelectedRowsChange, project.taskIds],
   );
 
   return (
@@ -205,22 +207,21 @@ const ManageJobsModal = styled((props) => {
     >
       <ModalHeader>{header}</ModalHeader>
       <ModalBody>
-        <Row>
-          <Table
-            columns={columns}
-            data={data}
-            SubComponent={WithSelected}
-          />
+        <Row >
+          <Col >
+            <Table
+              columns={columns}
+              data={data}
+              SubComponent={WithSelected}
+            />
+          </Col>
+          <Col >
+            <Table
+              columns={taskscolumns}
+              data={t_data}
+            />
+          </Col>
         </Row>
-        <Row>
-          <Table
-            columns={taskscolumns}
-            data={t_data}
-          />
-        </Row>
-        {/* <Row> */}
-
-        {/* </Row> */}
       </ModalBody>
       <ModalFooter>
         <Button

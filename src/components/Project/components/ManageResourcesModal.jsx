@@ -7,9 +7,9 @@ import styled from 'styled-components';
 import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 
-import Button, { ButtonColors, ButtonSizes } from '+components/Button';
+import Button, { ButtonColors } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
-import Table, { ButtonsCell } from '+components/Table';
+import Table from '+components/Table';
 import Row from './Row';
 
 
@@ -26,11 +26,8 @@ const ManageResourcesModal = styled((props) => {
   } = props;
 
   const dispatch = useDispatch();
-  const none = 'none';
 
   const [selectedRows, setSelectedRows] = useState([]);
-
-  const isResourcesFetching = useSelector(resourcesSelectors.isFetching);
   const resources = useSelector(resourcesSelectors.getResources);
 
   const columns = useMemo(
@@ -45,13 +42,13 @@ const ManageResourcesModal = styled((props) => {
             <div> {id} </div>
             // </Link>
           ),
-          [id, name],
+          [id],
         ),
       }, {
         id: 'omeroIds',
         accessor: 'omeroIds',
         Header: 'Omero Image IDs',
-      }
+      },
     ]),
     [],
   );
@@ -66,7 +63,7 @@ const ManageResourcesModal = styled((props) => {
       const selected = selectedRows.map((el) => String(el?.id) || String(el));
       onSubmit(project , selected);
     },
-    [onSubmit, selectedRows],
+    [onSubmit, selectedRows, project],
   );
 
   const emitCancel = useCallback(
