@@ -211,7 +211,7 @@ const JobFormModal = styled((props) => {
         field="single"
         becomes={true} //eslint-disable-line react/jsx-boolean-value
         set="omeroIds"
-        to={[]}
+        to={formValues.omeroIds?.length > 1 ? [formValues.omeroIds[0]] : formValues.omeroIds}
       />
 
       <WhenFieldChanges
