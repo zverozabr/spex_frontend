@@ -46,12 +46,14 @@ const JobFormModal = styled((props) => {
 
   const jobThumbnails = useSelector(omeroSelectors.getThumbnails(initialValues.id));
 
+  const imageDetails = useSelector(omeroSelectors.getImageDetails(formValues.omeroIds?.[0]?.id));
+
   const normalizedOmeroIds = useMemo(
     () => (Object.keys(jobThumbnails || {}).map((id) =>({ id, img: jobThumbnails[id] }))),
     [jobThumbnails],
   );
 
-  const options = useMemo(
+  const omeroImagesAsOptions = useMemo(
     () => (Object.keys(omeroDatasetThumbnails || {}).map((id) => ({ id, img: omeroDatasetThumbnails[id] }))),
     [omeroDatasetThumbnails],
   );
@@ -186,6 +188,30 @@ const JobFormModal = styled((props) => {
     [dispatch, initialValues],
   );
 
+  useEffect(
+    () => {
+      if (!formValues.omeroIds?.length) {
+        return;
+      }
+      const { id: imageId } = formValues.omeroIds[0];
+      dispatch(omeroActions.fetchImageDetails(imageId));
+      return () => {
+        dispatch(omeroActions.clearImageDetails(imageId));
+      };
+    },
+    [dispatch, formValues.omeroIds],
+  );
+
+  useEffect(
+    () => {
+      if (imageDetails?.meta && formValues.omeroIds?.length === 1) {
+        setOmeroProjectId(imageDetails.meta.projectId);
+        setOmeroDatasetId(imageDetails.meta.datasetId);
+      }
+    },
+    [formValues.omeroIds?.length, imageDetails],
+  );
+
   return (
     <FormModal
       className={className}
@@ -193,6 +219,7 @@ const JobFormModal = styled((props) => {
       initialValues={{
         ...initialValues,
         single: initialValues.single ?? normalizedOmeroIds.length <= 1,
+        slices: initialValues.content.slice,
         omeroIds: normalizedOmeroIds,
       }}
       closeButtonText={closeButtonText}
@@ -215,6 +242,13 @@ const JobFormModal = styled((props) => {
       />
 
       <WhenFieldChanges
+        field="slices"
+        becomes={false}
+        set="content.slice"
+        to={undefined}
+      />
+
+      <WhenFieldChanges
         field="single"
         becomes={false}
         set="content.segment"
@@ -224,99 +258,160 @@ const JobFormModal = styled((props) => {
       <WhenFieldChanges
         field="content.segment"
         becomes={false}
-        set="content.start.x"
+        set="content.start"
         to={undefined}
       />
 
       <WhenFieldChanges
         field="content.segment"
         becomes={false}
-        set="content.start.y"
+        set="content.stop"
         to={undefined}
       />
 
-      <WhenFieldChanges
-        field="content.segment"
-        becomes={false}
-        set="content.stop.x"
-        to={undefined}
-      />
-
-      <WhenFieldChanges
-        field="content.segment"
-        becomes={false}
-        set="content.stop.y"
-        to={undefined}
-      />
-
-      <Col $maxWidth="390px">
-        <Field
-          name="name"
-          label="Name"
-          component={Controls.TextField}
-          validate={Validators.required}
-        />
-
-        <Group>
+      <Col>
+        <Group $label="Images" $height="100%">
           <Row>
             <Field
-              name="content.c"
-              label="Channel"
-              component={Controls.TextField}
-              InputProps={{
-              inputProps: {
-                type: 'number',
-                min: 0,
-              },
+              name="single"
+              label="123"
+              formControlProps={{
+                hiddenLabel: true, // not working
+                className: 'hidden-label',
               }}
-              parse={Parsers.number}
+              component={Controls.Select}
+              validate={Validators.required}
+            >
+              <Controls.SelectOption value={true}>One Image Mode</Controls.SelectOption> {/* eslint-disable-line react/jsx-boolean-value */}
+              <Controls.SelectOption value={false}>Multi Images Mode</Controls.SelectOption>
+            </Field>
+
+            <Select
+              defaultValue={none}
+              value={omeroProjectId}
+              onChange={onProjectChange}
+              disabled={isOmeroFetching}
+            >
+              <Option value={none}>Select Omero Project</Option>
+              {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+            </Select>
+
+            <Select
+              defaultValue={none}
+              value={omeroDatasetId}
+              onChange={onDatasetChange}
+              disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
+            >
+              <Option value={none}>Select Omero Dataset</Option>
+              {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+            </Select>
+          </Row>
+
+          {formValues.single && (
+            <Field
+              name="omeroIds"
+              label="Omero IDs"
+              component={Controls.ImagePicker}
+              editable={formValues?.content?.segment}
+              area={segmentationArea}
+              options={omeroImagesAsOptions}
+              validate={Validators.required}
+              onAreaChange={onAreaChange}
+            />
+          )}
+
+          {!formValues.single && (
+            <Field
+              name="omeroIds"
+              label="Omero IDs"
+              component={Controls.TransferList}
+              options={omeroImagesAsOptions}
               validate={Validators.required}
             />
+          )}
+        </Group>
+      </Col>
 
-            <Field
-              name="content.size"
-              label="Size"
-              component={Controls.TextField}
-              InputProps={{
+      <Col $maxWidth="390px">
+        <Group $label="Main" $disabled={formValues.omeroIds?.length === 0}>
+          <Field
+            name="name"
+            label="Job Type"
+            component={Controls.Select}
+            validate={Validators.requiredConditional('omeroIds')}
+          >
+            <Controls.SelectOption value="segmentation">Segmentation</Controls.SelectOption>
+          </Field>
+
+          <Field
+            name="content.c"
+            label="Channel"
+            component={Controls.Select}
+            validate={Validators.requiredConditional('omeroIds')}
+          >
+            {imageDetails?.channels.map((el, i) => (
+              <Controls.SelectOption key={`${el.color}_${el.label}`} value={i}>
+                {`${i} ${el.label}`}
+              </Controls.SelectOption>
+            ))}
+          </Field>
+
+          <Field
+            name="content.size"
+            label="Size"
+            component={Controls.TextField}
+            InputProps={{
               inputProps: {
                 type: 'number',
                 min: 1, max: 25,
               },
-              }}
-              parse={Parsers.number}
-              validate={Validators.required}
-            />
-          </Row>
+            }}
+            parse={Parsers.number}
+            validate={Validators.requiredConditional('omeroIds')}
+          />
         </Group>
 
-        <Group $label="Slice*">
+        <Group $label="Slices" $disabled={formValues.omeroIds?.length === 0}>
+          <Row>
+            <label>
+              <Field
+                name="slices"
+                component={Controls.Checkbox}
+                type="checkbox"
+              />{' '}
+              Cut Into Slices
+            </label>
+          </Row>
+
           <Row>
             <Field
               name="content.slice.x"
-              label="X"
+              label="Width"
               component={Controls.TextField}
               InputProps={{
-              inputProps: {
-                type: 'number',
-                min: 1,
-              },
+                inputProps: {
+                  type: 'number',
+                  min: 1,
+                },
               }}
               parse={Parsers.number}
-              validate={Validators.required}
+              validate={Validators.requiredConditional('slices')}
+              disabled={!formValues.slices}
             />
 
             <Field
               name="content.slice.y"
-              label="Y"
+              label="Height"
               component={Controls.TextField}
               InputProps={{
-              inputProps: {
-                type: 'number',
-                min: 1,
-              },
+                inputProps: {
+                  type: 'number',
+                  min: 1,
+                },
               }}
               parse={Parsers.number}
-              validate={Validators.required}
+              validate={Validators.requiredConditional('slices')}
+              disabled={!formValues.slices}
             />
 
             <Field
@@ -324,43 +419,20 @@ const JobFormModal = styled((props) => {
               label="Margin"
               component={Controls.TextField}
               InputProps={{
-              inputProps: {
-                type: 'number',
-                min: 1,
-              },
+                inputProps: {
+                  type: 'number',
+                  min: 15,
+                  max: 100,
+                },
               }}
               parse={Parsers.number}
-              validate={Validators.required}
+              validate={Validators.requiredConditional('slices')}
+              disabled={!formValues.slices}
             />
           </Row>
         </Group>
 
-        <Group>
-          <label>
-            <Field
-              name="single"
-              component={Controls.Radio}
-              type="radio"
-              value="true" // eslint-disable-line react/jsx-boolean-value
-              parse={(val) => val === 'true'}
-              format={(val) => String(val || false)}
-            />{' '}
-            One Picture
-          </label>
-          <label>
-            <Field
-              name="single"
-              component={Controls.Radio}
-              type="radio"
-              value="false"
-              parse={(val) => val === 'true'}
-              format={(val) => String(val || false)}
-            />{' '}
-            Multi Picture
-          </label>
-        </Group>
-
-        <Group $disabled={!formValues.single}>
+        <Group $label="Segment" $disabled={!formValues.single || formValues.omeroIds?.length === 0}>
           <Row>
             <label>
               <Field
@@ -369,7 +441,7 @@ const JobFormModal = styled((props) => {
                 type="checkbox"
                 disabled={!formValues.single}
               />{' '}
-              Segment
+              Process One Segment Only
             </label>
           </Row>
 
@@ -436,55 +508,6 @@ const JobFormModal = styled((props) => {
           </Row>
         </Group>
       </Col>
-
-      <Col>
-        <Group $label="Images" $height="100%">
-          <Row>
-            <Select
-              defaultValue={none}
-              value={omeroProjectId}
-              onChange={onProjectChange}
-              disabled={isOmeroFetching}
-            >
-              <Option value={none}>Select Omero Project</Option>
-              {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-            </Select>
-
-            <Select
-              defaultValue={none}
-              value={omeroDatasetId}
-              onChange={onDatasetChange}
-              disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
-            >
-              <Option value={none}>Select Omero Dataset</Option>
-              {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-            </Select>
-          </Row>
-
-          {formValues.single && (
-            <Field
-              name="omeroIds"
-              label="Omero IDs"
-              component={Controls.ImagePicker}
-              editable={formValues?.content?.segment}
-              area={segmentationArea}
-              options={options}
-              validate={Validators.required}
-              onAreaChange={onAreaChange}
-            />
-          )}
-
-          {!formValues.single && (
-            <Field
-              name="omeroIds"
-              label="Omero IDs"
-              component={Controls.TransferList}
-              options={options}
-              validate={Validators.required}
-            />
-          )}
-        </Group>
-      </Col>
     </FormModal>
   );
 })`
@@ -523,6 +546,15 @@ const JobFormModal = styled((props) => {
 
   label {
     white-space: nowrap;
+  }
+  
+  .hidden-label {
+    label {
+      display: none;
+    }
+    label + .MuiInput-formControl {
+      margin-top: unset;
+    }
   }
 `;
 
