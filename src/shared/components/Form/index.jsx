@@ -4,6 +4,7 @@ import { Form, Field, FormSpy } from 'react-final-form';
 import styled from 'styled-components';
 
 import ImagePicker from '+components/ImagePicker';
+import { Option as SelectOption } from '+components/Select';
 import Slider from '+components/Slider';
 import TransferList from '+components/TransferList';
 
@@ -24,6 +25,7 @@ const Controls = {
   Checkbox,
   Radio,
   Select,
+  SelectOption,
   Slider,
   TransferList,
   ImagePicker,
