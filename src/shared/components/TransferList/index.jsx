@@ -54,8 +54,15 @@ const TransferList = styled((props) => {
     [options, value],
   );
 
-  const leftChecked = intersection(checked, options);
-  const rightChecked = intersection(checked, value);
+  const leftChecked = useMemo(
+    () => (intersection(checked, fixedOptions)),
+    [checked, fixedOptions],
+  );
+
+  const rightChecked = useMemo(
+    () => (intersection(checked, value)),
+    [checked, value],
+  );
 
   const onCheckedLeft = useCallback(
     () => {
