@@ -10,7 +10,18 @@ export default styled((props) => {
       accessor: 'status',
       Header: 'Status',
       Cell: ({ row: { original: { status } } }) => useMemo(
-        () => (status != null ? `In Progress (${Math.round(status * 100)}%)` : 'N/A'),
+        () => {
+          if (status == null) {
+            return 'N/A';
+          }
+          if (Math.round(status) === 0) {
+            return 'Waiting To Process';
+          }
+          if (Math.round(status) === 100) {
+            return 'Done';
+          }
+          return 'In Progress';
+        },
         [status],
       ),
     }, {

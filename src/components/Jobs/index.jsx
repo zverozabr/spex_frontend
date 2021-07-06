@@ -1,13 +1,10 @@
 import React, { Fragment, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import PathNames from '@/models/PathNames';
-
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 
 import Button, { ButtonSizes, ButtonColors } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
-import Link from '+components/Link';
 import Table, { ButtonsCell } from '+components/Table';
 
 import ButtonsContainer from './components/ButtonsContainer';
@@ -15,17 +12,11 @@ import JobFormModal from './components/JobFormModal';
 import SubComponent from './components/SubComponent';
 
 const defaultJob = {
-  name: '',
+  name: 'segmentation',
   omeroIds: [],
   single: true,
-  content: {
-    c: 0,
-    size: 20,
-    slice: { x: 100, y: 100, margin: 31 },
-    segment: false,
-    start: { x: undefined, y: undefined },
-    stop: { x: undefined, y: undefined },
-  },
+  slices: false,
+  content: {},
 };
 
 const refreshInterval = 6e4; // 1 minute
@@ -50,15 +41,35 @@ const Jobs = () => {
   );
 
   const onManageJobModalSubmit = useCallback(
-    // Omit single field
-    ({ single, ...values }) => {
-      const omeroIds = values.omeroIds.map((el) => +(el.id || el));
-      const normalizedJob = { ...values, omeroIds, content: JSON.stringify(values.content) };
+    (values) => {
+      const omeroIds = values.omeroIds.map((el) => el.id || el);
+
+      const { content } = values;
+      if (!content.segment) {
+        delete values.content.segment;
+        delete values.content.start;
+        delete values.content.stop;
+      }
+
+      if (!values.slices) {
+        delete values.content.slice;
+      }
+
+      delete values.single;
+      delete values.slices;
+
+      const normalizedJob = {
+        ...values,
+        omeroIds,
+        content: JSON.stringify(content),
+      };
+
       if (normalizedJob.id) {
         dispatch(jobsActions.updateJob(normalizedJob));
       } else {
         dispatch(jobsActions.createJob(normalizedJob));
       }
+
       setJobToManage(null);
     },
     [dispatch],
@@ -94,20 +105,28 @@ const Jobs = () => {
       },
       Header: 'Status',
       Cell: ({ value: status }) => useMemo(
-        () => (status != null ? `In Progress (${Math.round(status * 100)}%)` : 'N/A'),
+        () => {
+          if (status == null) {
+            return 'N/A';
+          }
+          if (Math.round(status) === 0) {
+            return 'Waiting To Process';
+          }
+          if (Math.round(status) === 100) {
+            return 'Done';
+          }
+          return 'In Progress';
+        },
         [status],
       ),
     }, {
       id: 'name',
       accessor: 'name',
-      Header: 'Name',
-      Cell: ({ row: { original: { id, name } } }) => useMemo(
-        () => (
-          <Link to={`/${PathNames.jobs}/${id}`}>
-            {name}
-          </Link>
-        ),
-        [id, name],
+      Header: 'Type',
+      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
+      Cell: ({ row: { original: { name } } }) => useMemo(
+        () => name,
+        [name],
       ),
     }, {
       id: 'omeroIds',
