@@ -48,14 +48,14 @@ const ImageViewer = (props) => {
 
   const onSidebarMouseEnter = useCallback(
     () => {
-      map.dragging.disable();
+      map?.dragging.disable();
     },
     [map],
   );
 
   const onSidebarMouseLeave = useCallback(
     () => {
-      map.dragging.enable();
+      map?.dragging.enable();
     },
     [map],
   );
