@@ -60,30 +60,27 @@ const ImagePicker = styled((props) => {
       spacing={3}
       justify="center"
       alignItems="center"
-      // wrap="nowrap"
       container
     >
-      {options.length > 0 && (
-        <Grid className="list" item>
-          <Card>
-            <List dense component="div" role="list">
-              {options.map((el) => (
-                <ListItem
-                  key={el.id}
-                  role="listitem"
-                  selected={include(value, el)}
-                  onClick={() => onChange([el])}
-                  button
-                >
-                  {el.img && <ListItemIcon><img src={el.img} alt={el.title || 'Image'} /></ListItemIcon>}
-                  {el.title && <ListItemText id={`image-picker-item-${el.id}-label`} primary={el.title} />}
-                </ListItem>
-              ))}
-              <ListItem />
-            </List>
-          </Card>
-        </Grid>
-      )}
+      <Grid className="list" item>
+        <Card>
+          <List dense component="div" role="list">
+            {options.map((el) => (
+              <ListItem
+                key={el.id}
+                role="listitem"
+                selected={include(value, el)}
+                onClick={() => onChange([el])}
+                button
+              >
+                {el.img && <ListItemIcon><img src={el.img} alt={el.title || 'Image'} /></ListItemIcon>}
+                {el.title && <ListItemText id={`image-picker-item-${el.id}-label`} primary={el.title} />}
+              </ListItem>
+            ))}
+            <ListItem />
+          </List>
+        </Card>
+      </Grid>
 
       <Grid className="image" item>
         {!imageDetails && <NoData>No image to display</NoData>}
@@ -167,9 +164,9 @@ const ImagePicker = styled((props) => {
     flex-basis: 100% !important;
   }
   
-  &.invalid .list {
-    border: 1px solid #f44336;
-    border-radius: 4px;
+  &.invalid {
+    border: 2px solid #f44336;
+    border-radius: 6px;
   }
 
   .error {
