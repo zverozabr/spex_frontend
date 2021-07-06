@@ -1,9 +1,12 @@
 import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import ReactFlow from 'react-flow-renderer';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
@@ -30,6 +33,14 @@ import ThumbnailsContainer from './components/ThumbnailsContainer';
 
 
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
+const elements = [
+  { id: '1', type: 'input', data: { label: 'Node 1' }, position: { x: 250, y: 5 } },
+  { id: '2', data: { label: 'Node 2' }, position: { x: 100, y: 100 } },
+  { id: '3', data: { label: 'Node 3' }, position: { x: 400, y: 100 } },
+  { id: '4', data: { label: 'Node 4' }, position: { x: 400, y: 200 } },
+  { id: 'e1-2', source: '1', target: '2', animated: true },
+  { id: 'e1-3', source: '1', target: '3' },
+];
 
 const Project = () => {
   const dispatch = useDispatch();
@@ -43,6 +54,7 @@ const Project = () => {
     [pathname],
   );
 
+  const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
   const project = useSelector(projectsSelectors.getProject(projectId));
   const thumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
   const tasks = useSelector(tasksSelectors.getTasks);
@@ -69,10 +81,10 @@ const Project = () => {
   [project],
   );
 
-  const r_actions = [{ name: 'Remove selected', fn: (rows) => onToggleRemoveRid(rows), color: ButtonColors.danger }];
-  const t_actions = [{ name: 'Remove selected', fn: (rows) => onToggleRemoveTid(rows), color: ButtonColors.danger }];
+  const resourceActions = [{ name: 'Remove selected', fn: (rows) => onToggleRemoveRid(rows), color: ButtonColors.danger }];
+  const _tasksActions = [{ name: 'Remove selected', fn: (rows) => onToggleRemoveTid(rows), color: ButtonColors.danger }];
 
-  const r_columns = useMemo(
+  const resourceColumns = useMemo(
     () => ([
       {
         id: 'name',
@@ -94,7 +106,8 @@ const Project = () => {
     ]),
     [],
   );
-  const t_columns = useMemo(
+
+  const tasksColumns = useMemo(
     () => ([
       {
         id: 'id',
@@ -110,7 +123,7 @@ const Project = () => {
       [],
     );
 
-  const res_data = useMemo(
+  const resourceData = useMemo(
     () => {
       if (resource_ids.length === 0 || resources.length === 0) {
         return [];
@@ -119,7 +132,19 @@ const Project = () => {
     },
     [resources, resource_ids],
   );
-  const t_data = useMemo(
+
+  const pipelineData = useMemo(
+    () => {
+      if (Object.keys(pipelines || {}).length) {
+        return [];
+      };
+      console.log(pipelines);
+      return [];
+    },
+    [pipelines],
+  );
+
+  const tasksData = useMemo(
     () => {
       if (taskIds.length === 0 || tasks.length === 0) {
         return [];
@@ -306,6 +331,15 @@ const Project = () => {
     },
     [dispatch, taskIds],
   );
+  useEffect(
+    () => {
+      if (Object.keys(pipelines || {}).length) {
+        return;
+      }
+      dispatch(pipelineActions.fetchPipelines(projectId));
+    },
+    [dispatch, pipelines, projectId],
+  );
 
   useEffect(
     () => {
@@ -386,9 +420,9 @@ const Project = () => {
         </TabPanel>
         <TabPanel value={activeDataTab} index={1}>
           <Table
-            columns={r_columns}
-            data={res_data}
-            actions={r_actions}
+            columns={resourceColumns}
+            data={resourceData}
+            actions={resourceActions}
             allowRowSelection
             pageSizeOptions={[10]}
             minRows={10}
@@ -396,9 +430,9 @@ const Project = () => {
         </TabPanel>
         <TabPanel value={activeDataTab} index={2}>
           <Table
-            columns={t_columns}
-            data={t_data}
-            actions={t_actions}
+            columns={tasksColumns}
+            data={tasksData}
+            actions={_tasksActions}
             allowRowSelection
             pageSizeOptions={[10]}
             minRows={10}
@@ -414,7 +448,7 @@ const Project = () => {
         </ButtonsContainer>
 
         <PipelineContainer>
-          Pipeline Will Be Here
+          <ReactFlow elements={elements} />
         </PipelineContainer>
       </Row>
 

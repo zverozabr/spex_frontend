@@ -2,6 +2,8 @@ import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
+import hash from '+utils/hash';
+
 const initialState = {
   isFetching: false,
   error: '',
@@ -27,9 +29,10 @@ const slice = createSlice({
     updatePipeline: startFetching,
     deletePipeline: startFetching,
 
-    fetchPipelinesSuccess: (state, { payload: { id, data } }) => {
+    fetchPipelinesSuccess: (state, { payload: { projectId, data } }) => {
       stopFetching(state);
-      state.pipelines[id] = (data || {});
+      const hashedPipelines = hash(data || [], 'id');
+      state.pipelines[projectId] = hashedPipelines;
     },
 
     updatePipelineSuccess: (state, { payload: pipeline }) => {
@@ -67,7 +70,7 @@ const slice = createSlice({
         try {
           const url = `${baseUrl}/${projectId}`;
           const { data } = yield call(api.get, url);
-          yield put(actions.fetchPipelinesSuccess({ id: projectId, data: data.data }));
+          yield put(actions.fetchPipelinesSuccess({ projectId: projectId, data: data.data['pipelines'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -131,14 +134,14 @@ const slice = createSlice({
       (state) => state?.isFetching,
     ),
 
-    getPipelines: createSelector(
+    getPipelines: (projectId) => createSelector(
       [getState],
-      (state) => state?.pipelines,
+      (state) => state?.pipelines[projectId],
     ),
 
-    getPipeline: (id) => createSelector(
+    getPipeline: (projectId, id) => createSelector(
       [getState],
-      (state) => state?.pipelines[id],
+      (state) => state?.pipelines[projectId][id],
     ),
   }),
 });

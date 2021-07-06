@@ -70,7 +70,7 @@ const ManageJobsModal = styled((props) => {
       [],
     );
 
-    const taskscolumns = useMemo(
+    const tasksColumns = useMemo(
       () => ([
         {
           id: 'id',
@@ -91,7 +91,7 @@ const ManageJobsModal = styled((props) => {
     [jobs],
   );
 
-  const t_data = useMemo(
+  const tasksData = useMemo(
     () => {
       if (project.taskIds.length === 0 || tasks.length === 0) {
         return [];
@@ -187,12 +187,12 @@ const ManageJobsModal = styled((props) => {
   );
 
   const WithSelected = useCallback(
-    (subProbs) => {
+    (subProps) => {
       return (
         <SubComponent
-          {...subProbs}
+          {...subProps}
           selectedRowIds={project.taskIds}
-          onSelectedRowsChange={(selected) => onSelectedRowsChange(selected, subProbs)}
+          onSelectedRowsChange={(selected) => onSelectedRowsChange(selected, subProps)}
         />
       );
     },
@@ -217,8 +217,8 @@ const ManageJobsModal = styled((props) => {
           </Col>
           <Col >
             <Table
-              columns={taskscolumns}
-              data={t_data}
+              columns={tasksColumns}
+              data={tasksData}
             />
           </Col>
         </Row>
