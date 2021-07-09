@@ -33,14 +33,6 @@ import ThumbnailsContainer from './components/ThumbnailsContainer';
 
 
 const not = (a, b) => (a.filter((value) => b.indexOf(value) === -1));
-const elements = [
-  { id: '1', type: 'input', data: { label: 'Node 1' }, position: { x: 250, y: 5 } },
-  { id: '2', data: { label: 'Node 2' }, position: { x: 100, y: 100 } },
-  { id: '3', data: { label: 'Node 3' }, position: { x: 400, y: 100 } },
-  { id: '4', data: { label: 'Node 4' }, position: { x: 400, y: 200 } },
-  { id: 'e1-2', source: '1', target: '2', animated: true },
-  { id: 'e1-3', source: '1', target: '3' },
-];
 
 const Project = () => {
   const dispatch = useDispatch();
@@ -67,6 +59,7 @@ const Project = () => {
   const [manageJobsModalOpen, setManageJobsModalOpen] = useState(false);
   const [manageResourcesModalOpen, setManageResourcesModalOpen] = useState(false);
   const [activeDataTab, setActiveDataTab] = useState(0);
+  const [activePipelineTab, setActivePipelineTab] = useState(false);
 
   const omeroIds = useMemo(
     () => (project?.omeroIds || []),
@@ -79,6 +72,35 @@ const Project = () => {
   const taskIds = useMemo(
     () => (project?.taskIds || []),
   [project],
+  );
+
+  const recursion = useCallback(
+    (data, elements, x, y) => {
+      if (data['boxes'] !== undefined) {
+        y += 150;
+        data['boxes'].forEach((element) => {
+          elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position: { 'x': x += 150, 'y': y } });
+          elements.push({ id: 'e1-2', source: data['id'], target: element.id, animated: true });
+          elements = recursion(element['boxes'], elements, x, y);
+          if (element['tasks'] !== undefined) {
+            y += 150;
+            element['tasks'].forEach((task) => {
+              elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position: { 'x': x += 150, 'y': y } });
+              elements.push({ id: 'e1-2', source: element.id, target: task.id, animated: true });
+            });
+          };
+          if (element['resources'] !== undefined) {
+            y += 150;
+            element['resources'].forEach((task) => {
+              elements.push({ id: task.id, type: 'input', data: { label: 'resources/' + task.id }, position: { 'x': x += 150, 'y': y } });
+              elements.push({ id: 'e1-2', source: element.id, target: task.id, animated: true });
+            });
+          };
+        });
+      };
+      return elements;
+    },
+    [],
   );
 
   const resourceActions = [{ name: 'Remove selected', fn: (rows) => onToggleRemoveRid(rows), color: ButtonColors.danger }];
@@ -135,13 +157,35 @@ const Project = () => {
 
   const pipelineData = useMemo(
     () => {
-      if (Object.keys(pipelines || {}).length) {
+      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false) {
+        let data = [];
+        let x = 0;
+        let y = 0;
+        const p = activePipelineTab;
+
+        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position: { 'x': x += 50, 'y': 50 } });
+        data.push({ id: 'e1-2', source: projectId, target: pipelines[p].id, animated: true });
+        data = recursion(pipelines[p], data, x, y);
+
+        return data;
+      } else {
         return [];
       };
-      console.log(pipelines);
-      return [];
     },
-    [pipelines],
+    [pipelines, projectId, recursion, activePipelineTab],
+  );
+
+  const pipelineTabs = useMemo(
+    () => {
+      if (Object.keys(pipelines || {}).length > 0) {
+        return Object.values(pipelines).map(p => {
+          return <Tab label={p.name} key={p.id} value={p.id} />;
+        });
+      } else {
+        return [];
+      };
+    },
+    [pipelines, projectId],
   );
 
   const tasksData = useMemo(
@@ -304,7 +348,15 @@ const Project = () => {
     [],
   );
 
+  const onPipelineTabChange = useCallback(
+    (_, id) => {
+      setActivePipelineTab(id);
+    },
+    [pipelines],
+  );
+
   const prevOpen = React.useRef(open);
+
   useEffect(() => {
     if (prevOpen.current === true && open === false) {
       anchorRef.current.focus();
@@ -322,6 +374,7 @@ const Project = () => {
     },
     [dispatch, resource_ids],
   );
+
   useEffect(
     () => {
       if (taskIds.length === 0) {
@@ -331,14 +384,24 @@ const Project = () => {
     },
     [dispatch, taskIds],
   );
+
   useEffect(
     () => {
-      if (Object.keys(pipelines || {}).length) {
+      if (Object.keys(pipelines || {}).length > 0) {
         return;
       }
       dispatch(pipelineActions.fetchPipelines(projectId));
     },
     [dispatch, pipelines, projectId],
+  );
+
+  useEffect(
+    () => {
+      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {
+        setActivePipelineTab(Object.keys(pipelines)[0]);
+      }
+    },
+    [activePipelineTab, pipelines],
   );
 
   useEffect(
@@ -445,11 +508,15 @@ const Project = () => {
           <Button onClick={onPipelineAdd}>
             Add Pipeline
           </Button>
+          <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
+            {pipelineTabs}
+          </Tabs>
         </ButtonsContainer>
 
         <PipelineContainer>
-          <ReactFlow elements={elements} />
+          <ReactFlow elements={pipelineData} />
         </PipelineContainer>
+
       </Row>
 
       {manageImagesModalOpen && (
