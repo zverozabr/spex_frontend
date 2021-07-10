@@ -1,5 +1,6 @@
 import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
-import ReactFlow from 'react-flow-renderer';
+import dagre from 'dagre';
+import ReactFlow, { Controls, ReactFlowProvider, isNode } from 'react-flow-renderer';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
@@ -60,40 +61,79 @@ const Project = () => {
   const [manageResourcesModalOpen, setManageResourcesModalOpen] = useState(false);
   const [activeDataTab, setActiveDataTab] = useState(0);
   const [activePipelineTab, setActivePipelineTab] = useState(false);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
 
   const omeroIds = useMemo(
     () => (project?.omeroIds || []),
   [project],
   );
+
   const resource_ids = useMemo(
     () => (project?.resource_ids || []),
   [project],
   );
+
   const taskIds = useMemo(
     () => (project?.taskIds || []),
   [project],
   );
 
+  const nodeWidth = 172;
+  const nodeHeight = 36;
+
+  const getLayoutedElements = useCallback((elements, direction = 'LR') => {
+      const isHorizontal = direction === 'LR';
+      dagreGraph.setGraph({ rankdir: direction });
+
+      elements.forEach((el) => {
+        if (isNode(el)) {
+          dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
+        } else {
+          dagreGraph.setEdge(el.source, el.target);
+        }
+      });
+
+      dagre.layout(dagreGraph);
+
+      return elements.map((el) => {
+        if (isNode(el)) {
+          const nodeWithPosition = dagreGraph.node(el.id);
+          el.targetPosition = isHorizontal ? 'left' : 'top';
+          el.sourcePosition = isHorizontal ? 'right' : 'bottom';
+
+          // unfortunately we need this little hack to pass a slightly different position
+          // to notify react flow about the change. Moreover we are shifting the dagre node position
+          // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
+          el.position = {
+            x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
+            y: nodeWithPosition.y - nodeHeight / 2,
+          };
+        }
+
+        return el;
+      });
+    },
+    [dagreGraph],
+  );
+
   const recursion = useCallback(
-    (data, elements, x, y) => {
+    (data, elements, position) => {
       if (data['boxes'] !== undefined) {
-        y += 150;
         data['boxes'].forEach((element) => {
-          elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position: { 'x': x += 150, 'y': y } });
-          elements.push({ id: 'e1-2', source: data['id'], target: element.id, animated: true });
-          elements = recursion(element['boxes'], elements, x, y);
+          elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
+          elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep'});
+          elements = recursion(element, elements, position);
           if (element['tasks'] !== undefined) {
-            y += 150;
             element['tasks'].forEach((task) => {
-              elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position: { 'x': x += 150, 'y': y } });
-              elements.push({ id: 'e1-2', source: element.id, target: task.id, animated: true });
+              elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
+              elements.push({ id: 'el/' +task.id, source: element.id, target: task.id, animated: true });
             });
           };
           if (element['resources'] !== undefined) {
-            y += 150;
-            element['resources'].forEach((task) => {
-              elements.push({ id: task.id, type: 'input', data: { label: 'resources/' + task.id }, position: { 'x': x += 150, 'y': y } });
-              elements.push({ id: 'e1-2', source: element.id, target: task.id, animated: true });
+            element['resources'].forEach((res) => {
+              elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
+              elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
             });
           };
         });
@@ -159,33 +199,31 @@ const Project = () => {
     () => {
       if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false) {
         let data = [];
-        let x = 0;
-        let y = 0;
         const p = activePipelineTab;
+        const position = { x: 0, y: 0 };
 
-        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position: { 'x': x += 50, 'y': 50 } });
-        data.push({ id: 'e1-2', source: projectId, target: pipelines[p].id, animated: true });
-        data = recursion(pipelines[p], data, x, y);
-
-        return data;
+        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
+        data = recursion(pipelines[p], data, position);
+        if (data.length === 1) return [];
+        return getLayoutedElements(data);
       } else {
         return [];
       };
     },
-    [pipelines, projectId, recursion, activePipelineTab],
+    [pipelines, recursion, activePipelineTab, getLayoutedElements],
   );
 
   const pipelineTabs = useMemo(
     () => {
       if (Object.keys(pipelines || {}).length > 0) {
-        return Object.values(pipelines).map(p => {
+        return Object.values(pipelines).map((p) => {
           return <Tab label={p.name} key={p.id} value={p.id} />;
         });
       } else {
         return [];
       };
     },
-    [pipelines, projectId],
+    [pipelines],
   );
 
   const tasksData = useMemo(
@@ -228,6 +266,13 @@ const Project = () => {
       }
     },
     [setOpen],
+  );
+
+  const onLoadReactFlow = useCallback(
+    (rf) => {
+      setReactFlowInstance(rf);
+    },
+    [setReactFlowInstance],
   );
 
   const onRemoveImages = useCallback(
@@ -352,7 +397,7 @@ const Project = () => {
     (_, id) => {
       setActivePipelineTab(id);
     },
-    [pipelines],
+    [],
   );
 
   const prevOpen = React.useRef(open);
@@ -364,6 +409,15 @@ const Project = () => {
 
     prevOpen.current = open;
   }, [open]);
+
+  useEffect(() => {
+    if (pipelineData && reactFlowInstance) {
+      setTimeout(() => {
+        reactFlowInstance.fitView();
+      }, 100);
+      // reactFlowInstance.zoomTo(1.2);
+    }
+  }, [pipelineData, reactFlowInstance]);
 
   useEffect(
     () => {
@@ -512,9 +566,13 @@ const Project = () => {
             {pipelineTabs}
           </Tabs>
         </ButtonsContainer>
-
         <PipelineContainer>
-          <ReactFlow elements={pipelineData} />
+          <ReactFlowProvider>
+            <ReactFlow elements={pipelineData} onLoad={onLoadReactFlow}>
+              {/* <MiniMap /> */}
+              <Controls />
+            </ReactFlow>
+          </ReactFlowProvider>
         </PipelineContainer>
 
       </Row>
