@@ -274,7 +274,6 @@ const JobFormModal = styled((props) => {
           <Row>
             <Field
               name="single"
-              label="123"
               formControlProps={{
                 hiddenLabel: true, // not working
                 className: 'hidden-label',
@@ -366,7 +365,7 @@ const JobFormModal = styled((props) => {
                 min: 1, max: 25,
               },
             }}
-            parse={Parsers.number}
+            parse={(v) => Parsers.numberBetween(v, 1, 25)}
             validate={Validators.requiredConditional('omeroIds')}
           />
         </Group>
@@ -392,9 +391,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 1,
+                  max: Math.round((imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER) / 2),
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 1, Math.round((imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER) / 2))}
               validate={Validators.requiredConditional('slices')}
               disabled={!formValues.slices}
             />
@@ -407,9 +407,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 1,
+                  max: Math.round((imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER) / 2),
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 1, Math.round((imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER) / 2))}
               validate={Validators.requiredConditional('slices')}
               disabled={!formValues.slices}
             />
@@ -425,7 +426,7 @@ const JobFormModal = styled((props) => {
                   max: 100,
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 15, 100)}
               validate={Validators.requiredConditional('slices')}
               disabled={!formValues.slices}
             />
@@ -454,9 +455,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 0,
+                  max: imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER,
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 0, imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER)}
               disabled={!formValues.content?.segment}
               validate={Validators.requiredConditional('content.segment')}
             />
@@ -469,9 +471,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 0,
+                  max: imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER,
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 0, imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER)}
               disabled={!formValues.content?.segment}
               validate={Validators.requiredConditional('content.segment')}
             />
@@ -484,9 +487,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 0,
+                  max: imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER,
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 0, imageDetails?.size?.width ?? Number.MAX_SAFE_INTEGER)}
               disabled={!formValues.content?.segment}
               validate={Validators.requiredConditional('content.segment')}
             />
@@ -499,9 +503,10 @@ const JobFormModal = styled((props) => {
                 inputProps: {
                   type: 'number',
                   min: 0,
+                  max: imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER,
                 },
               }}
-              parse={Parsers.number}
+              parse={(v) => Parsers.numberBetween(v, 0, imageDetails?.size?.height ?? Number.MAX_SAFE_INTEGER)}
               disabled={!formValues.content?.segment}
               validate={Validators.requiredConditional('content.segment')}
             />
