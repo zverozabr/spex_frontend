@@ -40,7 +40,8 @@ const ImageViewer = (props) => {
   } = props;
 
   const [map, setMap] = useState(null);
-  const featureGroup = useRef(null);
+  const featureGroupRef = useRef(null);
+  const omeroLayerRef = useRef(null);
 
   const [channels, setChannels] = useState(cloneDeep(data.channels));
   const [sidebarCollapsed, toggleSidebar] = useToggle(true);
@@ -83,27 +84,29 @@ const ImageViewer = (props) => {
     (event) => {
       if (onChange) {
         const { sourceTarget: _map } = event;
-        const [ layer ] = featureGroup.current.getLayers();
+        const [ layer ] = featureGroupRef.current.getLayers();
         const [ latLngs ] = layer.getLatLngs();
-        const p1 = _map.options.crs.latLngToPoint(latLngs[1]);
-        const p2 = _map.options.crs.latLngToPoint(latLngs[3]);
+        const { maxZoom } = omeroLayerRef.current;
+        const p1 = _map.options.crs.latLngToPoint(latLngs[1], maxZoom);
+        const p2 = _map.options.crs.latLngToPoint(latLngs[3], maxZoom);
+        const { width: imageWidth, height: imageHeight } = data.size;
         const region = [{
-          x: Math.max(0, Math.round(p1.x)),
-          y: Math.max(0, Math.round(p1.y)),
+          x: Math.min(imageWidth, Math.max(0, Math.round(p1.x))),
+          y: Math.min(imageHeight, Math.max(0, Math.round(p1.y))),
         }, {
-          x: Math.max(0, Math.round(p2.x)),
-          y: Math.max(0, Math.round(p2.y)),
+          x: Math.min(imageWidth, Math.max(0, Math.round(p2.x))),
+          y: Math.min(imageHeight, Math.max(0, Math.round(p2.y))),
         }];
         onChange(region);
       }
     },
-    [onChange],
+    [data.size, onChange],
   );
 
   const onPathCreate = useCallback(
     (event) => {
       onPathChange(event);
-      featureGroup.current.clearLayers();
+      featureGroupRef.current.clearLayers();
     },
     [onPathChange],
   );
@@ -124,7 +127,7 @@ const ImageViewer = (props) => {
       L.EditToolbar.Delete.include({
         enable: () => {
           // eslint-disable-next-line react/no-this-in-sfc
-          featureGroup.current.clearLayers();
+          featureGroupRef.current.clearLayers();
           onPathDeleted();
         },
       });
@@ -140,15 +143,16 @@ const ImageViewer = (props) => {
 
       const fixedValue = (value || []).filter((el) => el?.x >= 0 && el?.y >=0);
       if (fixedValue.length !== 2) {
-        featureGroup.current.clearLayers();
+        featureGroupRef.current.clearLayers();
         setRectangleBounds(null);
         return;
       }
 
+      const { maxZoom } = omeroLayerRef.current;
       const p1 = L.point(value[0].x, value[0].y);
-      const latlng1 = map.options.crs.pointToLatLng(p1);
+      const latlng1 = map.options.crs.pointToLatLng(p1, maxZoom);
       const p2 = L.point(value[1].x, value[1].y);
-      const latlng2 = map.options.crs.pointToLatLng(p2);
+      const latlng2 = map.options.crs.pointToLatLng(p2, maxZoom);
       const bounds = [latlng1, latlng2];
 
       setRectangleBounds(bounds);
@@ -169,6 +173,7 @@ const ImageViewer = (props) => {
         whenCreated={setMap}
       >
         <OmeroLayer
+          ref={omeroLayerRef}
           data={data}
           options={{
             baseUrl,
@@ -178,7 +183,7 @@ const ImageViewer = (props) => {
 
         <FullscreenControl position="topright" />
 
-        <FeatureGroup ref={featureGroup}>
+        <FeatureGroup ref={featureGroupRef}>
           <EditControl
             position="topright"
             draw={{
@@ -252,6 +257,10 @@ ImageViewer.propTypes = {
    */
   data: PropTypes.shape({
     channels: PropTypes.arrayOf(PropTypes.shape({})),
+    size: PropTypes.shape({
+      width: PropTypes.number,
+      height: PropTypes.number,
+    }),
   }),
   /**
    * Selected area value [{ x1, y1 }, { x2, y2 }]

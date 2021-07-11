@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { forwardRef, useRef, useEffect } from 'react';
 import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
@@ -281,10 +281,11 @@ L.TileLayer.Omero = L.TileLayer.extend({
   },
 });
 
-const OmeroLayer = (props) => {
+const OmeroLayer = forwardRef((props, ref) => {
   const { data, options, debounce } = props;
   const map = useMap();
-  const omeroLayer = useRef(null);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const omeroLayer = ref || useRef(null);
 
   // Update layer
   useDebounce(
@@ -329,7 +330,7 @@ const OmeroLayer = (props) => {
       map.addLayer(layer);
       omeroLayer.current = layer;
     },
-    [map, data, options],
+    [map, data, options, omeroLayer],
   );
 
   // Remove layer
@@ -339,11 +340,13 @@ const OmeroLayer = (props) => {
         map.removeLayer(omeroLayer.current);
       }
     },
-    [map],
+    [map, omeroLayer],
   );
 
   return null;
-};
+});
+
+OmeroLayer.displayName = 'OmeroLayer';
 
 OmeroLayer.propTypes = {
   data: PropTypes.shape({}).isRequired,
