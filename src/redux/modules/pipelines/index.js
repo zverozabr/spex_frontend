@@ -7,7 +7,7 @@ import hash from '+utils/hash';
 const initialState = {
   isFetching: false,
   error: '',
-  pipelines: {},
+  pipelines: [],
 };
 
 let api;
@@ -32,7 +32,11 @@ const slice = createSlice({
     fetchPipelinesSuccess: (state, { payload: { projectId, data } }) => {
       stopFetching(state);
       const hashedPipelines = hash(data || [], 'id');
-      state.pipelines[projectId] = hashedPipelines;
+      if (JSON.stringify(hashedPipelines) === JSON.stringify( { } ) ) {
+        state.pipelines[projectId] = [];
+      } else {
+        state.pipelines[projectId] = hashedPipelines;
+      };
     },
 
     updatePipelineSuccess: (state, { payload: pipeline }) => {
@@ -42,12 +46,13 @@ const slice = createSlice({
 
     createPipelineSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
-      state.pipelines[pipeline.id] = pipeline;
+      const hashedKey = hash([pipeline] || [], 'id');
+      state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
     },
 
-    deletePipelineSuccess(state, { payload: id }) {
+    deletePipelineSuccess(state, { payload: [projectId, pipelineId] }) {
       stopFetching(state);
-      delete state.pipelines[id];
+      delete state.pipelines[projectId][pipelineId];
     },
 
     clearPipelines: (state) => {
@@ -84,7 +89,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}`;
+          const url = `${baseUrl}/create/${pipeline.project}`;
           const { data } = yield call(api.post, url, pipeline);
           yield put(actions.createPipelineSuccess(data.data));
         } catch (error) {
@@ -112,13 +117,12 @@ const slice = createSlice({
     },
 
     [actions.deletePipeline]: {
-      * saga({ payload: id }) {
+      * saga({ payload: [projectId, pipelineId] }) {
         initApi();
-
         try {
-          const url = `${baseUrl}/${id}`;
+          const url = `${baseUrl}/delete/${projectId}/${pipelineId}`;
           yield call(api.delete, url);
-          yield put(actions.deletePipelineSuccess(id));
+          yield put(actions.deletePipelineSuccess([projectId, pipelineId]));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

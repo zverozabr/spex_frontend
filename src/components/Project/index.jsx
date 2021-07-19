@@ -12,8 +12,11 @@ import { actions as projectsActions, selectors as projectsSelectors } from '@/re
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
-import Button, { ButtonColors } from '+components/Button';
+import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import ClickAwayListener from '+components/ClickAwayListener';
+import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
+import { Field, Controls as FormControls, Validators } from '+components/Form';
+import FormModal from '+components/FormModal';
 import Grow from '+components/Grow';
 import MenuList, { MenuItem } from '+components/MenuList';
 import NoData from '+components/NoData';
@@ -63,6 +66,8 @@ const Project = () => {
   const [activePipelineTab, setActivePipelineTab] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
+  const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
+  const [pipelineToDelete, setPipelineToDelete ] = useState(null);
 
   const omeroIds = useMemo(
     () => (project?.omeroIds || []),
@@ -122,7 +127,7 @@ const Project = () => {
       if (data['boxes'] !== undefined) {
         data['boxes'].forEach((element) => {
           elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
-          elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep'});
+          elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
           elements = recursion(element, elements, position);
           if (element['tasks'] !== undefined) {
             element['tasks'].forEach((task) => {
@@ -197,7 +202,7 @@ const Project = () => {
 
   const pipelineData = useMemo(
     () => {
-      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false) {
+      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false && !pipelines instanceof Array) {
         let data = [];
         const p = activePipelineTab;
         const position = { x: 0, y: 0 };
@@ -287,14 +292,6 @@ const Project = () => {
     [dispatch, omeroIds, project, selectedThumbnails],
   );
 
-  const onPipelineAdd = useCallback(
-    () => {
-      // eslint-disable-next-line no-console
-      console.log('onPipelineAdd');
-    },
-    [],
-  );
-
   const onThumbnailClick = useCallback(
     (ids) => {
       setSelectedThumbnails(ids);
@@ -356,6 +353,38 @@ const Project = () => {
     [],
   );
 
+  const onAddPipelineModalOpen = useCallback(
+    () => { setAddPipelineModalOpen(true); },
+    [],
+  );
+
+  const onAddPipelineClose = useCallback(
+    () => { setAddPipelineModalOpen(false); },
+    [],
+  );
+
+  const onDeletePipelineModalOpen = useCallback(
+    (pipeline) => {
+        setPipelineToDelete(pipeline);
+      },
+    [],
+  );
+
+  const onDeletePipelineModalClose = useCallback(
+    () => {
+        setPipelineToDelete(null);
+      },
+    [],
+  );
+
+  const onDeletePipelineModalSubmit = useCallback(
+    () => {
+      dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete]));
+      setPipelineToDelete(null);
+    },
+    [dispatch, pipelineToDelete, projectId],
+  );
+
   const onResourcesChanged = useCallback(
     (project, values) => {
       setManageResourcesModalOpen(false);
@@ -364,6 +393,14 @@ const Project = () => {
       dispatch(projectsActions.updateProject(updateData));
     },
     [dispatch],
+  );
+
+  const onPipelinesChanged = useCallback(
+    (values) => {
+      setAddPipelineModalOpen(false);
+      dispatch(pipelineActions.createPipeline({ ...values, 'project': projectId.toString() }));
+    },
+    [dispatch, projectId],
   );
 
   const onToggleRemoveRid = useCallback(
@@ -442,6 +479,9 @@ const Project = () => {
   useEffect(
     () => {
       if (Object.keys(pipelines || {}).length > 0) {
+        return;
+      }
+      if (pipelines instanceof Array) {
         return;
       }
       dispatch(pipelineActions.fetchPipelines(projectId));
@@ -559,8 +599,16 @@ const Project = () => {
 
       <Row>
         <ButtonsContainer>
-          <Button onClick={onPipelineAdd}>
-            Add Pipeline
+          <Button onClick={onAddPipelineModalOpen}>
+            Add
+          </Button>
+          <Button
+            size={ButtonSizes.small}
+            color={ButtonColors.secondary}
+            variant="outlined"
+            onClick={() => onDeletePipelineModalOpen(activePipelineTab)}
+          >
+            Delete
           </Button>
           <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
             {pipelineTabs}
@@ -593,6 +641,34 @@ const Project = () => {
           project={project}
           onClose={onManageJobsClose}
           onSubmit={onJobsChanged}
+          open
+        />
+      )}
+
+      {addPipelineModalOpen && (
+        <FormModal
+          header="Add pipeline"
+          project={project}
+          onClose={onAddPipelineClose}
+          onSubmit={onPipelinesChanged}
+          open
+        >
+          <Field
+            name="name"
+            label="Name"
+            component={FormControls.TextField}
+            validate={Validators.required}
+            required
+          />
+        </FormModal>
+      )}
+
+      {pipelineToDelete && (
+        <ConfirmModal
+          action={ConfirmActions.delete}
+          item={activePipelineTab}
+          onClose={onDeletePipelineModalClose}
+          onSubmit={onDeletePipelineModalSubmit}
           open
         />
       )}
