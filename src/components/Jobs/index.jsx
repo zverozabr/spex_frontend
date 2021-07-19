@@ -9,7 +9,7 @@ import Table, { ButtonsCell } from '+components/Table';
 
 import ButtonsContainer from './components/ButtonsContainer';
 import JobFormModal from './components/JobFormModal';
-import SubComponent from './components/SubComponent';
+import SubComponent from './components/TasksTable';
 
 const defaultJob = {
   name: 'segmentation',

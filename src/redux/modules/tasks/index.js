@@ -8,6 +8,7 @@ const initialState = {
   isFetching: false,
   error: '',
   tasks: {},
+  images: {},
 };
 
 let api;
@@ -39,6 +40,7 @@ const slice = createSlice({
   reducers: {
     fetchTasksByIds: startFetching,
     fetchTasks: startFetching,
+    fetchTaskImage: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
     deleteTask: startFetching,
@@ -47,6 +49,11 @@ const slice = createSlice({
       stopFetching(state);
       const normalizedTasks = tasks.map(normalizeTask);
       state.tasks = hash(normalizedTasks || [], 'id');
+    },
+
+    fetchTaskImageSuccess: (state, { payload: { id, image } }) => {
+      stopFetching(state);
+      state.images[id] = image;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -66,6 +73,13 @@ const slice = createSlice({
 
     clearTasks: (state) => {
       state.tasks = {};
+    },
+
+    clearTaskImage: (state, { payload: id }) => {
+      if (!id) {
+        return;
+      }
+      delete state.images[id];
     },
 
     requestFail(state, { payload: { message } }) {
@@ -101,6 +115,22 @@ const slice = createSlice({
           const url = `${baseUrl}/list`;
           const { data } = yield call(api.post, url, { ids });
           yield put(actions.fetchTasksSuccess(data.data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchTaskImage]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/im/${id}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchTaskImageSuccess({ id, image: data }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -172,6 +202,11 @@ const slice = createSlice({
     getTask: (id) => createSelector(
       [getState],
       (state) => state?.tasks[id],
+    ),
+
+    getTaskImage: (id) => createSelector(
+      [getState],
+      (state) => state?.images[id],
     ),
   }),
 });
