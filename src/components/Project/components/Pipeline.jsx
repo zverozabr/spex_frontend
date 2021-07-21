@@ -213,18 +213,18 @@ const DnDFlow = () => {
   const pipelineData = useMemo(
     () => {
       if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false ) {
-      let data = [];
-      const p = activePipelineTab;
-      const position = { x: 0, y: 0 };
-
-      data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
-      data = recursion(pipelines[p], data, position);
-      if (data.length === 1) return [];
-      const result = getLayoutedElements(data);
-      setElements(result);
-      return result;
-      } else {
-      return [];
+        let data = [];
+        const p = activePipelineTab;
+        const position = { x: 0, y: 0 };
+        if (pipelines[p] === []) return [];
+        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
+        data = recursion(pipelines[p], data, position);
+        if (data.length === 1) return [];
+        const result = getLayoutedElements(data);
+        setElements(result);
+        return result;
+        } else {
+        return [];
       };
     },
     [pipelines, recursion, getLayoutedElements, activePipelineTab],
@@ -268,8 +268,11 @@ const DnDFlow = () => {
   useEffect(
     () => {
       if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {
-      setActivePipelineTab(Object.keys(pipelines)[0]);
-      }
+        setActivePipelineTab(Object.keys(pipelines)[0]);
+      };
+      if (Object.keys(pipelines || {}).length === 0 && activePipelineTab !== false) {
+        setActivePipelineTab(false);
+      };
     },
     [activePipelineTab, pipelines],
   );
@@ -289,9 +292,6 @@ const DnDFlow = () => {
           >
             Delete
           </Button>
-          {/* <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
-            {pipelineTabs}
-          </Tabs> */}
         </ButtonsContainer>
         <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
           {pipelineTabs}
