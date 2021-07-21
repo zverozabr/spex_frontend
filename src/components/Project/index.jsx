@@ -2,6 +2,7 @@ import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
+import Jobs from '@/components/Jobs';
 import PathNames from '@/models/PathNames';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 import { actions as projectsActions, selectors as projectsSelectors } from '@/redux/modules/projects';
@@ -20,11 +21,12 @@ import Tabs, { Tab, TabPanel } from '+components/Tabs';
 import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 import ButtonsContainer from './components/ButtonsContainer';
+import Col from './components/Col';
 import Container from './components/Container';
 import ManageImagesFormModal from './components/ManageImagesFormModal';
 import ManageJobsModal from './components/ManageJobsModal';
 import ManageResourcesModal from './components/ManageResourcesModal';
-import DnDFlow from './components/Pipeline';
+import Pipeline from './components/Pipeline';
 import Row from './components/Row';
 import ThumbnailsContainer from './components/ThumbnailsContainer';
 
@@ -118,7 +120,8 @@ const Project = () => {
     () => {
       if (resource_ids.length === 0 || resources.length === 0) {
         return [];
-      };
+      }
+
       return Object.values(resources).filter((res) => resource_ids.indexOf(res.id) > -1);
     },
     [resources, resource_ids],
@@ -249,7 +252,6 @@ const Project = () => {
     [dispatch],
   );
 
-
   const onToggleRemoveRid = useCallback(
     (rows) => {
       const to_delete = rows.map((el) => el.id || el);
@@ -327,87 +329,97 @@ const Project = () => {
   return (
     <Container>
       <Row>
-        <ButtonsContainer>
-          <Button
-            ref={anchorRef}
-            aria-controls={open ? 'menu-list-grow' : undefined}
-            aria-haspopup="true"
-            onClick={onToggle}
-          >
-            Manage
-          </Button>
-          <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
-            {({ TransitionProps, placement }) => (
-              <Grow
-                {...TransitionProps}
-                style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
-              >
-                <Paper>
-                  <ClickAwayListener onClickAway={onToggleClose}>
-                    <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
-                      <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
-                      <MenuItem onClick={onManageJobsModalOpen}>Jobs</MenuItem>
-                      <MenuItem onClick={onManageResourcesModalOpen}>Resources</MenuItem>
-                    </MenuList>
-                  </ClickAwayListener>
-                </Paper>
-              </Grow>
-            )}
-          </Popper>
-        </ButtonsContainer>
-        <Tabs value={activeDataTab} onChange={onDataTabChange}>
-          <Tab label="Images" />
-          <Tab label="Resources" />
-          <Tab label="Tasks" />
-        </Tabs>
-        <TabPanel value={activeDataTab} index={0}>
-          <ButtonsContainer style={{ 'padding': '14px', 'background': '#ccc' }}>
-            <Button
-              color={ButtonColors.danger}
-              onClick={onRemoveImages}
-              disabled={selectedThumbnails.length === 0}
-            >
-              Remove Selected
-            </Button>
-          </ButtonsContainer>
-          <ThumbnailsContainer>
-            {normalizedThumbnails.length === 0 && <NoData>No Images To Display</NoData>}
-            {normalizedThumbnails.length > 0 && (
-              <ThumbnailsViewer
-                thumbnails={normalizedThumbnails}
-                active={selectedThumbnails}
-                onClick={onThumbnailClick}
-                allowMultiSelect
-                $size={1.5}
-                $center
-              />
-            )}
-          </ThumbnailsContainer>
-        </TabPanel>
-        <TabPanel value={activeDataTab} index={1}>
-          <Table
-            columns={resourceColumns}
-            data={resourceData}
-            actions={resourceActions}
-            allowRowSelection
-            pageSizeOptions={[10]}
-            minRows={10}
-          />
-        </TabPanel>
-        <TabPanel value={activeDataTab} index={2}>
-          <Table
-            columns={tasksColumns}
-            data={tasksData}
-            actions={_tasksActions}
-            allowRowSelection
-            pageSizeOptions={[10]}
-            minRows={10}
-          />
-        </TabPanel>
-      </Row>
+        <Col $maxWidth="500px">
+          <Pipeline />
+        </Col>
 
-      <Row>
-        <DnDFlow />
+        <Col>
+          <Row>
+            <Col>
+              <ButtonsContainer>
+                <Button
+                  ref={anchorRef}
+                  aria-controls={open ? 'menu-list-grow' : undefined}
+                  aria-haspopup="true"
+                  onClick={onToggle}
+                >
+                  Manage
+                </Button>
+                <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition >
+                  {({ TransitionProps, placement }) => (
+                    <Grow
+                      {...TransitionProps}
+                      style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
+                    >
+                      <Paper>
+                        <ClickAwayListener onClickAway={onToggleClose}>
+                          <MenuList autoFocusItem={open} id="menu-list-grow" onKeyDown={onKeyDownInMenu}>
+                            <MenuItem onClick={onManageImagesModalOpen}>Images</MenuItem>
+                            <MenuItem onClick={onManageJobsModalOpen}>From Jobs Results</MenuItem>
+                            {/*<MenuItem onClick={onManageResourcesModalOpen}>Resources</MenuItem>*/}
+                          </MenuList>
+                        </ClickAwayListener>
+                      </Paper>
+                    </Grow>
+                  )}
+                </Popper>
+              </ButtonsContainer>
+              <Tabs value={activeDataTab} onChange={onDataTabChange}>
+                <Tab label="Images" />
+                <Tab label="Resources" />
+                {/*<Tab label="Tasks" />*/}
+              </Tabs>
+              <TabPanel value={activeDataTab} index={0}>
+                <ButtonsContainer style={{ 'padding': '14px', 'background': '#ccc' }}>
+                  <Button
+                    color={ButtonColors.danger}
+                    onClick={onRemoveImages}
+                    disabled={selectedThumbnails.length === 0}
+                  >
+                    Remove Selected
+                  </Button>
+                </ButtonsContainer>
+                <ThumbnailsContainer>
+                  {normalizedThumbnails.length === 0 && <NoData>No Images To Display</NoData>}
+                  {normalizedThumbnails.length > 0 && (
+                    <ThumbnailsViewer
+                      thumbnails={normalizedThumbnails}
+                      active={selectedThumbnails}
+                      onClick={onThumbnailClick}
+                      allowMultiSelect
+                      $size={1.5}
+                      $center
+                    />
+                  )}
+                </ThumbnailsContainer>
+              </TabPanel>
+              {/*<TabPanel value={activeDataTab} index={1}>
+                <Table
+                  columns={resourceColumns}
+                  data={resourceData}
+                  actions={resourceActions}
+                  allowRowSelection
+                  pageSizeOptions={[10]}
+                  minRows={10}
+                />
+              </TabPanel>*/}
+              <TabPanel value={activeDataTab} index={1}>
+                <Table
+                  columns={tasksColumns}
+                  data={tasksData}
+                  actions={_tasksActions}
+                  allowRowSelection
+                  pageSizeOptions={[10]}
+                />
+              </TabPanel>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <Jobs />
+            </Col>
+          </Row>
+        </Col>
       </Row>
 
       {manageImagesModalOpen && (

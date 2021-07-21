@@ -7,10 +7,10 @@ import ReactFlow, {
   Controls,
   isNode,
 } from 'react-flow-renderer';
-
-
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
+
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
@@ -19,11 +19,8 @@ import { Field, Controls as FormControls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Tabs, { Tab } from '+components/Tabs';
 import ButtonsContainer from './ButtonsContainer';
+import Col from './Col';
 import Sidebar from './PipelineSidebar';
-import Row from './Row';
-
-
-import './dnd.css';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -31,46 +28,83 @@ const nodeHeight = 36;
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const DnDFlow = () => {
+const Container = styled(Col)`
+  aside {
+    border-right: 1px solid #eee;
+    padding: 15px 10px;
+    font-size: 12px;
+    background: #fcfcfc;
+
+    > * {
+      margin-bottom: 10px;
+      cursor: grab;
+    }
+
+    .description {
+      margin-bottom: 10px;
+    }
+  }
+
+  .reactflow-wrapper {
+    flex-grow: 1;
+    height: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  @media screen and (min-width: 768px) {
+    & aside {
+      //width: 20%;
+      max-width: 180px;
+    }
+  }
+`;
+
+const Pipeline = () => {
   const dispatch = useDispatch();
   const { pathname } = useLocation();
   const projectId = useMemo(
-	() => {
-	  const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
-	  return match ? match.params.id : undefined;
-	},
-	[pathname],
+    () => {
+      const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
+      return match ? match.params.id : undefined;
+    },
+    [pathname],
   );
+
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [elements, setElements] = useState([]);
   const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
-  const [activePipelineTab, setActivePipelineTab] = useState(false);
+  const [activePipelineTab, setActivePipelineTab] = useState(null);
   const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
-  const [pipelineToDelete, setPipelineToDelete ] = useState(null);
+  const [pipelineToDelete, setPipelineToDelete] = useState(null);
 
   const recursion = useCallback(
     (data, elements, position) => {
-      if (data['boxes'] !== undefined) {
+      if (!data['boxes']) {
+        return elements;
+      }
+
       data['boxes'].forEach((element) => {
         elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
-        elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
+        elements.push({ id: 'el/' + element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
         elements = recursion(element, elements, position);
+
         if (element['tasks'] !== undefined) {
-        element['tasks'].forEach((task) => {
-          elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
-          elements.push({ id: 'el/' +task.id, source: element.id, target: task.id, animated: true });
-        });
-        };
+          element['tasks'].forEach((task) => {
+            elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
+            elements.push({ id: 'el/' + task.id, source: element.id, target: task.id, animated: true });
+          });
+        }
+
         if (element['resources'] !== undefined) {
-        element['resources'].forEach((res) => {
-          elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
-          elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
-        });
-        };
+          element['resources'].forEach((res) => {
+            elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
+            elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
+          });
+        }
       });
-      };
+
       return elements;
     },
     [],
@@ -81,37 +115,38 @@ const DnDFlow = () => {
       dagreGraph.setGraph({ rankdir: direction });
 
       elements.forEach((el) => {
-      if (isNode(el)) {
-        dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
-      } else {
+        if (isNode(el)) {
+          dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
+          return;
+        }
+
         dagreGraph.setEdge(el.source, el.target);
-      }
       });
 
       dagre.layout(dagreGraph);
 
       return elements.map((el) => {
-      if (isNode(el)) {
-        const nodeWithPosition = dagreGraph.node(el.id);
-        el.targetPosition = isHorizontal ? 'left' : 'top';
-        el.sourcePosition = isHorizontal ? 'right' : 'bottom';
+        if (isNode(el)) {
+          const nodeWithPosition = dagreGraph.node(el.id);
+          el.targetPosition = isHorizontal ? 'left' : 'top';
+          el.sourcePosition = isHorizontal ? 'right' : 'bottom';
 
-        // unfortunately we need this little hack to pass a slightly different position
-        // to notify react flow about the change. Moreover we are shifting the dagre node position
-        // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
-        el.position = {
-        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
-        y: nodeWithPosition.y - nodeHeight / 2,
-        };
-      }
+          // unfortunately we need this little hack to pass a slightly different position
+          // to notify react flow about the change. Moreover we are shifting the dagre node position
+          // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
+          el.position = {
+            x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
+            y: nodeWithPosition.y - nodeHeight / 2,
+          };
+        }
 
-      return el;
+        return el;
       });
     },
     [dagreGraph],
   );
 
- const onConnect = useCallback(
+  const onConnect = useCallback(
     (params) => {
       setElements((els) => addEdge(params, els));
     },
@@ -170,26 +205,30 @@ const DnDFlow = () => {
   );
 
   const onAddPipelineModalOpen = useCallback(
-    () => { setAddPipelineModalOpen(true); },
+    () => {
+      setAddPipelineModalOpen(true);
+    },
     [],
   );
 
   const onAddPipelineClose = useCallback(
-    () => { setAddPipelineModalOpen(false); },
+    () => {
+      setAddPipelineModalOpen(false);
+    },
     [],
   );
 
   const onDeletePipelineModalOpen = useCallback(
     (pipeline) => {
-        setPipelineToDelete(pipeline);
-      },
+      setPipelineToDelete(pipeline);
+    },
     [],
   );
 
   const onDeletePipelineModalClose = useCallback(
     () => {
-        setPipelineToDelete(null);
-      },
+      setPipelineToDelete(null);
+    },
     [],
   );
 
@@ -199,87 +238,119 @@ const DnDFlow = () => {
       setPipelineToDelete(null);
       setActivePipelineTab(Object.keys(pipelines)[0]);
     },
-    [dispatch, pipelineToDelete, projectId, pipelines, setActivePipelineTab],
+    [dispatch, pipelineToDelete, projectId, pipelines],
   );
 
   const onPipelinesChanged = useCallback(
     (values) => {
       setAddPipelineModalOpen(false);
-      dispatch(pipelineActions.createPipeline({ ...values, 'project': projectId.toString() }));
+      dispatch(pipelineActions.createPipeline({
+        ...values,
+        'project': projectId.toString(),
+      }));
     },
     [dispatch, projectId],
   );
 
   const pipelineData = useMemo(
     () => {
-      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false ) {
-        let data = [];
-        const p = activePipelineTab;
-        const position = { x: 0, y: 0 };
-        if (pipelines[p] === []) return [];
-        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
-        data = recursion(pipelines[p], data, position);
-        if (data.length === 1) return [];
-        const result = getLayoutedElements(data);
-        setElements(result);
+      let result = [];
+      if (!(Object.keys(pipelines || {}).length > 0 && activePipelineTab)) {
         return result;
-        } else {
+      }
+
+      const p = activePipelineTab;
+      const position = { x: 0, y: 0 };
+
+      if (!pipelines[p] || !pipelines[p].length) {
+        return result;
+      }
+
+      result.push({
+        id: pipelines[p].id,
+        type: 'input',
+        data: {
+          label: pipelines[p]._id,
+        },
+        position,
+        isHidden: true,
+      });
+      result = recursion(pipelines[p], result, position);
+
+      if (result.length === 1) {
         return [];
-      };
+      }
+
+      result = getLayoutedElements(result);
+      setElements(result);
+
+      return result;
     },
     [pipelines, recursion, getLayoutedElements, activePipelineTab],
   );
 
   const pipelineTabs = useMemo(
-    () => {
-      if (Object.keys(pipelines || {}).length > 0) {
-      return Object.values(pipelines).map((p) => {
-        return <Tab label={p.name} key={p.id} value={p.id} />;
-      });
-      } else {
-      return [];
-      };
-    },
+    () => Object.values(pipelines || {}).map((p) => (
+      <Tab
+        label={p.name}
+        key={p.id}
+        value={p.id}
+      />
+    )),
     [pipelines],
   );
 
   useEffect(
     () => {
-      if (Object.keys(pipelines || {}).length > 0) {
-      return;
+      if (Array.isArray(pipelines) || Object.keys(pipelines || {}).length > 0) {
+        return;
       }
-      if (pipelines instanceof Array) {
-      return;
-      }
+
       dispatch(pipelineActions.fetchPipelines(projectId));
     },
     [dispatch, pipelines, projectId],
   );
 
-  useEffect(() => {
-    if (pipelineData && reactFlowInstance) {
-      setTimeout(() => {
-      reactFlowInstance.fitView();
+  useEffect(
+    () => {
+      if (!(pipelineData && reactFlowInstance)) {
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        reactFlowInstance.fitView();
       }, 100);
-      // reactFlowInstance.zoomTo(1.2);
-    }
-  }, [pipelineData, reactFlowInstance]);
+
+      return () => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      };
+    },
+    [pipelineData, reactFlowInstance],
+  );
 
   useEffect(
     () => {
-      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {
-        setActivePipelineTab(Object.keys(pipelines)[0]);
-      };
-      if (Object.keys(pipelines || {}).length === 0 && activePipelineTab !== false) {
-        setActivePipelineTab(false);
-      };
+      const [key] = Object.keys(pipelines || {});
+      setActivePipelineTab((prev) => {
+        if (key && !prev) {
+          return key;
+        }
+
+        if (!key && prev) {
+          return null;
+        }
+
+        return prev;
+      });
     },
-    [activePipelineTab, pipelines],
+    [pipelines],
   );
 
   return (
-    <div className="dndflow">
-      <Row>
+    <React.Fragment>
+      <Container>
         <ButtonsContainer>
           <Button onClick={onAddPipelineModalOpen}>
             Add
@@ -311,7 +382,7 @@ const DnDFlow = () => {
             </ReactFlow>
           </div>
         </ReactFlowProvider>
-      </Row>
+      </Container>
       {addPipelineModalOpen && (
         <FormModal
           header="Add pipeline"
@@ -339,8 +410,8 @@ const DnDFlow = () => {
           open
         />
       )}
-    </div>
+    </React.Fragment>
   );
 };
 
-export default DnDFlow;
+export default Pipeline;

@@ -1,5 +1,4 @@
 import React from 'react';
-import './dnd.css';
 
 const Sidebar = () => {
   const onDragStart = (event, nodeType) => {

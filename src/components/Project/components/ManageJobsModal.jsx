@@ -67,24 +67,24 @@ const ManageJobsModal = styled((props) => {
       accessor: 'omeroIds',
       Header: 'Omero Image IDs',
     }]),
-      [],
-    );
+    [],
+  );
 
-    const tasksColumns = useMemo(
-      () => ([
-        {
-          id: 'id',
-          accessor: 'id',
-          Header: 'id',
-        },
-        {
-          id: 'name',
-          accessor: 'name',
-          Header: 'name',
-        },
-        ]),
-        [],
-      );
+  const tasksColumns = useMemo(
+    () => ([
+      {
+        id: 'id',
+        accessor: 'id',
+        Header: 'id',
+      },
+      {
+        id: 'name',
+        accessor: 'name',
+        Header: 'name',
+      },
+    ]),
+    [],
+  );
 
   const data = useMemo(
     () => Object.values(jobs),
@@ -95,19 +95,21 @@ const ManageJobsModal = styled((props) => {
     () => {
       if (project.taskIds.length === 0 || tasks.length === 0) {
         return [];
-      };
+      }
+      ;
       if (selectedRows.length === 0) {
         setSelectedRows(project.taskIds);
         return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
       } else {
         return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
-      };
-      },
+      }
+      ;
+    },
 
     [tasks, selectedRows, project.taskIds],
   );
 
- const emitSubmit = useCallback(
+  const emitSubmit = useCallback(
     () => {
       const selected = Object.values(selectedRows).flat();
       onSubmit(project, selected);
@@ -121,7 +123,7 @@ const ManageJobsModal = styled((props) => {
         groupId: project.id,
         imageIds: project.omeroIds,
       }));
-    onClose();
+      onClose();
     },
     [dispatch, onClose, project],
   );
@@ -164,15 +166,16 @@ const ManageJobsModal = styled((props) => {
     () => {
       if (project.taskIds.length > 0 && Object.keys(tasks || {}).length !== 0 && Object.keys(jobs || {}).length !== 0) {
         let curr = {};
-        Object.values(jobs).forEach(function(o) {
+        Object.values(jobs).forEach(function (o) {
           curr[o.id] = [];
-          project.taskIds.forEach(function(tid) {
+          project.taskIds.forEach(function (tid) {
             if (o.tasks.find((task) => task.id === tid))
               curr[o.id].push(tasks[tid].id);
           });
         });
         selectedRef.current = curr;
-      };
+      }
+      ;
     },
     [jobs, project.taskIds, tasks],
   );
@@ -207,15 +210,14 @@ const ManageJobsModal = styled((props) => {
     >
       <ModalHeader>{header}</ModalHeader>
       <ModalBody>
-        <Row >
-          <Col >
+        <Row>
+          <Col>
             <Table
               columns={columns}
               data={data}
               SubComponent={WithSelected}
             />
-          </Col>
-          <Col >
+
             <Table
               columns={tasksColumns}
               data={tasksData}
@@ -242,6 +244,10 @@ const ManageJobsModal = styled((props) => {
 })`
   ${Row} + ${Row} {
     margin-top: 20px;
+  }
+  
+  .modal-content {
+    width: 800px;
   }
 
   .transfer-list {
@@ -287,8 +293,10 @@ ManageJobsModal.defaultProps = {
   open: false,
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
-  onClose: () => {},
-  onSubmit: () => {},
+  onClose: () => {
+  },
+  onSubmit: () => {
+  },
 };
 
 export default ManageJobsModal;
