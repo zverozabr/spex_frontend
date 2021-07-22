@@ -1,0 +1,891 @@
+Index: src/components/Project/components/Pipeline.jsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';\nimport dagre from 'dagre';\nimport ReactFlow, {\n  ReactFlowProvider,\n  addEdge,\n  removeElements,\n  Controls,\n  isNode,\n} from 'react-flow-renderer';\n\n\nimport { useDispatch, useSelector } from 'react-redux';\nimport { matchPath, useLocation } from 'react-router-dom';\nimport PathNames from '@/models/PathNames';\nimport { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';\nimport Button, { ButtonColors, ButtonSizes } from '+components/Button';\nimport ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';\nimport { Field, Controls as FormControls, Validators } from '+components/Form';\nimport FormModal from '+components/FormModal';\nimport Tabs, { Tab } from '+components/Tabs';\nimport ButtonsContainer from './ButtonsContainer';\nimport Sidebar from './PipelineSidebar';\nimport Row from './Row';\n\n\nimport './dnd.css';\n\nconst nodeWidth = 172;\nconst nodeHeight = 36;\n\nlet id = 0;\nconst getId = () => `dndnode_${id++}`;\n\nconst DnDFlow = () => {\n  const dispatch = useDispatch();\n  const { pathname } = useLocation();\n  const projectId = useMemo(\n\t() => {\n\t  const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });\n\t  return match ? match.params.id : undefined;\n\t},\n\t[pathname],\n  );\n  const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));\n  const reactFlowWrapper = useRef(null);\n  const [reactFlowInstance, setReactFlowInstance] = useState(null);\n  const [elements, setElements] = useState([]);\n  const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));\n  const [activePipelineTab, setActivePipelineTab] = useState(false);\n  const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);\n  const [pipelineToDelete, setPipelineToDelete ] = useState(null);\n\n  const recursion = useCallback(\n    (data, elements, position) => {\n      if (data['boxes'] !== undefined) {\n      data['boxes'].forEach((element) => {\n        elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });\n        elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });\n        elements = recursion(element, elements, position);\n        if (element['tasks'] !== undefined) {\n        element['tasks'].forEach((task) => {\n          elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });\n          elements.push({ id: 'el/' +task.id, source: element.id, target: task.id, animated: true });\n        });\n        };\n        if (element['resources'] !== undefined) {\n        element['resources'].forEach((res) => {\n          elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });\n          elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });\n        });\n        };\n      });\n      };\n      return elements;\n    },\n    [],\n  );\n\n  const getLayoutedElements = useCallback((elements, direction = 'LR') => {\n      const isHorizontal = direction === 'LR';\n      dagreGraph.setGraph({ rankdir: direction });\n\n      elements.forEach((el) => {\n      if (isNode(el)) {\n        dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });\n      } else {\n        dagreGraph.setEdge(el.source, el.target);\n      }\n      });\n\n      dagre.layout(dagreGraph);\n\n      return elements.map((el) => {\n      if (isNode(el)) {\n        const nodeWithPosition = dagreGraph.node(el.id);\n        el.targetPosition = isHorizontal ? 'left' : 'top';\n        el.sourcePosition = isHorizontal ? 'right' : 'bottom';\n\n        // unfortunately we need this little hack to pass a slightly different position\n        // to notify react flow about the change. Moreover we are shifting the dagre node position\n        // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).\n        el.position = {\n        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,\n        y: nodeWithPosition.y - nodeHeight / 2,\n        };\n      }\n\n      return el;\n      });\n    },\n    [dagreGraph],\n  );\n\n const onConnect = useCallback(\n    (params) => {\n      setElements((els) => addEdge(params, els));\n    },\n    [setElements],\n  );\n\n  const onElementsRemove = useCallback(\n    (elementsToRemove) => {\n      setElements((els) => removeElements(elementsToRemove, els));\n    },\n    [setElements],\n  );\n\n  const onLoad = useCallback(\n    (_reactFlowInstance) => {\n      setReactFlowInstance(_reactFlowInstance);\n    },\n    [setReactFlowInstance],\n  );\n\n  const onDragOver = useCallback(\n    (event) => {\n      event.preventDefault();\n      event.dataTransfer.dropEffect = 'move';\n    },\n    [],\n  );\n\n  const onDrop = useCallback(\n    (event) => {\n      event.preventDefault();\n\n      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();\n      const type = event.dataTransfer.getData('application/reactflow');\n      const position = reactFlowInstance.project({\n        x: event.clientX - reactFlowBounds.left,\n        y: event.clientY - reactFlowBounds.top,\n      });\n      const newNode = {\n        id: getId(),\n        type,\n        position,\n        data: { label: `${type} node` },\n      };\n\n      setElements((es) => es.concat(newNode));\n    },\n    [setElements, reactFlowWrapper, reactFlowInstance],\n  );\n\n  const onPipelineTabChange = useCallback(\n    (_, id) => {\n      setActivePipelineTab(id);\n    },\n    [],\n  );\n\n  const onAddPipelineModalOpen = useCallback(\n    () => { setAddPipelineModalOpen(true); },\n    [],\n  );\n\n  const onAddPipelineClose = useCallback(\n    () => { setAddPipelineModalOpen(false); },\n    [],\n  );\n\n  const onDeletePipelineModalOpen = useCallback(\n    (pipeline) => {\n        setPipelineToDelete(pipeline);\n      },\n    [],\n  );\n\n  const onDeletePipelineModalClose = useCallback(\n    () => {\n        setPipelineToDelete(null);\n      },\n    [],\n  );\n\n  const onDeletePipelineModalSubmit = useCallback(\n    () => {\n      dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete]));\n      setPipelineToDelete(null);\n      setActivePipelineTab(Object.keys(pipelines)[0]);\n    },\n    [dispatch, pipelineToDelete, projectId, pipelines, setActivePipelineTab],\n  );\n\n  const onPipelinesChanged = useCallback(\n    (values) => {\n      setAddPipelineModalOpen(false);\n      dispatch(pipelineActions.createPipeline({ ...values, 'project': projectId.toString() }));\n    },\n    [dispatch, projectId],\n  );\n\n  const pipelineData = useMemo(\n    () => {\n      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false ) {\n        let data = [];\n        const p = activePipelineTab;\n        const position = { x: 0, y: 0 };\n        if (pipelines[p] === []) return [];\n        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });\n        data = recursion(pipelines[p], data, position);\n        if (data.length === 1) return [];\n        const result = getLayoutedElements(data);\n        setElements(result);\n        return result;\n        } else {\n        return [];\n      };\n    },\n    [pipelines, recursion, getLayoutedElements, activePipelineTab],\n  );\n\n  const pipelineTabs = useMemo(\n    () => {\n      if (Object.keys(pipelines || {}).length > 0) {\n      return Object.values(pipelines).map((p) => {\n        return <Tab label={p.name} key={p.id} value={p.id} />;\n      });\n      } else {\n      return [];\n      };\n    },\n    [pipelines],\n  );\n\n  useEffect(\n    () => {\n      if (Object.keys(pipelines || {}).length > 0) {\n      return;\n      }\n      if (pipelines instanceof Array) {\n      return;\n      }\n      dispatch(pipelineActions.fetchPipelines(projectId));\n    },\n    [dispatch, pipelines, projectId],\n  );\n\n  useEffect(() => {\n    if (pipelineData && reactFlowInstance) {\n      setTimeout(() => {\n      reactFlowInstance.fitView();\n      }, 100);\n      // reactFlowInstance.zoomTo(1.2);\n    }\n  }, [pipelineData, reactFlowInstance]);\n\n  useEffect(\n    () => {\n      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {\n        setActivePipelineTab(Object.keys(pipelines)[0]);\n      };\n      if (Object.keys(pipelines || {}).length === 0 && activePipelineTab !== false) {\n        setActivePipelineTab(false);\n      };\n    },\n    [activePipelineTab, pipelines],\n  );\n\n  return (\n    <div className=\"dndflow\">\n      <Row>\n        <ButtonsContainer>\n          <Button onClick={onAddPipelineModalOpen}>\n            Add\n          </Button>\n          <Button\n            size={ButtonSizes.small}\n            color={ButtonColors.secondary}\n            variant=\"outlined\"\n            onClick={() => onDeletePipelineModalOpen(activePipelineTab)}\n          >\n            Delete\n          </Button>\n        </ButtonsContainer>\n        <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>\n          {pipelineTabs}\n        </Tabs>\n        <ReactFlowProvider>\n          <Sidebar />\n          <div className=\"reactflow-wrapper\" ref={reactFlowWrapper}>\n            <ReactFlow\n              elements={elements}\n              onConnect={onConnect}\n              onElementsRemove={onElementsRemove}\n              onLoad={onLoad}\n              onDrop={onDrop}\n              onDragOver={onDragOver}\n            >\n              <Controls />\n            </ReactFlow>\n          </div>\n        </ReactFlowProvider>\n      </Row>\n      {addPipelineModalOpen && (\n        <FormModal\n          header=\"Add pipeline\"\n          project={projectId}\n          onClose={onAddPipelineClose}\n          onSubmit={onPipelinesChanged}\n          open\n        >\n          <Field\n            name=\"name\"\n            label=\"Name\"\n            component={FormControls.TextField}\n            validate={Validators.required}\n            required\n          />\n        </FormModal>\n      )}\n\n      {pipelineToDelete && (\n        <ConfirmModal\n          action={ConfirmActions.delete}\n          item={activePipelineTab}\n          onClose={onDeletePipelineModalClose}\n          onSubmit={onDeletePipelineModalSubmit}\n          open\n        />\n      )}\n    </div>\n  );\n};\n\nexport default DnDFlow;\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/components/Project/components/Pipeline.jsx b/src/components/Project/components/Pipeline.jsx
+--- a/src/components/Project/components/Pipeline.jsx	
++++ b/src/components/Project/components/Pipeline.jsx	
+@@ -1,11 +1,11 @@
+ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+ import dagre from 'dagre';
+ import ReactFlow, {
+-  ReactFlowProvider,
+-  addEdge,
+-  removeElements,
+-  Controls,
+-  isNode,
++    ReactFlowProvider,
++    addEdge,
++    removeElements,
++    Controls,
++    isNode,
+ } from 'react-flow-renderer';
+ 
+ 
+@@ -32,315 +32,326 @@
+ const getId = () => `dndnode_${id++}`;
+ 
+ const DnDFlow = () => {
+-  const dispatch = useDispatch();
+-  const { pathname } = useLocation();
+-  const projectId = useMemo(
+-	() => {
+-	  const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
+-	  return match ? match.params.id : undefined;
+-	},
+-	[pathname],
+-  );
+-  const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
+-  const reactFlowWrapper = useRef(null);
+-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+-  const [elements, setElements] = useState([]);
+-  const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
+-  const [activePipelineTab, setActivePipelineTab] = useState(false);
+-  const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
+-  const [pipelineToDelete, setPipelineToDelete ] = useState(null);
++    const dispatch = useDispatch();
++    const { pathname } = useLocation();
++    const projectId = useMemo(
++        () => {
++            const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
++            return match ? match.params.id : undefined;
++        },
++        [pathname],
++    );
++    const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
++    const reactFlowWrapper = useRef(null);
++    const [reactFlowInstance, setReactFlowInstance] = useState(null);
++    const [elements, setElements] = useState([]);
++    const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
++    const [activePipelineTab, setActivePipelineTab] = useState(false);
++    const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
++    const [pipelineToDelete, setPipelineToDelete] = useState(null);
+ 
+-  const recursion = useCallback(
+-    (data, elements, position) => {
+-      if (data['boxes'] !== undefined) {
+-      data['boxes'].forEach((element) => {
+-        elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
+-        elements.push({ id: 'el/' +element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
+-        elements = recursion(element, elements, position);
+-        if (element['tasks'] !== undefined) {
+-        element['tasks'].forEach((task) => {
+-          elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
+-          elements.push({ id: 'el/' +task.id, source: element.id, target: task.id, animated: true });
+-        });
+-        };
+-        if (element['resources'] !== undefined) {
+-        element['resources'].forEach((res) => {
+-          elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
+-          elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
+-        });
+-        };
+-      });
+-      };
+-      return elements;
+-    },
+-    [],
+-  );
++    const recursion = useCallback(
++        (data, elements, position) => {
++            if (data['boxes'] !== undefined) {
++                data['boxes'].forEach((element) => {
++                    elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
++                    elements.push({ id: 'el/' + element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
++                    elements = recursion(element, elements, position);
++                    if (element['tasks'] !== undefined) {
++                        element['tasks'].forEach((task) => {
++                            elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
++                            elements.push({ id: 'el/' + task.id, source: element.id, target: task.id, animated: true });
++                        });
++                    }
++                    ;
++                    if (element['resources'] !== undefined) {
++                        element['resources'].forEach((res) => {
++                            elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
++                            elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
++                        });
++                    }
++                    ;
++                });
++            }
++            ;
++            return elements;
++        },
++        [],
++    );
+ 
+-  const getLayoutedElements = useCallback((elements, direction = 'LR') => {
+-      const isHorizontal = direction === 'LR';
+-      dagreGraph.setGraph({ rankdir: direction });
++    const getLayoutedElements = useCallback((elements, direction = 'LR') => {
++            const isHorizontal = direction === 'LR';
++            dagreGraph.setGraph({ rankdir: direction });
+ 
+-      elements.forEach((el) => {
+-      if (isNode(el)) {
+-        dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
+-      } else {
+-        dagreGraph.setEdge(el.source, el.target);
+-      }
+-      });
++            elements.forEach((el) => {
++                if (isNode(el)) {
++                    dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
++                } else {
++                    dagreGraph.setEdge(el.source, el.target);
++                }
++            });
+ 
+-      dagre.layout(dagreGraph);
++            dagre.layout(dagreGraph);
+ 
+-      return elements.map((el) => {
+-      if (isNode(el)) {
+-        const nodeWithPosition = dagreGraph.node(el.id);
+-        el.targetPosition = isHorizontal ? 'left' : 'top';
+-        el.sourcePosition = isHorizontal ? 'right' : 'bottom';
++            return elements.map((el) => {
++                if (isNode(el)) {
++                    const nodeWithPosition = dagreGraph.node(el.id);
++                    el.targetPosition = isHorizontal ? 'left' : 'top';
++                    el.sourcePosition = isHorizontal ? 'right' : 'bottom';
+ 
+-        // unfortunately we need this little hack to pass a slightly different position
+-        // to notify react flow about the change. Moreover we are shifting the dagre node position
+-        // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
+-        el.position = {
+-        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
+-        y: nodeWithPosition.y - nodeHeight / 2,
+-        };
+-      }
++                    // unfortunately we need this little hack to pass a slightly different position
++                    // to notify react flow about the change. Moreover we are shifting the dagre node position
++                    // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
++                    el.position = {
++                        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
++                        y: nodeWithPosition.y - nodeHeight / 2,
++                    };
++                }
+ 
+-      return el;
+-      });
+-    },
+-    [dagreGraph],
+-  );
++                return el;
++            });
++        },
++        [dagreGraph],
++    );
+ 
+- const onConnect = useCallback(
+-    (params) => {
+-      setElements((els) => addEdge(params, els));
+-    },
+-    [setElements],
+-  );
++    const onConnect = useCallback(
++        (params) => {
++            setElements((els) => addEdge(params, els));
++        },
++        [setElements],
++    );
+ 
+-  const onElementsRemove = useCallback(
+-    (elementsToRemove) => {
+-      setElements((els) => removeElements(elementsToRemove, els));
+-    },
+-    [setElements],
+-  );
++    const onElementsRemove = useCallback(
++        (elementsToRemove) => {
++            setElements((els) => removeElements(elementsToRemove, els));
++        },
++        [setElements],
++    );
+ 
+-  const onLoad = useCallback(
+-    (_reactFlowInstance) => {
+-      setReactFlowInstance(_reactFlowInstance);
+-    },
+-    [setReactFlowInstance],
+-  );
++    const onLoad = useCallback(
++        (_reactFlowInstance) => {
++            setReactFlowInstance(_reactFlowInstance);
++        },
++        [setReactFlowInstance],
++    );
+ 
+-  const onDragOver = useCallback(
+-    (event) => {
+-      event.preventDefault();
+-      event.dataTransfer.dropEffect = 'move';
+-    },
+-    [],
+-  );
++    const onDragOver = useCallback(
++        (event) => {
++            event.preventDefault();
++            event.dataTransfer.dropEffect = 'move';
++        },
++        [],
++    );
+ 
+-  const onDrop = useCallback(
+-    (event) => {
+-      event.preventDefault();
++    const onDrop = useCallback(
++        (event) => {
++            event.preventDefault();
+ 
+-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+-      const type = event.dataTransfer.getData('application/reactflow');
+-      const position = reactFlowInstance.project({
+-        x: event.clientX - reactFlowBounds.left,
+-        y: event.clientY - reactFlowBounds.top,
+-      });
+-      const newNode = {
+-        id: getId(),
+-        type,
+-        position,
+-        data: { label: `${type} node` },
+-      };
++            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
++            const type = event.dataTransfer.getData('application/reactflow');
++            const position = reactFlowInstance.project({
++                x: event.clientX - reactFlowBounds.left,
++                y: event.clientY - reactFlowBounds.top,
++            });
++            const newNode = {
++                id: getId(),
++                type,
++                position,
++                data: { label: `${type} node` },
++            };
+ 
+-      setElements((es) => es.concat(newNode));
+-    },
+-    [setElements, reactFlowWrapper, reactFlowInstance],
+-  );
++            setElements((es) => es.concat(newNode));
++        },
++        [setElements, reactFlowWrapper, reactFlowInstance],
++    );
+ 
+-  const onPipelineTabChange = useCallback(
+-    (_, id) => {
+-      setActivePipelineTab(id);
+-    },
+-    [],
+-  );
++    const onPipelineTabChange = useCallback(
++        (_, id) => {
++            setActivePipelineTab(id);
++        },
++        [],
++    );
+ 
+-  const onAddPipelineModalOpen = useCallback(
+-    () => { setAddPipelineModalOpen(true); },
+-    [],
+-  );
++    const onAddPipelineModalOpen = useCallback(
++        () => {
++            setAddPipelineModalOpen(true);
++        },
++        [],
++    );
+ 
+-  const onAddPipelineClose = useCallback(
+-    () => { setAddPipelineModalOpen(false); },
+-    [],
+-  );
++    const onAddPipelineClose = useCallback(
++        () => {
++            setAddPipelineModalOpen(false);
++        },
++        [],
++    );
+ 
+-  const onDeletePipelineModalOpen = useCallback(
+-    (pipeline) => {
+-        setPipelineToDelete(pipeline);
+-      },
+-    [],
+-  );
++    const onDeletePipelineModalOpen = useCallback(
++        (pipeline) => {
++            setPipelineToDelete(pipeline);
++        },
++        [],
++    );
+ 
+-  const onDeletePipelineModalClose = useCallback(
+-    () => {
+-        setPipelineToDelete(null);
+-      },
+-    [],
+-  );
++    const onDeletePipelineModalClose = useCallback(
++        () => {
++            setPipelineToDelete(null);
++        },
++        [],
++    );
+ 
+-  const onDeletePipelineModalSubmit = useCallback(
+-    () => {
+-      dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete]));
+-      setPipelineToDelete(null);
+-      setActivePipelineTab(Object.keys(pipelines)[0]);
+-    },
+-    [dispatch, pipelineToDelete, projectId, pipelines, setActivePipelineTab],
+-  );
++    const onDeletePipelineModalSubmit = useCallback(
++        () => {
++            dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete]));
++            setPipelineToDelete(null);
++            setActivePipelineTab(Object.keys(pipelines)[0]);
++        },
++        [dispatch, pipelineToDelete, projectId, pipelines, setActivePipelineTab],
++    );
+ 
+-  const onPipelinesChanged = useCallback(
+-    (values) => {
+-      setAddPipelineModalOpen(false);
+-      dispatch(pipelineActions.createPipeline({ ...values, 'project': projectId.toString() }));
+-    },
+-    [dispatch, projectId],
+-  );
++    const onPipelinesChanged = useCallback(
++        (values) => {
++            setAddPipelineModalOpen(false);
++            dispatch(pipelineActions.createPipeline({ ...values, 'project': projectId.toString() }));
++        },
++        [dispatch, projectId],
++    );
+ 
+-  const pipelineData = useMemo(
+-    () => {
+-      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false ) {
+-        let data = [];
+-        const p = activePipelineTab;
+-        const position = { x: 0, y: 0 };
+-        if (pipelines[p] === []) return [];
+-        data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
+-        data = recursion(pipelines[p], data, position);
+-        if (data.length === 1) return [];
+-        const result = getLayoutedElements(data);
+-        setElements(result);
+-        return result;
+-        } else {
+-        return [];
+-      };
+-    },
+-    [pipelines, recursion, getLayoutedElements, activePipelineTab],
+-  );
++    const pipelineData = useMemo(
++        () => {
++            if (Object.keys(pipelines || {}).length > 0 && activePipelineTab !== false) {
++                let data = [];
++                const p = activePipelineTab;
++                const position = { x: 0, y: 0 };
++                if (pipelines[p] === []) return [];
++                data.push({ id: pipelines[p].id, type: 'input', data: { label: pipelines[p]._id }, position, isHidden: true });
++                data = recursion(pipelines[p], data, position);
++                if (data.length === 1) return [];
++                const result = getLayoutedElements(data);
++                setElements(result);
++                return result;
++            } else {
++                return [];
++            }
++            ;
++        },
++        [pipelines, recursion, getLayoutedElements, activePipelineTab],
++    );
+ 
+-  const pipelineTabs = useMemo(
+-    () => {
+-      if (Object.keys(pipelines || {}).length > 0) {
+-      return Object.values(pipelines).map((p) => {
+-        return <Tab label={p.name} key={p.id} value={p.id} />;
+-      });
+-      } else {
+-      return [];
+-      };
+-    },
+-    [pipelines],
+-  );
++    const pipelineTabs = useMemo(
++        () => {
++            if (Object.keys(pipelines || {}).length > 0) {
++                return Object.values(pipelines).map((p) => {
++                    return <Tab label={p.name} key={p.id} value={p.id}/>;
++                });
++            } else {
++                return [];
++            }
++            ;
++        },
++        [pipelines],
++    );
+ 
+-  useEffect(
+-    () => {
+-      if (Object.keys(pipelines || {}).length > 0) {
+-      return;
+-      }
+-      if (pipelines instanceof Array) {
+-      return;
+-      }
+-      dispatch(pipelineActions.fetchPipelines(projectId));
+-    },
+-    [dispatch, pipelines, projectId],
+-  );
++    useEffect(
++        () => {
++            if (Object.keys(pipelines || {}).length > 0) {
++                return;
++            }
++            if (pipelines instanceof Array) {
++                return;
++            }
++            dispatch(pipelineActions.fetchPipelines(projectId));
++        },
++        [dispatch, pipelines, projectId],
++    );
+ 
+-  useEffect(() => {
+-    if (pipelineData && reactFlowInstance) {
+-      setTimeout(() => {
+-      reactFlowInstance.fitView();
+-      }, 100);
+-      // reactFlowInstance.zoomTo(1.2);
+-    }
+-  }, [pipelineData, reactFlowInstance]);
++    useEffect(() => {
++        if (pipelineData && reactFlowInstance) {
++            setTimeout(() => {
++                reactFlowInstance.fitView();
++            }, 100);
++            // reactFlowInstance.zoomTo(1.2);
++        }
++    }, [pipelineData, reactFlowInstance]);
+ 
+-  useEffect(
+-    () => {
+-      if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {
+-        setActivePipelineTab(Object.keys(pipelines)[0]);
+-      };
+-      if (Object.keys(pipelines || {}).length === 0 && activePipelineTab !== false) {
+-        setActivePipelineTab(false);
+-      };
+-    },
+-    [activePipelineTab, pipelines],
+-  );
++    useEffect(
++        () => {
++            if (Object.keys(pipelines || {}).length > 0 && activePipelineTab === false) {
++                setActivePipelineTab(Object.keys(pipelines)[0]);
++            }
++            ;
++            if (Object.keys(pipelines || {}).length === 0 && activePipelineTab !== false) {
++                setActivePipelineTab(false);
++            }
++            ;
++        },
++        [activePipelineTab, pipelines],
++    );
+ 
+-  return (
+-    <div className="dndflow">
+-      <Row>
+-        <ButtonsContainer>
+-          <Button onClick={onAddPipelineModalOpen}>
+-            Add
+-          </Button>
+-          <Button
+-            size={ButtonSizes.small}
+-            color={ButtonColors.secondary}
+-            variant="outlined"
+-            onClick={() => onDeletePipelineModalOpen(activePipelineTab)}
+-          >
+-            Delete
+-          </Button>
+-        </ButtonsContainer>
+-        <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
+-          {pipelineTabs}
+-        </Tabs>
+-        <ReactFlowProvider>
+-          <Sidebar />
+-          <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+-            <ReactFlow
+-              elements={elements}
+-              onConnect={onConnect}
+-              onElementsRemove={onElementsRemove}
+-              onLoad={onLoad}
+-              onDrop={onDrop}
+-              onDragOver={onDragOver}
+-            >
+-              <Controls />
+-            </ReactFlow>
+-          </div>
+-        </ReactFlowProvider>
+-      </Row>
+-      {addPipelineModalOpen && (
+-        <FormModal
+-          header="Add pipeline"
+-          project={projectId}
+-          onClose={onAddPipelineClose}
+-          onSubmit={onPipelinesChanged}
+-          open
+-        >
+-          <Field
+-            name="name"
+-            label="Name"
+-            component={FormControls.TextField}
+-            validate={Validators.required}
+-            required
+-          />
+-        </FormModal>
+-      )}
++    return (
++        <div className="dndflow">
++            <Row>
++                <ButtonsContainer>
++                    <Button onClick={onAddPipelineModalOpen}>
++                        Add
++                    </Button>
++                    <Button
++                        size={ButtonSizes.small}
++                        color={ButtonColors.secondary}
++                        variant="outlined"
++                        onClick={() => onDeletePipelineModalOpen(activePipelineTab)}
++                    >
++                        Delete
++                    </Button>
++                </ButtonsContainer>
++                <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
++                    {pipelineTabs}
++                </Tabs>
++                <ReactFlowProvider>
++                    <Sidebar/>
++                    <div className="reactflow-wrapper" ref={reactFlowWrapper}>
++                        <ReactFlow
++                            elements={elements}
++                            onConnect={onConnect}
++                            onElementsRemove={onElementsRemove}
++                            onLoad={onLoad}
++                            onDrop={onDrop}
++                            onDragOver={onDragOver}
++                        >
++                            <Controls/>
++                        </ReactFlow>
++                    </div>
++                </ReactFlowProvider>
++            </Row>
++            {addPipelineModalOpen && (
++                <FormModal
++                    header="Add pipeline"
++                    project={projectId}
++                    onClose={onAddPipelineClose}
++                    onSubmit={onPipelinesChanged}
++                    open
++                >
++                    <Field
++                        name="name"
++                        label="Name"
++                        component={FormControls.TextField}
++                        validate={Validators.required}
++                        required
++                    />
++                </FormModal>
++            )}
+ 
+-      {pipelineToDelete && (
+-        <ConfirmModal
+-          action={ConfirmActions.delete}
+-          item={activePipelineTab}
+-          onClose={onDeletePipelineModalClose}
+-          onSubmit={onDeletePipelineModalSubmit}
+-          open
+-        />
+-      )}
+-    </div>
+-  );
++            {pipelineToDelete && (
++                <ConfirmModal
++                    action={ConfirmActions.delete}
++                    item={activePipelineTab}
++                    onClose={onDeletePipelineModalClose}
++                    onSubmit={onDeletePipelineModalSubmit}
++                    open
++                />
++            )}
++        </div>
++    );
+ };
+ 
+ export default DnDFlow;
+Index: .eslintrc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\n  \"extends\": [\n    \"react-app\",\n    \"plugin:react/all\",\n    \"plugin:jest/recommended\",\n    \"plugin:promise/recommended\",\n    \"plugin:security/recommended\"\n  ],\n  \"plugins\": [\n    \"jest\",\n    \"react\",\n    \"react-hooks\",\n    \"react-redux\",\n    \"security\",\n    \"unicorn\",\n    \"promise\",\n    \"import\"\n  ],\n\n  \"settings\": {\n    \"import/resolver\": {\n      \"webpack\": {\n        \"config\": \"./config/webpack.config.js\"\n      }\n    }\n  },\n\n  \"rules\": {\n    \"semi\": [2, \"always\"],\n    \"eol-last\": [\"error\", \"always\"],\n\n    \"security/detect-object-injection\": [0],\n\n    \"promise/prefer-await-to-callbacks\": \"warn\",\n    \"promise/prefer-await-to-then\": \"warn\",\n    \"promise/always-return\": \"warn\",\n\n    \"react/jsx-indent\": [2, 2, {\"indentLogicalExpressions\": true, \"checkAttributes\": true}],\n    \"react/jsx-props-no-spreading\":  [0],\n    \"react/jsx-no-bind\": [0],\n    \"react/jsx-indent-props\": [2, 2],\n    \"react/function-component-definition\": [1, { \"namedComponents\": \"arrow-function\", \"unnamedComponents\": \"arrow-function\" }],\n    \"react/jsx-max-props-per-line\": [1, { \"when\":  \"multiline\" }],\n    \"react/jsx-no-literals\": [0],\n    \"react/jsx-max-depth\": [0],\n    \"react/jsx-sort-props\": [0],\n    \"react/jsx-fragments\": [\"warn\", \"element\"],\n    \"react/sort-prop-types\": [0],\n    // \"import/no-unused-modules\": [1, {\"unusedExports\": true}], // uncomment to find out what files are unused\n    \"no-unused-vars\": \"warn\",\n    \"no-multi-spaces\": \"warn\",\n    \"no-restricted-syntax\": \"off\",\n    \"arrow-parens\": \"warn\",\n    \"comma-dangle\": [\"warn\", \"always-multiline\"],\n    \"padded-blocks\": [\"warn\", \"never\"],\n    \"react/require-default-props\": \"warn\",\n    \"linebreak-style\": \"off\",\n    \"arrow-body-style\": \"off\",\n    \"no-param-reassign\": \"off\",\n    \"react/no-typos\": \"off\",\n    \"func-names\": \"off\",\n    \"import/no-named-as-default-member\": \"off\",\n    \"import/no-named-as-default\": \"off\",\n    \"import/prefer-default-export\": \"off\",\n    \"jsx-a11y/anchor-is-valid\": [ \"error\", {\n      \"components\": [ \"Link\" ],\n      \"specialLink\": [ \"to\", \"hrefLeft\", \"hrefRight\" ],\n      \"aspects\": [ \"noHref\", \"invalidHref\", \"preferButton\" ]\n    }],\n    \"max-len\": [\"error\", {\"code\": 180, \"ignoreRegExpLiterals\": true, \"tabWidth\": 2}],\n    \"no-console\": [\"warn\"],\n    \"no-underscore-dangle\": \"off\",\n    \"object-curly-newline\": [\"error\", {\n      \"ImportDeclaration\": {\"multiline\": true, \"consistent\": true, \"minProperties\": 6}\n    }],\n    \"react/jsx-filename-extension\": [\"warn\", { \"extensions\": [\".js\", \".jsx\"] }],\n    \"react/jsx-one-expression-per-line\": \"off\",\n    \"react/destructuring-assignment\": \"off\",\n    \"react/no-danger\": \"off\",\n    \"react-hooks/rules-of-hooks\": \"error\",\n    \"max-classes-per-file\": \"off\",\n    \"react/jsx-curly-spacing\": [2, {\"when\": \"never\"}],\n    \"object-curly-spacing\": [\"warn\", \"always\", { \"objectsInObjects\": true }],\n    \"import/order\": [\"warn\", {\n      \"groups\": [\"builtin\", \"external\", \"internal\"],\n      \"pathGroups\": [\n        {\n          \"pattern\": \"react\",\n          \"group\": \"external\",\n          \"position\": \"before\"\n        }\n      ],\n      \"pathGroupsExcludedImportTypes\": [\"react\"],\n      \"alphabetize\": {\n        \"order\": \"asc\",\n        \"caseInsensitive\": true\n      }\n    }],\n    \"react/forbid-component-props\": [0],\n    \"quotes\": [\"error\", \"single\", { \"avoidEscape\": true }]\n  }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.eslintrc b/.eslintrc
+--- a/.eslintrc	
++++ b/.eslintrc	
+@@ -16,7 +16,6 @@
+     "promise",
+     "import"
+   ],
+-
+   "settings": {
+     "import/resolver": {
+       "webpack": {
+@@ -24,35 +23,81 @@
+       }
+     }
+   },
+-
+   "rules": {
+-    "semi": [2, "always"],
+-    "eol-last": ["error", "always"],
+-
+-    "security/detect-object-injection": [0],
+-
++    "semi": [
++      2,
++      "always"
++    ],
++    "eol-last": [
++      "error",
++      "always"
++    ],
++    "security/detect-object-injection": [
++      0
++    ],
+     "promise/prefer-await-to-callbacks": "warn",
+     "promise/prefer-await-to-then": "warn",
+     "promise/always-return": "warn",
+-
+-    "react/jsx-indent": [2, 2, {"indentLogicalExpressions": true, "checkAttributes": true}],
+-    "react/jsx-props-no-spreading":  [0],
+-    "react/jsx-no-bind": [0],
+-    "react/jsx-indent-props": [2, 2],
+-    "react/function-component-definition": [1, { "namedComponents": "arrow-function", "unnamedComponents": "arrow-function" }],
+-    "react/jsx-max-props-per-line": [1, { "when":  "multiline" }],
+-    "react/jsx-no-literals": [0],
+-    "react/jsx-max-depth": [0],
+-    "react/jsx-sort-props": [0],
+-    "react/jsx-fragments": ["warn", "element"],
+-    "react/sort-prop-types": [0],
++    "react/jsx-indent": [
++      2,
++      2,
++      {
++        "indentLogicalExpressions": true,
++        "checkAttributes": true
++      }
++    ],
++    "react/jsx-props-no-spreading": [
++      0
++    ],
++    "react/jsx-no-bind": [
++      0
++    ],
++    "react/jsx-indent-props": [
++      2,
++      2
++    ],
++    "react/function-component-definition": [
++      1,
++      {
++        "namedComponents": "arrow-function",
++        "unnamedComponents": "arrow-function"
++      }
++    ],
++    "react/jsx-max-props-per-line": [
++      1,
++      {
++        "when": "multiline"
++      }
++    ],
++    "react/jsx-no-literals": [
++      0
++    ],
++    "react/jsx-max-depth": [
++      0
++    ],
++    "react/jsx-sort-props": [
++      0
++    ],
++    "react/jsx-fragments": [
++      "warn",
++      "element"
++    ],
++    "react/sort-prop-types": [
++      0
++    ],
+     // "import/no-unused-modules": [1, {"unusedExports": true}], // uncomment to find out what files are unused
+     "no-unused-vars": "warn",
+     "no-multi-spaces": "warn",
+     "no-restricted-syntax": "off",
+     "arrow-parens": "warn",
+-    "comma-dangle": ["warn", "always-multiline"],
+-    "padded-blocks": ["warn", "never"],
++    "comma-dangle": [
++      "warn",
++      "always-multiline"
++    ],
++    "padded-blocks": [
++      "warn",
++      "never"
++    ],
+     "react/require-default-props": "warn",
+     "linebreak-style": "off",
+     "arrow-body-style": "off",
+@@ -62,41 +107,106 @@
+     "import/no-named-as-default-member": "off",
+     "import/no-named-as-default": "off",
+     "import/prefer-default-export": "off",
+-    "jsx-a11y/anchor-is-valid": [ "error", {
+-      "components": [ "Link" ],
+-      "specialLink": [ "to", "hrefLeft", "hrefRight" ],
+-      "aspects": [ "noHref", "invalidHref", "preferButton" ]
+-    }],
+-    "max-len": ["error", {"code": 180, "ignoreRegExpLiterals": true, "tabWidth": 2}],
+-    "no-console": ["warn"],
++    "jsx-a11y/anchor-is-valid": [
++      "error",
++      {
++        "components": [
++          "Link"
++        ],
++        "specialLink": [
++          "to",
++          "hrefLeft",
++          "hrefRight"
++        ],
++        "aspects": [
++          "noHref",
++          "invalidHref",
++          "preferButton"
++        ]
++      }
++    ],
++    "max-len": [
++      "error",
++      {
++        "code": 180,
++        "ignoreRegExpLiterals": true,
++        "tabWidth": 2
++      }
++    ],
++    "no-console": [
++      "warn"
++    ],
+     "no-underscore-dangle": "off",
+-    "object-curly-newline": ["error", {
+-      "ImportDeclaration": {"multiline": true, "consistent": true, "minProperties": 6}
+-    }],
+-    "react/jsx-filename-extension": ["warn", { "extensions": [".js", ".jsx"] }],
++    "object-curly-newline": [
++      "error",
++      {
++        "ImportDeclaration": {
++          "multiline": true,
++          "consistent": true,
++          "minProperties": 6
++        }
++      }
++    ],
++    "react/jsx-filename-extension": [
++      "warn",
++      {
++        "extensions": [
++          ".js",
++          ".jsx"
++        ]
++      }
++    ],
+     "react/jsx-one-expression-per-line": "off",
+     "react/destructuring-assignment": "off",
+     "react/no-danger": "off",
+     "react-hooks/rules-of-hooks": "error",
+     "max-classes-per-file": "off",
+-    "react/jsx-curly-spacing": [2, {"when": "never"}],
+-    "object-curly-spacing": ["warn", "always", { "objectsInObjects": true }],
+-    "import/order": ["warn", {
+-      "groups": ["builtin", "external", "internal"],
+-      "pathGroups": [
+-        {
+-          "pattern": "react",
+-          "group": "external",
+-          "position": "before"
+-        }
+-      ],
+-      "pathGroupsExcludedImportTypes": ["react"],
+-      "alphabetize": {
+-        "order": "asc",
+-        "caseInsensitive": true
++    "react/jsx-curly-spacing": [
++      2,
++      {
++        "when": "never"
++      }
++    ],
++    "object-curly-spacing": [
++      "warn",
++      "always",
++      {
++        "objectsInObjects": true
++      }
++    ],
++    "import/order": [
++      "warn",
++      {
++        "groups": [
++          "builtin",
++          "external",
++          "internal"
++        ],
++        "pathGroups": [
++          {
++            "pattern": "react",
++            "group": "external",
++            "position": "before"
++          }
++        ],
++        "pathGroupsExcludedImportTypes": [
++          "react"
++        ],
++        "alphabetize": {
++          "order": "asc",
++          "caseInsensitive": true
++        }
+       }
+-    }],
+-    "react/forbid-component-props": [0],
+-    "quotes": ["error", "single", { "avoidEscape": true }]
++    ],
++    "react/forbid-component-props": [
++      0
++    ],
++    "quotes": [
++      "error",
++      "single",
++      {
++        "avoidEscape": true
++      }
++    ]
+   }
+ }

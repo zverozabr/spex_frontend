@@ -20,10 +20,21 @@ import FormModal from '+components/FormModal';
 import Tabs, { Tab } from '+components/Tabs';
 import ButtonsContainer from './ButtonsContainer';
 import Col from './Col';
+import List, { ListItem, ListItemText, ListSubheader } from '+components/List';
 import Sidebar from './PipelineSidebar';
+import { makeStyles } from '@material-ui/core/styles';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
+
+const useStyles = makeStyles((theme) => ({
+  listItem: {
+    paddingLeft: '24px',
+  },
+  listItemActive: {
+    backgroundColor: theme.palette.background.sidebarItemActive,
+  },
+}));
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -69,6 +80,7 @@ const Pipeline = () => {
     },
     [pathname],
   );
+  const classes = useStyles();
 
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
   const reactFlowWrapper = useRef(null);
@@ -262,7 +274,7 @@ const Pipeline = () => {
       const p = activePipelineTab;
       const position = { x: 0, y: 0 };
 
-      if (!pipelines[p] || !pipelines[p].length) {
+      if (!pipelines[p]) {
         return result;
       }
 
@@ -298,6 +310,21 @@ const Pipeline = () => {
       />
     )),
     [pipelines],
+  );
+
+  const pipelineListItems = useMemo(
+    () => Object.values(pipelines || {}).map((p) => (
+      <ListItem
+        className={classes.listItem}
+        button
+        key={p.id}
+        selected={activePipelineTab === p.id}
+        onClick={(event) => onPipelineTabChange(event, p.id)}
+      >
+        <ListItemText primary={p.name} />
+      </ListItem>
+    )),
+    [pipelines, activePipelineTab],
   );
 
   useEffect(
@@ -345,7 +372,7 @@ const Pipeline = () => {
         return prev;
       });
     },
-    [pipelines],
+    [pipelines, activePipelineTab],
   );
 
   return (
@@ -364,9 +391,15 @@ const Pipeline = () => {
             Delete
           </Button>
         </ButtonsContainer>
-        <Tabs value={activePipelineTab} onChange={onPipelineTabChange}>
-          {pipelineTabs}
-        </Tabs>
+        <List>
+          <ListSubheader component="div" id="subheader">
+            Pipelines
+          </ListSubheader>
+          {pipelineListItems}
+        </List>
+        {/*<Tabs value={activePipelineTab} onChange={onPipelineTabChange} orientation="vertical">*/}
+        {/*  {pipelineTabs}*/}
+        {/*</Tabs>*/}
         <ReactFlowProvider>
           <Sidebar />
           <div className="reactflow-wrapper" ref={reactFlowWrapper}>
