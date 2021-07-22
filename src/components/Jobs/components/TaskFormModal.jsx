@@ -72,7 +72,7 @@ const TaskFormModal = styled((props) => {
       onClose={onClose}
       onSubmit={onSubmit}
     >
-      <img src={taskImage} />
+      <img src={taskImage} alt={`result of task ${taskId}`} />
     </FormModal>
   );
 })`
@@ -86,6 +86,10 @@ const TaskFormModal = styled((props) => {
     display: flex;
     flex-direction: row;
     min-height: 540px;
+  }
+  
+  img {
+    background: #000;
   }
 `;
 

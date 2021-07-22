@@ -128,9 +128,9 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/im/${id}`;
-          const { data } = yield call(api.get, url);
-          yield put(actions.fetchTaskImageSuccess({ id, image: data }));
+          const url = `${baseUrl}/image/${id}`;
+          const { data: { data: { image } } } = yield call(api.get, url);
+          yield put(actions.fetchTaskImageSuccess({ id, image }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
