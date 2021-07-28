@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
 import dagre from 'dagre';
 import ReactFlow, {
   ReactFlowProvider,
@@ -17,12 +18,10 @@ import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import { Field, Controls as FormControls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
-import Tabs, { Tab } from '+components/Tabs';
+import List, { ListItem, ListItemText, ListSubheader } from '+components/List';
 import ButtonsContainer from './ButtonsContainer';
 import Col from './Col';
-import List, { ListItem, ListItemText, ListSubheader } from '+components/List';
 import Sidebar from './PipelineSidebar';
-import { makeStyles } from '@material-ui/core/styles';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -288,28 +287,15 @@ const Pipeline = () => {
         isHidden: true,
       });
       result = recursion(pipelines[p], result, position);
-
       if (result.length === 1) {
-        return [];
+        result = [];
       }
-
       result = getLayoutedElements(result);
       setElements(result);
 
       return result;
     },
     [pipelines, recursion, getLayoutedElements, activePipelineTab],
-  );
-
-  const pipelineTabs = useMemo(
-    () => Object.values(pipelines || {}).map((p) => (
-      <Tab
-        label={p.name}
-        key={p.id}
-        value={p.id}
-      />
-    )),
-    [pipelines],
   );
 
   const pipelineListItems = useMemo(
@@ -324,7 +310,7 @@ const Pipeline = () => {
         <ListItemText primary={p.name} />
       </ListItem>
     )),
-    [pipelines, activePipelineTab],
+    [pipelines, activePipelineTab, onPipelineTabChange, classes.listItem],
   );
 
   useEffect(
@@ -397,9 +383,6 @@ const Pipeline = () => {
           </ListSubheader>
           {pipelineListItems}
         </List>
-        {/*<Tabs value={activePipelineTab} onChange={onPipelineTabChange} orientation="vertical">*/}
-        {/*  {pipelineTabs}*/}
-        {/*</Tabs>*/}
         <ReactFlowProvider>
           <Sidebar />
           <div className="reactflow-wrapper" ref={reactFlowWrapper}>

@@ -29,7 +29,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Use yarn instead of npm
-package-lock.json
 frontend.*
 
 # IDEA
@@ -39,3 +38,5 @@ frontend.*
 *.iws
 .vscode
 /tmp
+.eslintignore
+.eslintrc
