@@ -1,5 +1,5 @@
 export { default as createSlice } from './createSlice';
-export { createSelector } from '@reduxjs/toolkit';
+export { createSelector, current } from '@reduxjs/toolkit';
 export * from './withCancellation';
 
 /**

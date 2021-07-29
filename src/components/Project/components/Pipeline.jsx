@@ -85,6 +85,7 @@ const Pipeline = () => {
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [elements, setElements] = useState([]);
+  const [selectedNodes, setSelectedNodes] = useState([]);
   const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
   const [activePipelineTab, setActivePipelineTab] = useState(null);
   const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
@@ -202,11 +203,16 @@ const Pipeline = () => {
         position,
         data: { label: `${type} node` },
       };
-
+      let boxOrPipeline = activePipelineTab;
+      if (selectedNodes) {
+        boxOrPipeline = selectedNodes[0].id;
+      };
+      dispatch(pipelineActions.createBox([projectId, boxOrPipeline]));
       setElements((es) => es.concat(newNode));
     },
-    [setElements, reactFlowWrapper, reactFlowInstance],
+    [setElements, reactFlowWrapper, reactFlowInstance, dispatch, selectedNodes, projectId, activePipelineTab],
   );
+
 
   const onPipelineTabChange = useCallback(
     (_, id) => {
@@ -263,6 +269,13 @@ const Pipeline = () => {
     [dispatch, projectId],
   );
 
+  const onSelectionChange = useCallback(
+    (values) => {
+      setSelectedNodes(values);
+      },
+    [setSelectedNodes],
+  );
+
   const pipelineData = useMemo(
     () => {
       let result = [];
@@ -307,7 +320,7 @@ const Pipeline = () => {
         selected={activePipelineTab === p.id}
         onClick={(event) => onPipelineTabChange(event, p.id)}
       >
-        <ListItemText primary={p.name} />
+        <ListItemText primary={p.id + '|'+ p.name} />
       </ListItem>
     )),
     [pipelines, activePipelineTab, onPipelineTabChange, classes.listItem],
@@ -393,6 +406,8 @@ const Pipeline = () => {
               onLoad={onLoad}
               onDrop={onDrop}
               onDragOver={onDragOver}
+              elementsSelectable
+              onSelectionChange={onSelectionChange}
             >
               <Controls />
             </ReactFlow>

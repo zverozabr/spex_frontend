@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
-import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
+import { createSlice, createSelector, startFetching, stopFetching, current } from '@/redux/utils';
 
 import hash from '+utils/hash';
 
@@ -26,6 +26,7 @@ const slice = createSlice({
   reducers: {
     fetchPipelines: startFetching,
     createPipeline: startFetching,
+    createBox: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
 
@@ -36,7 +37,7 @@ const slice = createSlice({
         state.pipelines[projectId] = [];
       } else {
         state.pipelines[projectId] = hashedPipelines;
-      };
+      }
     },
 
     updatePipelineSuccess: (state, { payload: pipeline }) => {
@@ -45,6 +46,12 @@ const slice = createSlice({
     },
 
     createPipelineSuccess: (state, { payload: pipeline }) => {
+      stopFetching(state);
+      const hashedKey = hash([pipeline] || [], 'id');
+      state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
+    },
+
+    createBoxSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
       const hashedKey = hash([pipeline] || [], 'id');
       state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
@@ -92,6 +99,24 @@ const slice = createSlice({
           const url = `${baseUrl}/create/${pipeline.project}`;
           const { data } = yield call(api.post, url, pipeline);
           yield put(actions.createPipelineSuccess(data.data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.createBox]: {
+      * saga({ payload: pipeline }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/box/${pipeline[0]}/${pipeline[1]}`;
+          const { data } = yield call(api.post, url, { 'name': 'Box', 'project': pipeline[0] });
+          // eslint-disable-next-line no-console
+          console.log(current(this.state));
+          yield put(actions.createBoxSuccess([pipeline[0], pipeline[1], data.data]));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
