@@ -112,7 +112,7 @@ const slice = createSlice({
         initApi();
         try {
           const boxurl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
-          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
+          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
           const { data } = yield call(api.post, boxurl, { 'name': 'Box', 'project': pipeline.projectId });
           const pipe = yield call(api.get, pipeUrl);
           yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));

@@ -207,7 +207,7 @@ const Pipeline = () => {
       if (selectedNodes) {
         boxOrPipelineId = selectedNodes[0].id;
       };
-      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId }));
+      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: activePipelineTab }));
       setElements((es) => es.concat(newNode));
     },
     [setElements, reactFlowWrapper, reactFlowInstance, dispatch, selectedNodes, projectId, activePipelineTab],
