@@ -203,11 +203,11 @@ const Pipeline = () => {
         position,
         data: { label: `${type} node` },
       };
-      let boxOrPipeline = activePipelineTab;
+      let boxOrPipelineId = activePipelineTab;
       if (selectedNodes) {
-        boxOrPipeline = selectedNodes[0].id;
+        boxOrPipelineId = selectedNodes[0].id;
       };
-      dispatch(pipelineActions.createBox([projectId, boxOrPipeline]));
+      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId }));
       setElements((es) => es.concat(newNode));
     },
     [setElements, reactFlowWrapper, reactFlowInstance, dispatch, selectedNodes, projectId, activePipelineTab],

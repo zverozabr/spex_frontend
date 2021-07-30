@@ -40,3 +40,4 @@ frontend.*
 /tmp
 .eslintignore
 .eslintrc
+.shelf

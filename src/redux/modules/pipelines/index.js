@@ -1,6 +1,6 @@
 import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
-import { createSlice, createSelector, startFetching, stopFetching, current } from '@/redux/utils';
+import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
 import hash from '+utils/hash';
 
@@ -53,8 +53,8 @@ const slice = createSlice({
 
     createBoxSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
-      const hashedKey = hash([pipeline] || [], 'id');
-      state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
+      const hashedKey = hash(pipeline['pipe'] || [], 'id');
+      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
     },
 
     deletePipelineSuccess(state, { payload: [projectId, pipelineId] }) {
@@ -110,13 +110,12 @@ const slice = createSlice({
     [actions.createBox]: {
       * saga({ payload: pipeline }) {
         initApi();
-
         try {
-          const url = `${baseUrl}/box/${pipeline[0]}/${pipeline[1]}`;
-          const { data } = yield call(api.post, url, { 'name': 'Box', 'project': pipeline[0] });
-          // eslint-disable-next-line no-console
-          console.log(current(this.state));
-          yield put(actions.createBoxSuccess([pipeline[0], pipeline[1], data.data]));
+          const boxurl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
+          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
+          const { data } = yield call(api.post, boxurl, { 'name': 'Box', 'project': pipeline.projectId });
+          const pipe = yield call(api.get, pipeUrl);
+          yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
