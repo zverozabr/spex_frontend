@@ -12,8 +12,8 @@ import Button, { ButtonColors } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Table from '+components/Table';
 
-import Col from './Col';
-import Row from './Row';
+import Col from '../../components/Col';
+import Row from '../../components/Row';
 import SubComponent from './SubComponent';
 
 const ManageJobsModal = styled((props) => {

@@ -14,14 +14,17 @@ import styled from 'styled-components';
 
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
+
 import Button, { ButtonColors, ButtonSizes } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import { Field, Controls as FormControls, Validators } from '+components/Form';
 import FormModal from '+components/FormModal';
 import List, { ListItem, ListItemText, ListSubheader } from '+components/List';
-import ButtonsContainer from './ButtonsContainer';
-import Col from './Col';
-import Sidebar from './PipelineSidebar';
+
+import ButtonsContainer from '../components/ButtonsContainer';
+import Col from '../components/Col';
+
+import Sidebar from './components/PipelineSidebar';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -69,7 +72,7 @@ const Container = styled(Col)`
   }
 `;
 
-const Pipeline = () => {
+const Pipelines = () => {
   const dispatch = useDispatch();
   const { pathname } = useLocation();
   const projectId = useMemo(
@@ -478,4 +481,4 @@ const Pipeline = () => {
   );
 };
 
-export default Pipeline;
+export default Pipelines;

@@ -10,7 +10,7 @@ import { actions as resourcesActions, selectors as resourcesSelectors } from '@/
 import Button, { ButtonColors } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import Table from '+components/Table';
-import Row from './Row';
+import Row from '../../components/Row';
 
 
 const ManageResourcesModal = styled((props) => {

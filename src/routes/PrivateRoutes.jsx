@@ -42,7 +42,12 @@ const PrivateRoutes = () => {
         />
         <Route
           exact
-          path={[ `/${PathNames.projects}/:id` ]}
+          path={[
+            `/${PathNames.projects}/:id`,
+            `/${PathNames.projects}/:id/pipelines`,
+            `/${PathNames.projects}/:id/resources`,
+            `/${PathNames.projects}/:id/visualization`,
+          ]}
           component={Project}
         />
         <Route

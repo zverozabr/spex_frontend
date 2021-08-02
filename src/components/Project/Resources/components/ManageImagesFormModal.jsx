@@ -10,7 +10,7 @@ import { Field, Controls } from '+components/Form';
 import FormModal from '+components/FormModal';
 import Select, { Option } from '+components/Select';
 
-import Row from './Row';
+import Row from '../../components/Row';
 
 const none = 'none';
 
