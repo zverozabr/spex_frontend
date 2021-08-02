@@ -187,30 +187,63 @@ const Pipeline = () => {
     [],
   );
 
+  const createBox = useCallback(
+    () => {
+      let boxOrPipelineId = activePipelineTab;
+      if (selectedNodes) {
+        boxOrPipelineId = selectedNodes[0].id;
+      };
+
+      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: activePipelineTab }));
+    },
+    [selectedNodes, projectId, activePipelineTab, dispatch],
+  );
+
+
+  const addDataToPipeline = useCallback(
+    (type, id) => {
+      if (selectedNodes) {
+        let data = { projectId, 'boxId': selectedNodes[0].id, pipeline: activePipelineTab };
+        if (type === 'task') {
+          data.tasks_ids = [id];
+        };
+        if (type === 'resource') {
+          data.resource_ids = [id];
+        };
+        dispatch(pipelineActions.createEdge(data));
+      };
+    },
+    [selectedNodes, projectId, activePipelineTab, dispatch],
+  );
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
 
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData('application/reactflow');
+      const type = event.dataTransfer.getData('application/reactflow/nodeType');
+      const dataId = event.dataTransfer.getData('application/reactflow/id');
+      const dataType = event.dataTransfer.getData('application/reactflow/type');
+
       const position = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
+
       const newNode = {
         id: getId(),
         type,
         position,
         data: { label: `${type} node` },
       };
-      let boxOrPipelineId = activePipelineTab;
-      if (selectedNodes) {
-        boxOrPipelineId = selectedNodes[0].id;
-      };
-      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: activePipelineTab }));
       setElements((es) => es.concat(newNode));
+
+      if (dataType === 'new box') {
+        createBox();
+      } else if (dataType === 'task' || dataType === 'resource') {
+        addDataToPipeline(dataType, dataId);
+      }
     },
-    [setElements, reactFlowWrapper, reactFlowInstance, dispatch, selectedNodes, projectId, activePipelineTab],
+    [reactFlowWrapper, reactFlowInstance, createBox, addDataToPipeline, setElements],
   );
 
 
@@ -397,7 +430,7 @@ const Pipeline = () => {
           {pipelineListItems}
         </List>
         <ReactFlowProvider>
-          <Sidebar />
+          <Sidebar projectId={projectId} />
           <div className="reactflow-wrapper" ref={reactFlowWrapper}>
             <ReactFlow
               elements={elements}

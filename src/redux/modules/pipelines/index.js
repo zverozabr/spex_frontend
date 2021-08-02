@@ -27,6 +27,7 @@ const slice = createSlice({
     fetchPipelines: startFetching,
     createPipeline: startFetching,
     createBox: startFetching,
+    createEdge: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
 
@@ -52,6 +53,12 @@ const slice = createSlice({
     },
 
     createBoxSuccess: (state, { payload: pipeline }) => {
+      stopFetching(state);
+      const hashedKey = hash(pipeline['pipe'] || [], 'id');
+      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
+    },
+
+    createEdgeSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
       const hashedKey = hash(pipeline['pipe'] || [], 'id');
       state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
@@ -111,11 +118,35 @@ const slice = createSlice({
       * saga({ payload: pipeline }) {
         initApi();
         try {
-          const boxurl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
+          const boxUrl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
           const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
-          const { data } = yield call(api.post, boxurl, { 'name': 'Box', 'project': pipeline.projectId });
+          const { data } = yield call(api.post, boxUrl, { 'name': 'Box', 'project': pipeline.projectId });
           const pipe = yield call(api.get, pipeUrl);
           yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.createEdge]: {
+      * saga({ payload: pipeline }) {
+        initApi();
+        try {
+          const url = `${baseUrl}/${pipeline.projectId}/${pipeline.boxId}`;
+          let postData = { 'name': 'edge', 'project': pipeline.projectId };
+          if (pipeline.tasks_ids) {
+            postData.tasks_ids = pipeline.tasks_ids;
+          };
+          if (pipeline.resource_ids) {
+            postData.resource_ids = pipeline.resource_ids;
+          };
+          yield call(api.post, url, postData );
+          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
+          const pipe = yield call(api.get, pipeUrl);
+          yield put(actions.createEdgeSuccess({ ...pipeline, pipe: pipe['data']['data']['pipelines'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

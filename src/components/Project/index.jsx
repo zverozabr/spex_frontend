@@ -393,16 +393,7 @@ const Project = () => {
                   )}
                 </ThumbnailsContainer>
               </TabPanel>
-              {/*<TabPanel value={activeDataTab} index={1}>
-                <Table
-                  columns={resourceColumns}
-                  data={resourceData}
-                  actions={resourceActions}
-                  allowRowSelection
-                  pageSizeOptions={[10]}
-                  minRows={10}
-                />
-              </TabPanel>*/}
+
               <TabPanel value={activeDataTab} index={1}>
                 <Table
                   columns={tasksColumns}
