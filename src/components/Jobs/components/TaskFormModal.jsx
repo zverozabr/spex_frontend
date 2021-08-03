@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -28,10 +28,6 @@ const TaskFormModal = styled((props) => {
 
   const taskImage = useSelector(tasksSelectors.getTaskImage(taskId));
   const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroImageId));
-
-  console.log(taskId);
-  console.log(taskImage);
-  console.log(omeroImageDetails);
 
   useEffect(
     () => {

@@ -16,7 +16,7 @@ import Col from '../../components/Col';
 import Row from '../../components/Row';
 import SubComponent from './SubComponent';
 
-const ManageJobsModal = styled((props) => {
+const ManageTasksModal = styled((props) => {
   const {
     className,
     header,
@@ -34,12 +34,11 @@ const ManageJobsModal = styled((props) => {
   const selectedRef = useRef({});
   const [selectedRows, setSelectedRows] = useState([]);
 
-
   const columns = useMemo(
     () => ([{
       id: 'status',
       accessor: ({ tasks }) => {
-        if (!tasks.length) {
+        if (!tasks?.length) {
           return undefined;
         }
         const sum = tasks.reduce((acc, el) => acc + el.status, 0);
@@ -47,20 +46,27 @@ const ManageJobsModal = styled((props) => {
       },
       Header: 'Status',
       Cell: ({ value: status }) => useMemo(
-        () => (status != null ? `In Progress (${Math.round(status * 100)}%)` : 'N/A'),
+        () => {
+          if (status == null) {
+            return 'N/A';
+          }
+          if (Math.round(status) === 0) {
+            return 'Waiting To Process';
+          }
+          if (Math.round(status) === 100) {
+            return 'Done';
+          }
+          return 'In Progress';
+        },
         [status],
       ),
     }, {
       id: 'name',
       accessor: 'name',
       Header: 'Name',
-      Cell: ({ row: { original: { id, name } } }) => useMemo(
-        () => (
-          // <Link to={`/${PathNames.jobs}/${id}`}>
-          <div> {id} </div>
-          // </Link>
-        ),
-        [id],
+      Cell: ({ row: { original: { name } } }) => useMemo(
+        () => (<div>{name}</div>),
+        [name],
       ),
     }, {
       id: 'omeroIds',
@@ -96,14 +102,12 @@ const ManageJobsModal = styled((props) => {
       if (project.taskIds.length === 0 || tasks.length === 0) {
         return [];
       }
-      ;
       if (selectedRows.length === 0) {
         setSelectedRows(project.taskIds);
         return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
       } else {
         return Object.values(tasks).filter((task) => selectedRows.indexOf(task.id) > -1);
       }
-      ;
     },
 
     [tasks, selectedRows, project.taskIds],
@@ -175,7 +179,6 @@ const ManageJobsModal = styled((props) => {
         });
         selectedRef.current = curr;
       }
-      ;
     },
     [jobs, project.taskIds, tasks],
   );
@@ -256,7 +259,7 @@ const ManageJobsModal = styled((props) => {
   }
 `;
 
-ManageJobsModal.propTypes = {
+ManageTasksModal.propTypes = {
   /**
    * Override or extend the styles applied to the component.
    */
@@ -287,16 +290,14 @@ ManageJobsModal.propTypes = {
   onSubmit: PropTypes.func,
 };
 
-ManageJobsModal.defaultProps = {
+ManageTasksModal.defaultProps = {
   className: '',
   header: '',
   open: false,
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
-  onClose: () => {
-  },
-  onSubmit: () => {
-  },
+  onClose: () => {},
+  onSubmit: () => {},
 };
 
-export default ManageJobsModal;
+export default ManageTasksModal;
