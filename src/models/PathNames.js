@@ -3,6 +3,8 @@ const PathNames = {
   jobs: 'jobs',
   tasks: 'tasks',
   resources: 'resources',
+  pipelines: 'pipelines',
+  visualization: 'visualization',
   dataset: 'dataset',
   img: 'img',
 };

@@ -16,6 +16,7 @@ import { getFromStorage, saveToStorage } from '+utils/localStorage';
 
 import Container from './components/Container';
 import Pipelines from './Pipelines';
+import Pipeline from './Pipeline';
 import Resources from './Resources';
 import Visualization from './Visualization';
 
@@ -79,12 +80,17 @@ const Project = () => {
   const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
   const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
 
+  const matchPipelinePath = matchPath(location.pathname, { path: `/${PathNames.projects}/${projectId}/${PathNames.pipelines}/:id` });
+  const pipelineId = matchPipelinePath ? matchPipelinePath.params.id : undefined;
+
   const resourcesUrl = `/${PathNames.projects}/${projectId}`;
-  const pipelinesUrl = `/${PathNames.projects}/${projectId}/pipelines`;
-  const visualizationUrl = `/${PathNames.projects}/${projectId}/visualization`;
+  const pipelinesUrl = `/${PathNames.projects}/${projectId}/${PathNames.pipelines}`;
+  const pipelineUrl = `/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${pipelineId}`;
+  const visualizationUrl = `/${PathNames.projects}/${projectId}/${PathNames.visualization}`;
 
   const showResources = !!matchPath(location.pathname, { path: resourcesUrl, exact: true });
-  const showPipelines = !!matchPath(location.pathname, { path: pipelinesUrl });
+  const showPipelines = !!matchPath(location.pathname, { path: pipelinesUrl, exact: true });
+  const showPipeline = !!matchPath(location.pathname, { path: pipelineUrl, exact: true });
   const showVisualization = !!matchPath(location.pathname, { path: visualizationUrl });
 
   const [sidebarOpened, setSidebarOpened] = useState(getFromStorage('sidebarOpened') === 'true');
@@ -149,7 +155,7 @@ const Project = () => {
 
           <ListItem
             className={classes.listItem}
-            selected={showPipelines}
+            selected={showPipelines || showPipeline}
             onClick={onSidebarItemClick(pipelinesUrl)}
             button
           >
@@ -171,6 +177,7 @@ const Project = () => {
 
       {showResources && <Resources />}
       {showPipelines && <Pipelines />}
+      {showPipeline && <Pipeline />}
       {showVisualization && <Visualization />}
     </Container>
   );

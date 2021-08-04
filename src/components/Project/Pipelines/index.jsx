@@ -1,483 +1,226 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import dagre from 'dagre';
-import ReactFlow, {
-  ReactFlowProvider,
-  addEdge,
-  removeElements,
-  Controls,
-  isNode,
-} from 'react-flow-renderer';
+import React, { Fragment, useState, useMemo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
 
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
-import Button, { ButtonColors, ButtonSizes } from '+components/Button';
+import Button, { ButtonSizes, ButtonColors } from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
-import { Field, Controls as FormControls, Validators } from '+components/Form';
-import FormModal from '+components/FormModal';
-import List, { ListItem, ListItemText, ListSubheader } from '+components/List';
+import Link from '+components/Link';
+import Table, { ButtonsCell } from '+components/Table';
 
-import ButtonsContainer from '../components/ButtonsContainer';
-import Col from '../components/Col';
+import ButtonsContainer from './components/ButtonsContainer';
+import PipelineFormModal from './components/PipelineFormModal';
 
-import Sidebar from './components/PipelineSidebar';
+const defaultPipeline = {
+  name: '',
+};
 
-const nodeWidth = 172;
-const nodeHeight = 36;
-
-const useStyles = makeStyles((theme) => ({
-  listItem: {
-    paddingLeft: '24px',
-  },
-  listItemActive: {
-    backgroundColor: theme.palette.background.sidebarItemActive,
-  },
-}));
-
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-
-const Container = styled(Col)`
-  aside {
-    border-right: 1px solid #eee;
-    padding: 15px 10px;
-    font-size: 12px;
-    background: #fcfcfc;
-
-    > * {
-      margin-bottom: 10px;
-      cursor: grab;
-    }
-
-    .description {
-      margin-bottom: 10px;
-    }
-  }
-
-  .reactflow-wrapper {
-    flex-grow: 1;
-    height: 100%;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-  }
-
-  @media screen and (min-width: 768px) {
-    & aside {
-      //width: 20%;
-      max-width: 180px;
-    }
-  }
-`;
+const refreshInterval = 6e4; // 1 minute
 
 const Pipelines = () => {
   const dispatch = useDispatch();
-  const { pathname } = useLocation();
-  const projectId = useMemo(
-    () => {
-      const match = matchPath(pathname, { path: `/${PathNames.projects}/:id` });
-      return match ? match.params.id : undefined;
-    },
-    [pathname],
+  const location = useLocation();
+
+  const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
+  const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
+
+  const pipelines = useSelector(pipelineSelectors.getPipelines(projectId)) || {};
+
+  const [ pipelineToManage, setPipelineToManage ] = useState(null);
+  const [ pipelineToDelete, setPipelineToDelete ] = useState(null);
+  const [ refresher, setRefresher ] = useState(null);
+
+  const onManagePipelineModalOpen = useCallback(
+    (pipeline) => { setPipelineToManage(pipeline); },
+    [],
   );
-  const classes = useStyles();
 
-  const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
-  const reactFlowWrapper = useRef(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const [elements, setElements] = useState([]);
-  const [selectedNodes, setSelectedNodes] = useState([]);
-  const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
-  const [activePipelineTab, setActivePipelineTab] = useState(null);
-  const [addPipelineModalOpen, setAddPipelineModalOpen] = useState(false);
-  const [pipelineToDelete, setPipelineToDelete] = useState(null);
+  const onManagePipelineModalClose = useCallback(
+    () => { setPipelineToManage(null); },
+    [],
+  );
 
-  const recursion = useCallback(
-    (data, elements, position) => {
-      if (!data['boxes']) {
-        return elements;
+  const onManagePipelineModalSubmit = useCallback(
+    (values) => {
+      const normalizedPipeline = {
+        ...values,
+      };
+
+      if (normalizedPipeline.id) {
+        dispatch(pipelineActions.updatePipeline(normalizedPipeline));
+      } else {
+        dispatch(pipelineActions.createPipeline(normalizedPipeline));
       }
 
-      data['boxes'].forEach((element) => {
-        elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
-        elements.push({ id: 'el/' + element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
-        elements = recursion(element, elements, position);
-
-        if (element['tasks'] !== undefined) {
-          element['tasks'].forEach((task) => {
-            elements.push({ id: task.id, type: 'input', data: { label: 'task/' + task.id }, position, style: { border: '2px solid #777' } });
-            elements.push({ id: 'el/' + task.id, source: element.id, target: task.id, animated: true });
-          });
-        }
-
-        if (element['resources'] !== undefined) {
-          element['resources'].forEach((res) => {
-            elements.push({ id: res.id, type: 'input', data: { label: 'resources/' + res.id }, position });
-            elements.push({ id: 'el/' + res.id, source: element.id, target: res.id, animated: true });
-          });
-        }
-      });
-
-      return elements;
+      setPipelineToManage(null);
     },
-    [],
-  );
-
-  const getLayoutedElements = useCallback((elements, direction = 'LR') => {
-      const isHorizontal = direction === 'LR';
-      dagreGraph.setGraph({ rankdir: direction });
-
-      elements.forEach((el) => {
-        if (isNode(el)) {
-          dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
-          return;
-        }
-
-        dagreGraph.setEdge(el.source, el.target);
-      });
-
-      dagre.layout(dagreGraph);
-
-      return elements.map((el) => {
-        if (isNode(el)) {
-          const nodeWithPosition = dagreGraph.node(el.id);
-          el.targetPosition = isHorizontal ? 'left' : 'top';
-          el.sourcePosition = isHorizontal ? 'right' : 'bottom';
-
-          // unfortunately we need this little hack to pass a slightly different position
-          // to notify react flow about the change. Moreover we are shifting the dagre node position
-          // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
-          el.position = {
-            x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
-            y: nodeWithPosition.y - nodeHeight / 2,
-          };
-        }
-
-        return el;
-      });
-    },
-    [dagreGraph],
-  );
-
-  const onConnect = useCallback(
-    (params) => {
-      setElements((els) => addEdge(params, els));
-    },
-    [setElements],
-  );
-
-  const onElementsRemove = useCallback(
-    (elementsToRemove) => {
-      setElements((els) => removeElements(elementsToRemove, els));
-    },
-    [setElements],
-  );
-
-  const onLoad = useCallback(
-    (_reactFlowInstance) => {
-      setReactFlowInstance(_reactFlowInstance);
-    },
-    [setReactFlowInstance],
-  );
-
-  const onDragOver = useCallback(
-    (event) => {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-    },
-    [],
-  );
-
-  const createBox = useCallback(
-    () => {
-      let boxOrPipelineId = activePipelineTab;
-      if (selectedNodes) {
-        boxOrPipelineId = selectedNodes[0].id;
-      };
-
-      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: activePipelineTab }));
-    },
-    [selectedNodes, projectId, activePipelineTab, dispatch],
-  );
-
-
-  const addDataToPipeline = useCallback(
-    (type, id) => {
-      if (selectedNodes) {
-        let data = { projectId, 'boxId': selectedNodes[0].id, pipeline: activePipelineTab };
-        if (type === 'task') {
-          data.tasks_ids = [id];
-        };
-        if (type === 'resource') {
-          data.resource_ids = [id];
-        };
-        dispatch(pipelineActions.createEdge(data));
-      };
-    },
-    [selectedNodes, projectId, activePipelineTab, dispatch],
-  );
-  const onDrop = useCallback(
-    (event) => {
-      event.preventDefault();
-
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const type = event.dataTransfer.getData('application/reactflow/nodeType');
-      const dataId = event.dataTransfer.getData('application/reactflow/id');
-      const dataType = event.dataTransfer.getData('application/reactflow/type');
-
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-
-      const newNode = {
-        id: getId(),
-        type,
-        position,
-        data: { label: `${type} node` },
-      };
-      setElements((es) => es.concat(newNode));
-
-      if (dataType === 'new box') {
-        createBox();
-      } else if (dataType === 'task' || dataType === 'resource') {
-        addDataToPipeline(dataType, dataId);
-      }
-    },
-    [reactFlowWrapper, reactFlowInstance, createBox, addDataToPipeline, setElements],
-  );
-
-
-  const onPipelineTabChange = useCallback(
-    (_, id) => {
-      setActivePipelineTab(id);
-    },
-    [],
-  );
-
-  const onAddPipelineModalOpen = useCallback(
-    () => {
-      setAddPipelineModalOpen(true);
-    },
-    [],
-  );
-
-  const onAddPipelineClose = useCallback(
-    () => {
-      setAddPipelineModalOpen(false);
-    },
-    [],
+    [dispatch],
   );
 
   const onDeletePipelineModalOpen = useCallback(
-    (pipeline) => {
-      setPipelineToDelete(pipeline);
-    },
+    (pipeline) => { setPipelineToDelete(pipeline); },
     [],
   );
 
   const onDeletePipelineModalClose = useCallback(
-    () => {
-      setPipelineToDelete(null);
-    },
+    () => { setPipelineToDelete(null); },
     [],
   );
 
   const onDeletePipelineModalSubmit = useCallback(
     () => {
-      dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete]));
+      dispatch(pipelineActions.deletePipeline([projectId, pipelineToDelete.id]));
       setPipelineToDelete(null);
-      setActivePipelineTab(Object.keys(pipelines)[0]);
     },
-    [dispatch, pipelineToDelete, projectId, pipelines],
+    [dispatch, pipelineToDelete, projectId],
   );
 
-  const onPipelinesChanged = useCallback(
-    (values) => {
-      setAddPipelineModalOpen(false);
-      dispatch(pipelineActions.createPipeline({
-        ...values,
-        'project': projectId.toString(),
-      }));
-    },
-    [dispatch, projectId],
-  );
+  const columns = useMemo(
+    () => ([{
+      accessor: 'status',
+      Header: 'Status',
+      Cell: ({ row: { original: { id, status } } }) => useMemo(
+        () => {
+          let statusAsString;
+          switch (status) {
+            case null:
+            case undefined:
+              statusAsString = 'N/A';
+              break;
+            case 0:
+              statusAsString = 'Waiting To Process';
+              break;
+            case 100:
+              statusAsString = 'Done';
+              break;
+            default:
+              statusAsString = 'In Progress';
+              break;
+          }
 
-  const onSelectionChange = useCallback(
-    (values) => {
-      setSelectedNodes(values);
-      },
-    [setSelectedNodes],
-  );
-
-  const pipelineData = useMemo(
-    () => {
-      let result = [];
-      if (!(Object.keys(pipelines || {}).length > 0 && activePipelineTab)) {
-        return result;
-      }
-
-      const p = activePipelineTab;
-      const position = { x: 0, y: 0 };
-
-      if (!pipelines[p]) {
-        return result;
-      }
-
-      result.push({
-        id: pipelines[p].id,
-        type: 'input',
-        data: {
-          label: pipelines[p]._id,
+          return (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{statusAsString}</Link>);
         },
-        position,
-        isHidden: true,
-      });
-      result = recursion(pipelines[p], result, position);
-      if (result.length === 1) {
-        result = [];
-      }
-      result = getLayoutedElements(result);
-      setElements(result);
-
-      return result;
-    },
-    [pipelines, recursion, getLayoutedElements, activePipelineTab],
-  );
-
-  const pipelineListItems = useMemo(
-    () => Object.values(pipelines || {}).map((p) => (
-      <ListItem
-        className={classes.listItem}
-        button
-        key={p.id}
-        selected={activePipelineTab === p.id}
-        onClick={(event) => onPipelineTabChange(event, p.id)}
-      >
-        <ListItemText primary={p.id + '|'+ p.name} />
-      </ListItem>
-    )),
-    [pipelines, activePipelineTab, onPipelineTabChange, classes.listItem],
+        [id, status],
+      ),
+    }, {
+      accessor: 'name',
+      Header: 'Name',
+      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
+      Cell: ({ row: { original: { id, name } } }) => useMemo(
+        () => (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{name}</Link>),
+        [id, name],
+      ),
+    }, {
+      accessor: 'author',
+      Header: 'Author',
+      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
+      Cell: ({ row: { original: { author } } }) => useMemo(
+        () => author.login,
+        [author],
+      ),
+    }, {
+      Header: 'Actions',
+      minWidth: 140,
+      maxWidth: 140,
+      Cell: ({ row: { original } }) => useMemo(
+        () => (
+          <ButtonsCell>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => onDeletePipelineModalOpen(original)}
+            >
+              Delete
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => onManagePipelineModalOpen(original)}
+            >
+              Edit
+            </Button>
+            <Button
+              size={ButtonSizes.small}
+              color={ButtonColors.secondary}
+              variant="outlined"
+              onClick={() => {
+                const { id, ...copy } = original;
+                onManagePipelineModalOpen(copy);
+              }}
+            >
+              Copy
+            </Button>
+          </ButtonsCell>
+        ),
+        [original],
+      ),
+    }]),
+    [onDeletePipelineModalOpen, onManagePipelineModalOpen],
   );
 
   useEffect(
     () => {
-      if (Array.isArray(pipelines) || Object.keys(pipelines || {}).length > 0) {
+      if (!projectId) {
         return;
       }
-
       dispatch(pipelineActions.fetchPipelines(projectId));
     },
-    [dispatch, pipelines, projectId],
+    [dispatch, projectId, refresher],
   );
 
   useEffect(
     () => {
-      if (!(pipelineData && reactFlowInstance)) {
-        return;
-      }
-
-      const timer = setTimeout(() => {
-        reactFlowInstance.fitView();
-      }, 100);
-
+      const intervalId = setInterval(() => {
+        setRefresher(Date.now());
+      }, refreshInterval);
       return () => {
-        if (timer) {
-          clearTimeout(timer);
-        }
+        clearInterval(intervalId);
       };
     },
-    [pipelineData, reactFlowInstance],
-  );
-
-  useEffect(
-    () => {
-      const [key] = Object.keys(pipelines || {});
-      setActivePipelineTab((prev) => {
-        if (key && !prev) {
-          return key;
-        }
-
-        if (!key && prev) {
-          return null;
-        }
-
-        return prev;
-      });
-    },
-    [pipelines, activePipelineTab],
+    [dispatch],
   );
 
   return (
-    <React.Fragment>
-      <Container>
-        <ButtonsContainer>
-          <Button onClick={onAddPipelineModalOpen}>
-            Add
-          </Button>
-          <Button
-            size={ButtonSizes.small}
-            color={ButtonColors.secondary}
-            variant="outlined"
-            onClick={() => onDeletePipelineModalOpen(activePipelineTab)}
-          >
-            Delete
-          </Button>
-        </ButtonsContainer>
-        <List>
-          <ListSubheader component="div" id="subheader">
-            Pipelines
-          </ListSubheader>
-          {pipelineListItems}
-        </List>
-        <ReactFlowProvider>
-          <Sidebar projectId={projectId} />
-          <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-            <ReactFlow
-              elements={elements}
-              onConnect={onConnect}
-              onElementsRemove={onElementsRemove}
-              onLoad={onLoad}
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-              elementsSelectable
-              onSelectionChange={onSelectionChange}
-            >
-              <Controls />
-            </ReactFlow>
-          </div>
-        </ReactFlowProvider>
-      </Container>
-      {addPipelineModalOpen && (
-        <FormModal
-          header="Add pipeline"
-          project={projectId}
-          onClose={onAddPipelineClose}
-          onSubmit={onPipelinesChanged}
-          open
+    <Fragment>
+      <ButtonsContainer>
+        <Button onClick={() => {
+          const newProject = { ...defaultPipeline, project: `${projectId}` };
+          onManagePipelineModalOpen(newProject);
+        }}
         >
-          <Field
-            name="name"
-            label="Name"
-            component={FormControls.TextField}
-            validate={Validators.required}
-            required
-          />
-        </FormModal>
+          Add Pipeline
+        </Button>
+      </ButtonsContainer>
+
+      <Table
+        columns={columns}
+        data={Object.values(pipelines)}
+      />
+
+      {pipelineToManage && (
+        <PipelineFormModal
+          header={`${pipelineToManage.id ? 'Edit' : 'Add'} Pipeline`}
+          initialValues={pipelineToManage}
+          onClose={onManagePipelineModalClose}
+          onSubmit={onManagePipelineModalSubmit}
+          open
+        />
       )}
 
       {pipelineToDelete && (
         <ConfirmModal
           action={ConfirmActions.delete}
-          item={activePipelineTab}
+          item={pipelineToDelete.name}
           onClose={onDeletePipelineModalClose}
           onSubmit={onDeletePipelineModalSubmit}
           open
         />
       )}
-    </React.Fragment>
+    </Fragment>
   );
 };
 
