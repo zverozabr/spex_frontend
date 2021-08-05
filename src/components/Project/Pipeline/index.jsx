@@ -1,12 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import dagre from 'dagre';
-import ReactFlow, {
-  ReactFlowProvider,
-  addEdge,
-  removeElements,
-  Controls,
-  isNode,
-} from 'react-flow-renderer';
+import ReactFlow, { ReactFlowProvider, addEdge, removeElements, Controls, isNode } from 'react-flow-renderer';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
@@ -14,9 +8,11 @@ import styled from 'styled-components';
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
-import Col from '../components/Col';
-
-import Sidebar from './components/PipelineSidebar';
+import BlocksWrapper from './components/BlocksWrapper';
+import Blocks from './components/Bloсks';
+import Container from './components/Container';
+import BlockSettingsWrapper from './components/BlockSettingsWrapper';
+import FlowWrapper from './components/FlowWrapper';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -24,38 +20,7 @@ const nodeHeight = 36;
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const Container = styled(Col)`
-  aside {
-    border-right: 1px solid #eee;
-    padding: 15px 10px;
-    font-size: 12px;
-    background: #fcfcfc;
-
-    > * {
-      margin-bottom: 10px;
-      cursor: grab;
-    }
-
-    .description {
-      margin-bottom: 10px;
-    }
-  }
-
-  .reactflow-wrapper {
-    flex-grow: 1;
-    height: 600px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-  }
-
-  @media screen and (min-width: 768px) {
-    & aside {
-      //width: 20%;
-      max-width: 180px;
-    }
-  }
-`;
-
-const Pipelines = () => {
+const Pipeline = styled(({ className }) => {
   const dispatch = useDispatch();
   const location = useLocation();
 
@@ -301,10 +266,13 @@ const Pipelines = () => {
   );
 
   return (
-    <Container>
-      <ReactFlowProvider>
-        <Sidebar projectId={projectId} />
-        <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+    <ReactFlowProvider>
+      <Container className={className}>
+        <BlockSettingsWrapper>
+          Block Settings
+        </BlockSettingsWrapper>
+
+        <FlowWrapper ref={reactFlowWrapper}>
           <ReactFlow
             elements={elements}
             onConnect={onConnect}
@@ -312,15 +280,42 @@ const Pipelines = () => {
             onLoad={onLoad}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            elementsSelectable
             onSelectionChange={onSelectionChange}
+            elementsSelectable
           >
             <Controls />
           </ReactFlow>
-        </div>
-      </ReactFlowProvider>
-    </Container>
-  );
-};
+        </FlowWrapper>
 
-export default Pipelines;
+        <BlocksWrapper>
+          <Blocks projectId={projectId} />
+        </BlocksWrapper>
+      </Container>
+    </ReactFlowProvider>
+  );
+})`
+  aside {
+    border-right: 1px solid #eee;
+    padding: 15px 10px;
+    font-size: 12px;
+    background: #fcfcfc;
+
+    > * {
+      margin-bottom: 10px;
+      cursor: grab;
+    }
+
+    .description {
+      margin-bottom: 10px;
+    }
+  }
+
+  @media screen and (min-width: 768px) {
+    & aside {
+      //width: 20%;
+      max-width: 180px;
+    }
+  }  
+`;
+
+export default Pipeline;
