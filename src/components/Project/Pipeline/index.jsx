@@ -3,16 +3,17 @@ import dagre from 'dagre';
 import ReactFlow, { ReactFlowProvider, addEdge, removeElements, Controls, isNode } from 'react-flow-renderer';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
+
 
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
+import BlockSettingsWrapper from './components/BlockSettingsWrapper';
 import BlocksWrapper from './components/BlocksWrapper';
 import Blocks from './components/Bloсks';
 import Container from './components/Container';
-import BlockSettingsWrapper from './components/BlockSettingsWrapper';
 import FlowWrapper from './components/FlowWrapper';
+import PipeWrapper from './components/PipeWrapper';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -20,7 +21,7 @@ const nodeHeight = 36;
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const Pipeline = styled(({ className }) => {
+const Pipeline = () => {
   const dispatch = useDispatch();
   const location = useLocation();
 
@@ -162,6 +163,7 @@ const Pipeline = styled(({ className }) => {
     },
     [selectedNodes, projectId, pipelineId, dispatch],
   );
+
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
@@ -267,55 +269,34 @@ const Pipeline = styled(({ className }) => {
 
   return (
     <ReactFlowProvider>
-      <Container className={className}>
+      <Container>
+        <PipeWrapper>
+          <FlowWrapper ref={reactFlowWrapper}>
+            <ReactFlow
+              elements={elements}
+              onConnect={onConnect}
+              onElementsRemove={onElementsRemove}
+              onLoad={onLoad}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onSelectionChange={onSelectionChange}
+              elementsSelectable
+            >
+              <Controls />
+            </ReactFlow>
+          </FlowWrapper>
+
+          <BlocksWrapper>
+            <Blocks projectId={projectId} />
+          </BlocksWrapper>
+        </PipeWrapper>
+
         <BlockSettingsWrapper>
           Block Settings
         </BlockSettingsWrapper>
-
-        <FlowWrapper ref={reactFlowWrapper}>
-          <ReactFlow
-            elements={elements}
-            onConnect={onConnect}
-            onElementsRemove={onElementsRemove}
-            onLoad={onLoad}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onSelectionChange={onSelectionChange}
-            elementsSelectable
-          >
-            <Controls />
-          </ReactFlow>
-        </FlowWrapper>
-
-        <BlocksWrapper>
-          <Blocks projectId={projectId} />
-        </BlocksWrapper>
       </Container>
     </ReactFlowProvider>
   );
-})`
-  aside {
-    border-right: 1px solid #eee;
-    padding: 15px 10px;
-    font-size: 12px;
-    background: #fcfcfc;
-
-    > * {
-      margin-bottom: 10px;
-      cursor: grab;
-    }
-
-    .description {
-      margin-bottom: 10px;
-    }
-  }
-
-  @media screen and (min-width: 768px) {
-    & aside {
-      //width: 20%;
-      max-width: 180px;
-    }
-  }  
-`;
+};
 
 export default Pipeline;
