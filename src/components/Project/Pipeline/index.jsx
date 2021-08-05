@@ -62,6 +62,9 @@ const Pipelines = () => {
   const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
   const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
 
+  const matchPipelinePath = matchPath(location.pathname, { path: `/${PathNames.projects}/${projectId}/${PathNames.pipelines}/:id` });
+  const pipelineId = matchPipelinePath ? matchPipelinePath.params.id : undefined;
+
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
 
   const reactFlowWrapper = useRef(null);
@@ -69,7 +72,6 @@ const Pipelines = () => {
   const [elements, setElements] = useState([]);
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
-  const [activePipelineTab, setActivePipelineTab] = useState(null);
 
   const recursion = useCallback(
     (data, elements, position) => {
@@ -169,21 +171,21 @@ const Pipelines = () => {
 
   const createBox = useCallback(
     () => {
-      let boxOrPipelineId = activePipelineTab;
+      let boxOrPipelineId = pipelineId;
       if (selectedNodes) {
         boxOrPipelineId = selectedNodes[0].id;
       }
 
-      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: activePipelineTab }));
+      dispatch(pipelineActions.createBox({ projectId, boxOrPipelineId, pipeline: pipelineId }));
     },
-    [selectedNodes, projectId, activePipelineTab, dispatch],
+    [selectedNodes, projectId, pipelineId, dispatch],
   );
 
 
   const addDataToPipeline = useCallback(
     (type, id) => {
       if (selectedNodes) {
-        let data = { projectId, 'boxId': selectedNodes[0].id, pipeline: activePipelineTab };
+        let data = { projectId, 'boxId': selectedNodes[0].id, pipeline: pipelineId };
         if (type === 'task') {
           data.tasks_ids = [id];
         }
@@ -193,7 +195,7 @@ const Pipelines = () => {
         dispatch(pipelineActions.createEdge(data));
       }
     },
-    [selectedNodes, projectId, activePipelineTab, dispatch],
+    [selectedNodes, projectId, pipelineId, dispatch],
   );
   const onDrop = useCallback(
     (event) => {
@@ -236,11 +238,11 @@ const Pipelines = () => {
   const pipelineData = useMemo(
     () => {
       let result = [];
-      if (!(Object.keys(pipelines || {}).length > 0 && activePipelineTab)) {
+      if (!(Object.keys(pipelines || {}).length > 0 && pipelineId)) {
         return result;
       }
 
-      const p = activePipelineTab;
+      const p = pipelineId;
       const position = { x: 0, y: 0 };
 
       if (!pipelines[p]) {
@@ -265,7 +267,7 @@ const Pipelines = () => {
 
       return result;
     },
-    [pipelines, recursion, getLayoutedElements, activePipelineTab],
+    [pipelines, recursion, getLayoutedElements, pipelineId],
   );
 
   useEffect(
@@ -296,24 +298,6 @@ const Pipelines = () => {
       };
     },
     [pipelineData, reactFlowInstance],
-  );
-
-  useEffect(
-    () => {
-      const [key] = Object.keys(pipelines || {});
-      setActivePipelineTab((prev) => {
-        if (key && !prev) {
-          return key;
-        }
-
-        if (!key && prev) {
-          return null;
-        }
-
-        return prev;
-      });
-    },
-    [pipelines, activePipelineTab],
   );
 
   return (

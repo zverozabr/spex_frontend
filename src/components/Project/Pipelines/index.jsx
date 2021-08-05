@@ -79,9 +79,17 @@ const Pipelines = () => {
 
   const columns = useMemo(
     () => ([{
+      accessor: 'id',
+      Header: 'id',
+      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
+      Cell: ({ row: { original: { id } } }) => useMemo(
+        () => (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{id}</Link>),
+        [id],
+      ),
+    }, {
       accessor: 'status',
-      Header: 'Status',
-      Cell: ({ row: { original: { id, status } } }) => useMemo(
+      Header: 'status',
+      Cell: ({ row: { original: { status } } }) => useMemo(
         () => {
           let statusAsString;
           switch (status) {
@@ -100,30 +108,30 @@ const Pipelines = () => {
               break;
           }
 
-          return (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{statusAsString}</Link>);
+          return statusAsString;
         },
-        [id, status],
+        [status],
       ),
     }, {
       accessor: 'name',
-      Header: 'Name',
+      Header: 'name',
       getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
-      Cell: ({ row: { original: { id, name } } }) => useMemo(
-        () => (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{name}</Link>),
-        [id, name],
+      Cell: ({ row: { original: { name } } }) => useMemo(
+        () => name,
+        [name],
       ),
     }, {
       accessor: 'author',
-      Header: 'Author',
+      Header: 'author',
       getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
       Cell: ({ row: { original: { author } } }) => useMemo(
         () => author.login,
         [author],
       ),
     }, {
-      Header: 'Actions',
-      minWidth: 140,
-      maxWidth: 140,
+      Header: 'actions',
+      minWidth: 180,
+      maxWidth: 180,
       Cell: ({ row: { original } }) => useMemo(
         () => (
           <ButtonsCell>
@@ -159,7 +167,7 @@ const Pipelines = () => {
         [original],
       ),
     }]),
-    [onDeletePipelineModalOpen, onManagePipelineModalOpen],
+    [onDeletePipelineModalOpen, onManagePipelineModalOpen, projectId],
   );
 
   useEffect(

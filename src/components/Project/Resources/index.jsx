@@ -115,7 +115,7 @@ const Resources = () => {
       ),
     }, {
       id: 'actions',
-      Header: 'Actions',
+      Header: 'actions',
       minWidth: 40,
       maxWidth: 40,
       Cell: ({ row: { original } }) => useMemo(

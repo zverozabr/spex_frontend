@@ -139,10 +139,10 @@ const slice = createSlice({
           let postData = { 'name': 'edge', 'project': pipeline.projectId };
           if (pipeline.tasks_ids) {
             postData.tasks_ids = pipeline.tasks_ids;
-          };
+          }
           if (pipeline.resource_ids) {
             postData.resource_ids = pipeline.resource_ids;
-          };
+          }
           yield call(api.post, url, postData );
           const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
           const pipe = yield call(api.get, pipeUrl);

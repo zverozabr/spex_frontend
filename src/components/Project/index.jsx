@@ -15,8 +15,8 @@ import List, { ListItem, ListItemIcon, ListItemText } from '+components/List';
 import { getFromStorage, saveToStorage } from '+utils/localStorage';
 
 import Container from './components/Container';
-import Pipelines from './Pipelines';
 import Pipeline from './Pipeline';
+import Pipelines from './Pipelines';
 import Resources from './Resources';
 import Visualization from './Visualization';
 
