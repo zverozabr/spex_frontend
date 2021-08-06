@@ -1,25 +1,34 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import dagre from 'dagre';
-import ReactFlow, { ReactFlowProvider, addEdge, removeElements, Controls, isNode } from 'react-flow-renderer';
+import ReactFlow, {
+  ReactFlowProvider, addEdge, removeElements, Controls, Background, isNode,
+} from 'react-flow-renderer';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
+import { useToggle } from 'react-use';
 
-
+import Blocks from '@/models/Blocks';
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
-import BlockSettingsWrapper from './components/BlockSettingsWrapper';
-import BlocksWrapper from './components/BlocksWrapper';
-import Blocks from './components/Bloсks';
+import Button, { ButtonColors } from '+components/Button';
+// import BlocksWrapper from './components/BlocksWrapper';
+// import Blocks from './components/Bloсks';
+import Block from './components/Block';
+import BlocksModal from './components/BlocksModal';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
-import PipeWrapper from './components/PipeWrapper';
+import OutputWrapper from './components/OutputWrapper';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
+
+const nodeTypes = {
+  input: Block,
+};
 
 const Pipeline = () => {
   const dispatch = useDispatch();
@@ -33,11 +42,55 @@ const Pipeline = () => {
 
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId));
 
+  const pipeline = useMemo(
+    () => (pipelines?.[pipelineId]),
+    [pipelines, pipelineId],
+  );
+
+  const [showBlocksModal, toggleBlocksModal] = useToggle(false);
+
   const reactFlowWrapper = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [elements, setElements] = useState([]);
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [dagreGraph] = useState(new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({})));
+
+  const onBlockAdd = useCallback(
+    (type) => {
+      toggleBlocksModal();
+      switch (type) {
+        case Blocks.box.value:
+          dispatch(pipelineActions.createBox({
+            projectId,
+            pipeline: pipelineId,
+            boxOrPipelineId: pipelineId,
+          }));
+          return;
+        default:
+          console.log(`Add ${type} block in progress...`);
+          return;
+      }
+    },
+    [dispatch, pipelineId, projectId, toggleBlocksModal],
+  );
+
+  const onBlockDelete = useCallback(
+    (id, type) => {
+      switch (type) {
+        case Blocks.box.value:
+          dispatch(pipelineActions.deleteBox({
+            projectId,
+            pipeline: pipelineId,
+            boxOrPipelineId: id,
+          }));
+          return;
+        default:
+          console.log(`Remove ${type} block with id ${id} in progress...`);
+          return;
+      }
+    },
+    [dispatch, pipelineId, projectId],
+  );
 
   const recursion = useCallback(
     (data, elements, position) => {
@@ -46,8 +99,18 @@ const Pipeline = () => {
       }
 
       data['boxes'].forEach((element) => {
-        elements.push({ id: element.id, type: 'input', data: { label: 'box/' + element.id }, position });
+        elements.push({
+          id: element.id,
+          type: 'input',
+          data: {
+            ...Blocks.box,
+            onDelete: onBlockDelete,
+          },
+          position,
+        });
+
         elements.push({ id: 'el/' + element.id, source: data['id'], target: element.id, isHidden: false, type: 'smoothstep' });
+
         elements = recursion(element, elements, position);
 
         if (element['tasks'] !== undefined) {
@@ -67,7 +130,7 @@ const Pipeline = () => {
 
       return elements;
     },
-    [],
+    [onBlockDelete],
   );
 
   const getLayoutedElements = useCallback((elements, direction = 'LR') => {
@@ -205,27 +268,22 @@ const Pipeline = () => {
   const pipelineData = useMemo(
     () => {
       let result = [];
-      if (!(Object.keys(pipelines || {}).length > 0 && pipelineId)) {
+      if (!pipeline) {
         return result;
       }
 
-      const p = pipelineId;
       const position = { x: 0, y: 0 };
 
-      if (!pipelines[p]) {
-        return result;
-      }
-
       result.push({
-        id: pipelines[p].id,
+        id: pipeline.id,
         type: 'input',
         data: {
-          label: pipelines[p]._id,
+          label: pipeline._id,
         },
         position,
         isHidden: true,
       });
-      result = recursion(pipelines[p], result, position);
+      result = recursion(pipeline, result, position);
       if (result.length === 1) {
         result = [];
       }
@@ -234,18 +292,17 @@ const Pipeline = () => {
 
       return result;
     },
-    [pipelines, recursion, getLayoutedElements, pipelineId],
+    [pipeline, recursion, getLayoutedElements],
   );
 
   useEffect(
     () => {
-      if (Array.isArray(pipelines) || Object.keys(pipelines || {}).length > 0) {
+      if (pipeline) {
         return;
       }
-
       dispatch(pipelineActions.fetchPipelines(projectId));
     },
-    [dispatch, pipelines, projectId],
+    [dispatch, pipeline, pipelines, projectId],
   );
 
   useEffect(
@@ -270,30 +327,44 @@ const Pipeline = () => {
   return (
     <ReactFlowProvider>
       <Container>
-        <PipeWrapper>
-          <FlowWrapper ref={reactFlowWrapper}>
-            <ReactFlow
-              elements={elements}
-              onConnect={onConnect}
-              onElementsRemove={onElementsRemove}
-              onLoad={onLoad}
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-              onSelectionChange={onSelectionChange}
-              elementsSelectable
-            >
-              <Controls />
-            </ReactFlow>
-          </FlowWrapper>
+        <Button
+          className="pipeline-add-block"
+          color={ButtonColors.secondary}
+          onClick={toggleBlocksModal}
+        >
+          + blocks
+        </Button>
 
-          <BlocksWrapper>
-            <Blocks projectId={projectId} />
-          </BlocksWrapper>
-        </PipeWrapper>
+        <FlowWrapper ref={reactFlowWrapper}>
+          <ReactFlow
+            nodeTypes={nodeTypes}
+            elements={elements}
+            onConnect={onConnect}
+            onElementsRemove={onElementsRemove}
+            onLoad={onLoad}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onSelectionChange={onSelectionChange}
+            snapToGrid
+            elementsSelectable
+          >
+            <Controls showInteractive={false} />
+            <Background />
+          </ReactFlow>
+        </FlowWrapper>
 
-        <BlockSettingsWrapper>
-          Block Settings
-        </BlockSettingsWrapper>
+        <OutputWrapper>
+          Output
+        </OutputWrapper>
+
+        {showBlocksModal && (
+          <BlocksModal
+            header="Add Block"
+            onClose={toggleBlocksModal}
+            onBlockClick={onBlockAdd}
+            open
+          />
+        )}
       </Container>
     </ReactFlowProvider>
   );

@@ -125,7 +125,7 @@ const Pipelines = () => {
       Header: 'author',
       getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
       Cell: ({ row: { original: { author } } }) => useMemo(
-        () => author.login,
+        () => author?.login || 'Unknown',
         [author],
       ),
     }, {

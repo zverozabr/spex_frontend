@@ -27,6 +27,7 @@ const slice = createSlice({
     fetchPipelines: startFetching,
     createPipeline: startFetching,
     createBox: startFetching,
+    deleteBox: startFetching,
     createEdge: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
@@ -53,6 +54,12 @@ const slice = createSlice({
     },
 
     createBoxSuccess: (state, { payload: pipeline }) => {
+      stopFetching(state);
+      const hashedKey = hash(pipeline['pipe'] || [], 'id');
+      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
+    },
+
+    deleteBoxSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
       const hashedKey = hash(pipeline['pipe'] || [], 'id');
       state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
@@ -121,6 +128,23 @@ const slice = createSlice({
           const boxUrl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
           const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
           const { data } = yield call(api.post, boxUrl, { 'name': 'Box', 'project': pipeline.projectId });
+          const pipe = yield call(api.get, pipeUrl);
+          yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.deleteBox]: {
+      * saga({ payload: pipeline }) {
+        initApi();
+        try {
+          const boxUrl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
+          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
+          const { data } = yield call(api.delete, boxUrl);
           const pipe = yield call(api.get, pipeUrl);
           yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
         } catch (error) {
