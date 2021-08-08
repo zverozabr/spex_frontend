@@ -25,6 +25,7 @@ const slice = createSlice({
   initialState,
   reducers: {
     fetchPipelines: startFetching,
+    fetchPipeline: startFetching,
     createPipeline: startFetching,
     createBox: startFetching,
     deleteBox: startFetching,
@@ -53,16 +54,12 @@ const slice = createSlice({
       state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
     },
 
-    createBoxSuccess: (state, { payload: pipeline }) => {
+    createBoxSuccess: (state) => {
       stopFetching(state);
-      const hashedKey = hash(pipeline['pipe'] || [], 'id');
-      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
     },
 
-    deleteBoxSuccess: (state, { payload: pipeline }) => {
+    deleteBoxSuccess: (state) => {
       stopFetching(state);
-      const hashedKey = hash(pipeline['pipe'] || [], 'id');
-      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
     },
 
     createEdgeSuccess: (state, { payload: pipeline }) => {
@@ -105,6 +102,22 @@ const slice = createSlice({
       },
     },
 
+    [actions.fetchPipeline]: {
+      * saga({ payload: { projectId, pipelineId } }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/path/${projectId}/${pipelineId}`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchPipelinesSuccess({ projectId, data: data.data['pipelines'] }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
     [actions.createPipeline]: {
       * saga({ payload: pipeline }) {
         initApi();
@@ -113,64 +126,6 @@ const slice = createSlice({
           const url = `${baseUrl}/create/${pipeline.project}`;
           const { data } = yield call(api.post, url, pipeline);
           yield put(actions.createPipelineSuccess(data.data));
-        } catch (error) {
-          yield put(actions.requestFail(error));
-          // eslint-disable-next-line no-console
-          console.error(error.message);
-        }
-      },
-    },
-
-    [actions.createBox]: {
-      * saga({ payload: pipeline }) {
-        initApi();
-        try {
-          const boxUrl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
-          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
-          const { data } = yield call(api.post, boxUrl, { 'name': 'Box', 'project': pipeline.projectId });
-          const pipe = yield call(api.get, pipeUrl);
-          yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
-        } catch (error) {
-          yield put(actions.requestFail(error));
-          // eslint-disable-next-line no-console
-          console.error(error.message);
-        }
-      },
-    },
-
-    [actions.deleteBox]: {
-      * saga({ payload: pipeline }) {
-        initApi();
-        try {
-          const boxUrl = `${baseUrl}/box/${pipeline.projectId}/${pipeline.boxOrPipelineId}`;
-          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
-          const { data } = yield call(api.delete, boxUrl);
-          const pipe = yield call(api.get, pipeUrl);
-          yield put(actions.createBoxSuccess({ ...pipeline, data: data.data, pipe: pipe['data']['data']['pipelines'] }));
-        } catch (error) {
-          yield put(actions.requestFail(error));
-          // eslint-disable-next-line no-console
-          console.error(error.message);
-        }
-      },
-    },
-
-    [actions.createEdge]: {
-      * saga({ payload: pipeline }) {
-        initApi();
-        try {
-          const url = `${baseUrl}/${pipeline.projectId}/${pipeline.boxId}`;
-          let postData = { 'name': 'edge', 'project': pipeline.projectId };
-          if (pipeline.tasks_ids) {
-            postData.tasks_ids = pipeline.tasks_ids;
-          }
-          if (pipeline.resource_ids) {
-            postData.resource_ids = pipeline.resource_ids;
-          }
-          yield call(api.post, url, postData );
-          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
-          const pipe = yield call(api.get, pipeUrl);
-          yield put(actions.createEdgeSuccess({ ...pipeline, pipe: pipe['data']['data']['pipelines'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -209,6 +164,63 @@ const slice = createSlice({
         }
       },
     },
+
+    [actions.createBox]: {
+      * saga({ payload: { projectId, pipelineId, rootId } }) {
+        initApi();
+        try {
+          const boxUrl = `${baseUrl}/box/${projectId}/${rootId}`;
+          const createData = { 'name': 'Box', 'project': projectId };
+          yield call(api.post, boxUrl, createData);
+          yield put(actions.createBoxSuccess());
+          yield put(actions.fetchPipeline({ projectId, pipelineId }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.deleteBox]: {
+      * saga({ payload: { projectId, pipelineId, boxId } }) {
+        initApi();
+        try {
+          const boxUrl = `${baseUrl}/delete/${projectId}/${boxId}`;
+          yield call(api.delete, boxUrl);
+          yield put(actions.deleteBoxSuccess());
+          yield put(actions.fetchPipeline({ projectId, pipelineId }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.createEdge]: {
+      * saga({ payload: pipeline }) {
+        initApi();
+        try {
+          const url = `${baseUrl}/${pipeline.projectId}/${pipeline.boxId}`;
+          let createData = { 'name': 'edge', 'project': pipeline.projectId };
+          if (pipeline.tasks_ids) {
+            createData.tasks_ids = pipeline.tasks_ids;
+          }
+          if (pipeline.resource_ids) {
+            createData.resource_ids = pipeline.resource_ids;
+          }
+          yield call(api.post, url, createData );
+          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
+          const pipe = yield call(api.get, pipeUrl);
+          yield put(actions.createEdgeSuccess({ ...pipeline, pipe: pipe['data']['data']['pipelines'] }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
   }),
 
   selectors: (getState) => ({
@@ -222,9 +234,9 @@ const slice = createSlice({
       (state) => state?.pipelines[projectId],
     ),
 
-    getPipeline: (projectId, id) => createSelector(
+    getPipeline: (projectId, pipelineId) => createSelector(
       [getState],
-      (state) => state?.pipelines[projectId][id],
+      (state) => state?.pipelines[projectId]?.[pipelineId],
     ),
   }),
 });
