@@ -141,7 +141,6 @@ const Pipeline = () => {
 
   const onBlockSelect = useCallback(
     (blocks) => {
-      console.log('onBlockSelect', blocks);
       setSelectedBlock(blocks?.[0]);
     },
     [],
