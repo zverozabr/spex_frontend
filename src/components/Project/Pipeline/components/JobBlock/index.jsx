@@ -1,54 +1,53 @@
 /* eslint-disable react/jsx-handler-names */
-import React, { Fragment, memo } from 'react';
+import React, { memo } from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import PropTypes from 'prop-types';
 import { Handle } from 'react-flow-renderer';
 
-const Block = (props) => {
+import Container from './components/Container';
+
+const JobBlock = (props) => {
   const {
-    id,
     data,
     isConnectable,
   } = props;
 
   return (
-    <Fragment>
+    <Container>
       <div>
         {data.label && <strong>{data.label}</strong>}
 
         {data.onDelete && (
-          <IconButton onClick={() => data.onDelete(id, data.value)}>
+          <IconButton onClick={() => data.onDelete(data)}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         )}
 
         {data.onAdd && (
-          <IconButton onClick={() => data.onAdd(id, data.value)}>
+          <IconButton onClick={() => data.onAdd(data)}>
             <AddIcon fontSize="small" />
           </IconButton>
         )}
       </div>
 
       <Handle
-        type="source"
+        type="target"
         position="left"
         isConnectable={isConnectable}
       />
 
       <Handle
-        type="target"
+        type="source"
         position="right"
-        style={{ background: '#555' }}
         isConnectable={isConnectable}
       />
-    </Fragment>
+    </Container>
   );
 };
 
-Block.propTypes = {
-  id: PropTypes.string.isRequired,
+JobBlock.propTypes = {
   data: PropTypes.shape({
     label: PropTypes.string,
     value: PropTypes.string,
@@ -58,4 +57,4 @@ Block.propTypes = {
   isConnectable: PropTypes.bool.isRequired,
 };
 
-export default memo(Block);
+export default memo(JobBlock);
