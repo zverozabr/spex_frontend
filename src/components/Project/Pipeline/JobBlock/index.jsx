@@ -14,6 +14,8 @@ const JobBlock = (props) => {
     isConnectable,
   } = props;
 
+  const isHorizontal = data.direction === 'LR';
+
   return (
     <Container>
       <div>
@@ -34,13 +36,13 @@ const JobBlock = (props) => {
 
       <Handle
         type="target"
-        position="left"
+        position={isHorizontal ? 'left' : 'top'}
         isConnectable={isConnectable}
       />
 
       <Handle
         type="source"
-        position="right"
+        position={isHorizontal ? 'right' : 'bottom'}
         isConnectable={isConnectable}
       />
     </Container>
@@ -51,6 +53,7 @@ JobBlock.propTypes = {
   data: PropTypes.shape({
     label: PropTypes.string,
     value: PropTypes.string,
+    direction: PropTypes.string,
     onAdd: PropTypes.func,
     onDelete: PropTypes.func,
   }).isRequired,

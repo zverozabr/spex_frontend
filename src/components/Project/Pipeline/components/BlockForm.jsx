@@ -5,12 +5,47 @@ import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
 import Form, { FormRenderer } from '+components/Form';
-import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 
-/**
- * Form modal dialog.
- */
-const FormModal = styled((props) => {
+const Container = styled.div`
+  width: 100%;
+  height: 100%;
+  form {
+    width: 100%;
+    height: 100%;
+  }
+`;
+
+const Header = styled.div`
+  margin-bottom: 20px;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-transform: capitalize;
+  
+  :empty {
+    display: none;
+  }
+`;
+
+const Body = styled.div`
+  display: flex;
+  height: 100%;
+  margin: auto 0;
+`;
+
+const Footer = styled.div`
+  margin-top: 20px;
+  align-self: flex-end;
+  
+  :empty {
+    display: none;
+  }
+  
+  .MuiButton-root + .MuiButton-root {
+    margin-left: 15px;
+  }
+`;
+
+const BlockForm = (props) => {
   const {
     className,
     header,
@@ -18,8 +53,6 @@ const FormModal = styled((props) => {
     initialValues,
     closeButtonText,
     submitButtonText,
-    open,
-    modalProps,
     onClose,
     onSubmit,
     onForm,
@@ -33,24 +66,16 @@ const FormModal = styled((props) => {
       }
 
       return (
-        <Modal
-          {...modalProps}
-          className={className}
-          open={open}
-          onClose={(event) => {
-              form.restart();
-              onClose(event);
-          }}
-        >
+        <Container className={className}>
           <FormRenderer
             onSubmit={(event) => {
               // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
               handleSubmit(event)?.then(() => form.restart());
             }}
           >
-            <ModalHeader>{header}</ModalHeader>
-            <ModalBody>{children}</ModalBody>
-            <ModalFooter>
+            <Header>{header}</Header>
+            <Body>{children}</Body>
+            <Footer>
               <Button
                 color={ButtonColors.secondary}
                 onClick={(event) => {
@@ -67,12 +92,12 @@ const FormModal = styled((props) => {
               >
                 {submitButtonText}
               </Button>
-            </ModalFooter>
+            </Footer>
           </FormRenderer>
-        </Modal>
+        </Container>
       );
-      },
-    [onForm, modalProps, className, open, header, children, closeButtonText, submitButtonText, onClose],
+    },
+    [onForm, className, header, children, closeButtonText, submitButtonText, onClose],
   );
 
   return (
@@ -88,13 +113,7 @@ const FormModal = styled((props) => {
       onSubmit={onSubmit}
     />
   );
-})`
-  ${ModalBody} {
-    .MuiFormControl-root ~ .MuiFormControl-root {
-      margin-top: 14px;
-    }
-  }
-`;
+};
 
 const propTypes = {
   /**
@@ -130,7 +149,11 @@ const propTypes = {
    */
   modalProps: PropTypes.shape({}),
   /**
-   * Callback fired when the component requests to be closed. .
+   * Callback fired when the form is created.
+   */
+  onForm: PropTypes.func,
+  /**
+   * Callback fired when the component requests to be closed.
    */
   onClose: PropTypes.func,
   /**
@@ -148,15 +171,17 @@ const defaultProps = {
   submitButtonText: 'Submit',
   open: false,
   modalProps: null,
+  onForm: () => {},
   onClose: () => {},
   onSubmit: () => {},
 };
 
-FormModal.propTypes = propTypes;
-FormModal.defaultProps = defaultProps;
+BlockForm.propTypes = propTypes;
+BlockForm.defaultProps = defaultProps;
 
 export {
-  FormModal as default,
+  BlockForm as default,
   propTypes,
-  defaultProps
+  defaultProps,
 };
+

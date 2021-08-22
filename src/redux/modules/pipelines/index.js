@@ -1,7 +1,7 @@
 import { call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
+import { actions as jobsActions } from '@/redux/modules/jobs';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
-
 import hash from '+utils/hash';
 
 const initialState = {
@@ -27,8 +27,8 @@ const slice = createSlice({
     fetchPipelines: startFetching,
     fetchPipeline: startFetching,
     createPipeline: startFetching,
-    createBox: startFetching,
-    deleteBox: startFetching,
+    createJob: startFetching,
+    deleteJob: startFetching,
     createEdge: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
@@ -54,11 +54,11 @@ const slice = createSlice({
       state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
     },
 
-    createBoxSuccess: (state) => {
+    createJobSuccess: (state) => {
       stopFetching(state);
     },
 
-    deleteBoxSuccess: (state) => {
+    deleteJobSuccess: (state) => {
       stopFetching(state);
     },
 
@@ -107,7 +107,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/path/${projectId}/${pipelineId}`;
+          const url = `${baseUrl}/path/${pipelineId}`;
           const { data } = yield call(api.get, url);
           yield put(actions.fetchPipelinesSuccess({ projectId, data: data.data['pipelines'] }));
         } catch (error) {
@@ -165,15 +165,23 @@ const slice = createSlice({
       },
     },
 
-    [actions.createBox]: {
-      * saga({ payload: { projectId, pipelineId, rootId } }) {
+    [actions.createJob]: {
+      * saga({ payload: job }) {
         initApi();
         try {
-          const boxUrl = `${baseUrl}/box/${projectId}/${rootId}`;
-          const createData = { 'name': 'Box', 'project': projectId };
-          yield call(api.post, boxUrl, createData);
-          yield put(actions.createBoxSuccess());
-          yield put(actions.fetchPipeline({ projectId, pipelineId }));
+          const jobUrl = '/jobs';
+          const { data } = yield call(api.post, jobUrl, job);
+          yield put(jobsActions.createJobSuccess(data.data));
+
+          const connUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
+          yield call(api.get, connUrl);
+
+          yield put(actions.fetchPipeline({
+            projectId: job.projectId,
+            pipelineId: job.pipelineId,
+          }));
+
+          yield put(actions.createJobSuccess());
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -182,14 +190,16 @@ const slice = createSlice({
       },
     },
 
-    [actions.deleteBox]: {
-      * saga({ payload: { projectId, pipelineId, boxId } }) {
+    [actions.deleteJob]: {
+      * saga({ payload: { projectId, pipelineId, jobId } }) {
         initApi();
         try {
-          const boxUrl = `${baseUrl}/delete/${projectId}/${boxId}`;
-          yield call(api.delete, boxUrl);
-          yield put(actions.deleteBoxSuccess());
+          const jobUrl = `${baseUrl}/delete/${projectId}/${jobId}`;
+          yield call(api.delete, jobUrl);
+
           yield put(actions.fetchPipeline({ projectId, pipelineId }));
+
+          yield put(actions.deleteJobSuccess());
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

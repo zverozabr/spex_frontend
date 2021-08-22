@@ -13,6 +13,8 @@ const StartBlock = (props) => {
     isConnectable,
   } = props;
 
+  const isHorizontal = data.direction === 'LR';
+
   return (
     <Container>
       <IconButton onClick={() => data.onAdd(data)}>
@@ -21,7 +23,7 @@ const StartBlock = (props) => {
 
       <Handle
         type="source"
-        position="right"
+        position={isHorizontal ? 'right' : 'bottom'}
         isConnectable={isConnectable}
       />
     </Container>
@@ -31,6 +33,7 @@ const StartBlock = (props) => {
 StartBlock.propTypes = {
   data: PropTypes.shape({
     value: PropTypes.string,
+    direction: PropTypes.string,
     onAdd: PropTypes.func,
   }).isRequired,
   isConnectable: PropTypes.bool.isRequired,

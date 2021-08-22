@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export default styled.div`
   --width: ${(props) => props.$width};
 
-  z-index: 9999;
+  z-index: 999;
   position: absolute;
   top: 0;
   left: 0;
