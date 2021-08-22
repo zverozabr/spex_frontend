@@ -194,7 +194,7 @@ const slice = createSlice({
       * saga({ payload: { projectId, pipelineId, jobId } }) {
         initApi();
         try {
-          const jobUrl = `${baseUrl}/delete/${projectId}/${jobId}`;
+          const jobUrl = `${baseUrl}/delete/${pipelineId}/${jobId}`;
           yield call(api.delete, jobUrl);
 
           yield put(actions.fetchPipeline({ projectId, pipelineId }));
