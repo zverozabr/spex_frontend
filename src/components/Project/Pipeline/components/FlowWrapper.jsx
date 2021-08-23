@@ -15,7 +15,7 @@ export default styled.div`
     }
 
     .react-flow__node.selected {
-      border-width: 3px;
+      background-color: rgba(0,0,0,0.25);
     }
 
     .react-flow__node-input {

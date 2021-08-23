@@ -27,11 +27,14 @@ const slice = createSlice({
     fetchPipelines: startFetching,
     fetchPipeline: startFetching,
     createPipeline: startFetching,
-    createJob: startFetching,
-    deleteJob: startFetching,
-    createEdge: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
+
+    createJob: startFetching,
+    updateJob: startFetching,
+    deleteJob: startFetching,
+
+    createEdge: startFetching,
 
     fetchPipelinesSuccess: (state, { payload: { projectId, data } }) => {
       stopFetching(state);
@@ -43,18 +46,27 @@ const slice = createSlice({
       }
     },
 
-    updatePipelineSuccess: (state, { payload: pipeline }) => {
-      stopFetching(state);
-      state.pipelines[pipeline.id] = pipeline;
-    },
-
     createPipelineSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
       const hashedKey = hash([pipeline] || [], 'id');
       state.pipelines[pipeline.project] = { ...state.pipelines[pipeline.project], ...hashedKey };
     },
 
+    updatePipelineSuccess: (state, { payload: pipeline }) => {
+      stopFetching(state);
+      state.pipelines[pipeline.id] = pipeline;
+    },
+
+    deletePipelineSuccess(state, { payload: [projectId, pipelineId] }) {
+      stopFetching(state);
+      delete state.pipelines[projectId][pipelineId];
+    },
+
     createJobSuccess: (state) => {
+      stopFetching(state);
+    },
+
+    updateJobSuccess: (state) => {
       stopFetching(state);
     },
 
@@ -66,11 +78,6 @@ const slice = createSlice({
       stopFetching(state);
       const hashedKey = hash(pipeline['pipe'] || [], 'id');
       state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
-    },
-
-    deletePipelineSuccess(state, { payload: [projectId, pipelineId] }) {
-      stopFetching(state);
-      delete state.pipelines[projectId][pipelineId];
     },
 
     clearPipelines: (state) => {
@@ -173,8 +180,8 @@ const slice = createSlice({
           const { data } = yield call(api.post, jobUrl, job);
           yield put(jobsActions.createJobSuccess(data.data));
 
-          const connUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
-          yield call(api.get, connUrl);
+          const pipelineUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
+          yield call(api.get, pipelineUrl);
 
           yield put(actions.fetchPipeline({
             projectId: job.projectId,
@@ -190,12 +197,43 @@ const slice = createSlice({
       },
     },
 
+    [actions.updateJob]: {
+      * saga({ payload: job }) {
+        initApi();
+        try {
+          const updateParams = {
+            name: job.name,
+            content: job.content,
+            omeroIds: job.omeroIds,
+          };
+          const jobUrl = `/jobs/${job.id}`;
+          const { data } = yield call(api.put, jobUrl, updateParams);
+          yield put(jobsActions.updateJobSuccess(data.data));
+
+          yield put(actions.fetchPipeline({
+            projectId: job.projectId,
+            pipelineId: job.pipelineId,
+          }));
+
+          yield put(actions.updateJobSuccess());
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
     [actions.deleteJob]: {
       * saga({ payload: { projectId, pipelineId, jobId } }) {
         initApi();
         try {
-          const jobUrl = `${baseUrl}/delete/${pipelineId}/${jobId}`;
+          const pipelineUrl = `${baseUrl}/delete/${pipelineId}/${jobId}`;
+          yield call(api.delete, pipelineUrl);
+
+          const jobUrl = `/jobs/${jobId}`;
           yield call(api.delete, jobUrl);
+          yield put(jobsActions.deleteJobSuccess(jobId));
 
           yield put(actions.fetchPipeline({ projectId, pipelineId }));
 

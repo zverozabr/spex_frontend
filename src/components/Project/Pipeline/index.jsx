@@ -12,15 +12,14 @@ import { actions as pipelineActions, selectors as pipelineSelectors } from '@/re
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
 
+import JobBlock from './blocks/JobBlock';
+import StartBlock from './blocks/StartBlock';
 import BlockFormWrapper from './components/BlockFormWrapper';
 import BlocksModal from './components/BlocksModal';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
-
-import JobBlock from './JobBlock';
-import SegmentationForm from './SegmentationForm';
-import StartBlock from './StartBlock';
+import SegmentationForm from './forms/SegmentationForm';
 
 const nodeWidth = 172;
 const nodeHeight = 36;
@@ -54,6 +53,7 @@ const createElements = (inputData, result, options = {}) => {
       type: 'smoothstep',
       source: inputData.id,
       target: job.id,
+      animated: job.status !== 1,
     });
 
     result = createElements(job, result, options);
@@ -120,7 +120,10 @@ const Pipeline = () => {
 
   const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
   const jobs = useSelector(jobsSelectors.getJobs);
-  console.log(pipeline);
+
+  // TODO: Remove me after debug
+  console.log({ pipeline });
+
   const [refresher, setRefresher] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [actionWithBlock, setActionWithBlock] = useState(null);
@@ -161,6 +164,13 @@ const Pipeline = () => {
     [pipeline],
   );
 
+  const onJobCancel = useCallback(
+    () => {
+      setSelectedBlock((prevValue) => prevValue.id ? prevValue : null);
+    },
+    [],
+  );
+
   const onJobSubmit = useCallback(
     (values) => {
       setSelectedBlock(values);
@@ -188,7 +198,7 @@ const Pipeline = () => {
       };
 
       if (normalizedJob.id) {
-        dispatch(jobsActions.updateJob(normalizedJob));
+        dispatch(pipelineActions.updateJob(normalizedJob));
       } else {
         dispatch(pipelineActions.createJob(normalizedJob));
       }
@@ -296,7 +306,10 @@ const Pipeline = () => {
     },
     [elements, reactFlowInstance],
   );
-  console.log(selectedBlock);
+
+  // TODO: Remove me after debug
+  console.log({ selectedBlock });
+
   return (
     <ReactFlowProvider>
       <Container>
@@ -325,6 +338,7 @@ const Pipeline = () => {
               <SegmentationForm
                 header={selectedBlock.name}
                 initialValues={selectedBlock}
+                onClose={onJobCancel}
                 onSubmit={onJobSubmit}
               />
             )}

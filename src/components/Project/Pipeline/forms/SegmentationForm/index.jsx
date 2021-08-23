@@ -12,7 +12,7 @@ import {
 } from '+components/Form';
 import { propTypes, defaultProps } from '+components/FormModal';
 
-import Form from '../components/BlockForm';
+import Form from '../../components/BlockForm';
 import Col from './components/Col';
 import Group from './components/Group';
 import Row from './components/Row';
@@ -29,7 +29,7 @@ const SegmentationForm = styled((props) => {
   const dispatch = useDispatch();
 
   const formRef = useRef(null);
-  const [formValues, setFormValues] = useState(initialValues);
+  const [formValues, setFormValues] = useState(initialValues || {});
 
   const project = useSelector(projectsSelectors.getProject(formValues.projectId));
   const projectThumbnails = useSelector(omeroSelectors.getThumbnails(formValues.projectId));
@@ -42,7 +42,7 @@ const SegmentationForm = styled((props) => {
       if (!projectThumbnails) {
         return [];
       }
-      return (initialValues.omeroIds || []).filter((id) => projectThumbnails[id]).map((id) =>({ id, img: projectThumbnails[id] }));
+      return (initialValues?.omeroIds || []).filter((id) => projectThumbnails[id]).map((id) =>({ id, img: projectThumbnails[id] }));
     },
     [initialValues, projectThumbnails],
   );
@@ -102,8 +102,10 @@ const SegmentationForm = styled((props) => {
       if (!formValues.omeroIds?.length) {
         return;
       }
-      const { id: imageId } = formValues.omeroIds[0];
-      dispatch(omeroActions.fetchImageDetails(imageId));
+      const imageId = formValues.omeroIds[0].id || formValues.omeroIds[0];
+      if (imageId) {
+        dispatch(omeroActions.fetchImageDetails(imageId));
+      }
       return () => {
         dispatch(omeroActions.clearImageDetails(imageId));
       };
@@ -113,13 +115,23 @@ const SegmentationForm = styled((props) => {
 
   useEffect(
     () => {
-      const projectImageIds = project.omeroIds || [];
-      dispatch(omeroActions.fetchThumbnails({ groupId: formValues.projectId, imageIds: projectImageIds }));
+      const projectImageIds = project?.omeroIds || [];
+      if (projectImageIds.length) {
+        dispatch(omeroActions.fetchThumbnails({ groupId: formValues.projectId, imageIds: projectImageIds }));
+      }
       return () => {
         dispatch(omeroActions.clearThumbnails(formValues.projectId));
       };
     },
-    [dispatch, formValues.projectId, project.omeroIds],
+    [dispatch, formValues.projectId, project?.omeroIds],
+  );
+
+  useEffect(
+    () => () => {
+      const { current: form } = formRef;
+      form.restart();
+    },
+    [],
   );
 
   return (
