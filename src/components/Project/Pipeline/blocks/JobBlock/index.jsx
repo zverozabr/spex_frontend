@@ -22,13 +22,19 @@ const JobBlock = (props) => {
         {data.label && <strong>{data.label}</strong>}
 
         {data.onDelete && (
-          <IconButton onClick={() => data.onDelete(data)}>
+          <IconButton
+            disabled={data.id === 'new'}
+            onClick={() => data.onDelete(data)}
+          >
             <DeleteIcon fontSize="small" />
           </IconButton>
         )}
 
         {data.onAdd && (
-          <IconButton onClick={() => data.onAdd(data)}>
+          <IconButton
+            disabled={data.id === 'new'}
+            onClick={() => data.onAdd(data)}
+          >
             <AddIcon fontSize="small" />
           </IconButton>
         )}
@@ -51,6 +57,7 @@ const JobBlock = (props) => {
 
 JobBlock.propTypes = {
   data: PropTypes.shape({
+    id: PropTypes.string,
     label: PropTypes.string,
     value: PropTypes.string,
     direction: PropTypes.string,

@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import classNames from 'classnames';
 import dagre from 'dagre';
+import cloneDeep from 'lodash/cloneDeep';
 import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'react-flow-renderer';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
@@ -21,15 +23,39 @@ import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
 import SegmentationForm from './forms/SegmentationForm';
 
+const jobRefreshInterval = 6e4; // 1 minute
+
+const flowDirection = 'TB';
 const nodeWidth = 172;
 const nodeHeight = 36;
 
 const nodeTypes = {
-  input: StartBlock,
-  default: JobBlock,
+  start: StartBlock,
+  job: JobBlock,
 };
 
-const createElements = (inputData, result, options = {}) => {
+const defaultJobs = {
+  segmentation: {
+    name: 'segmentation',
+    omeroIds: [],
+    single: true,
+    slices: false,
+    content: {},
+  },
+};
+
+const addNewVirtualJobToPipeline = (rootId, newJob, node) => {
+  if (node.id === rootId) {
+    node.jobs.push(newJob);
+  } else {
+    for (let i = 0; i < node.jobs.length; i++) {
+      // eslint-disable-next-line no-unused-vars
+      addNewVirtualJobToPipeline(rootId, newJob, node.jobs[i]);
+    }
+  }
+};
+
+const createElements = (inputData, result, options = {}, selectedBlock) => {
   const { jobs } = inputData;
 
   if (!jobs) {
@@ -39,8 +65,12 @@ const createElements = (inputData, result, options = {}) => {
   jobs.forEach((job) => {
     result.push({
       id: job.id,
-      type: 'default',
+      type: 'job',
       position: options.position,
+      className: classNames({
+        new: job.id === 'new',
+        selected: job.id === selectedBlock?.id,
+      }),
       data: {
         ...(Blocks[job.name] || {}),
         ...options.data,
@@ -56,7 +86,7 @@ const createElements = (inputData, result, options = {}) => {
       animated: job.status !== 1,
     });
 
-    result = createElements(job, result, options);
+    result = createElements(job, result, options, selectedBlock);
   });
 
   return result;
@@ -94,20 +124,6 @@ const createGraphLayout = (elements, direction = 'LR') => {
   });
 };
 
-const defaultJobs = {
-  segmentation: {
-    name: 'segmentation',
-    omeroIds: [],
-    single: true,
-    slices: false,
-    content: {},
-  },
-};
-
-const refreshInterval = 6e4; // 1 minute
-
-const direction = 'LR';
-
 const Pipeline = () => {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -140,7 +156,7 @@ const Pipeline = () => {
       const options = {
         position: { x: 0, y: 0 },
         data: {
-          direction,
+          direction: flowDirection,
           onAdd: () => setActionWithBlock('add'),
           onDelete: () => setActionWithBlock('delete'),
         },
@@ -148,8 +164,9 @@ const Pipeline = () => {
 
       _elements.push({
         id: pipeline.id,
-        type: 'input',
+        type: 'start',
         position: options.position,
+        className: classNames({ selected: pipeline.id === selectedBlock?.id }),
         data: {
           ...options.data,
           id: pipeline.id,
@@ -157,23 +174,30 @@ const Pipeline = () => {
         },
       });
 
-      _elements = createElements(pipeline, _elements, options);
+      const pipelineClone = cloneDeep(pipeline);
 
-      return createGraphLayout(_elements, direction);
+      if (selectedBlock && selectedBlock.rootId && selectedBlock.id === 'new') {
+        addNewVirtualJobToPipeline(selectedBlock.rootId, selectedBlock, pipelineClone);
+      }
+
+      _elements = createElements(pipelineClone, _elements, options, selectedBlock);
+      return createGraphLayout(_elements, flowDirection);
     },
-    [pipeline],
+    [pipeline, selectedBlock],
   );
 
   const onJobCancel = useCallback(
     () => {
-      setSelectedBlock((prevValue) => prevValue.id ? prevValue : null);
+      setActionWithBlock(null);
+      setSelectedBlock(null);
     },
     [],
   );
 
   const onJobSubmit = useCallback(
     (values) => {
-      setSelectedBlock(values);
+      setActionWithBlock(null);
+      setSelectedBlock(null);
 
       const omeroIds = values.omeroIds.map((el) => el.id || el);
 
@@ -197,6 +221,10 @@ const Pipeline = () => {
         content: JSON.stringify(content),
       };
 
+      if (normalizedJob.id === 'new') {
+        delete normalizedJob.id;
+      }
+
       if (normalizedJob.id) {
         dispatch(pipelineActions.updateJob(normalizedJob));
       } else {
@@ -206,16 +234,23 @@ const Pipeline = () => {
     [dispatch],
   );
 
-  const onBlockSelect = useCallback(
-    (blocks) => {
-      if (!blocks || !blocks[0]) {
+  const onPaneClick = useCallback(
+    () => {
+      setActionWithBlock(null);
+      setSelectedBlock(null);
+    },
+    [],
+  );
+
+  const onBlockClick = useCallback(
+    (_, blocks) => {
+      if (blocks.id === 'new') {
         return;
       }
-      const { id } = blocks[0];
       setSelectedBlock({
         projectId,
         pipelineId,
-        ...(jobs[id] || blocks[0]),
+        ...(jobs[blocks.id] || blocks),
       });
     },
     [jobs, pipelineId, projectId],
@@ -223,16 +258,16 @@ const Pipeline = () => {
 
   const onBlockAdd = useCallback(
     (type) => {
-      setSelectedBlock({
+      setActionWithBlock(null);
+      setSelectedBlock((prevValue) => ({
         projectId,
         pipelineId,
-        rootId: selectedBlock?.id,
+        rootId: prevValue?.id,
+        id: 'new',
         ...(defaultJobs[type] || {}),
-      });
-
-      setActionWithBlock(null);
+      }));
     },
-    [pipelineId, projectId, selectedBlock?.id],
+    [pipelineId, projectId],
   );
 
   const onBlockDelete = useCallback(
@@ -278,14 +313,17 @@ const Pipeline = () => {
 
   useEffect(
     () => {
-      const intervalId = setInterval(() => {
+      const jobIntervalId = setInterval(() => {
         setRefresher(Date.now());
-      }, refreshInterval);
+      }, jobRefreshInterval);
+
       return () => {
-        clearInterval(intervalId);
+        if (jobIntervalId) {
+          clearInterval(jobIntervalId);
+        }
       };
     },
-    [dispatch],
+    [],
   );
 
   useEffect(
@@ -294,21 +332,18 @@ const Pipeline = () => {
         return;
       }
 
-      const timer = setTimeout(() => {
+      const reactFlowTimeoutId = setTimeout(() => {
         reactFlowInstance.fitView();
       }, 100);
 
       return () => {
-        if (timer) {
-          clearTimeout(timer);
+        if (reactFlowTimeoutId) {
+          clearTimeout(reactFlowTimeoutId);
         }
       };
     },
     [elements, reactFlowInstance],
   );
-
-  // TODO: Remove me after debug
-  console.log({ selectedBlock });
 
   return (
     <ReactFlowProvider>
@@ -317,11 +352,12 @@ const Pipeline = () => {
           <ReactFlow
             nodeTypes={nodeTypes}
             elements={elements}
-            onSelectionChange={onBlockSelect}
+            onElementClick={onBlockClick}
+            onPaneClick={onPaneClick}
             onLoad={onLoad}
             nodesDraggable={false}
             nodesConnectable={false}
-            elementsSelectable
+            elementsSelectable={false}
             snapToGrid
           >
             <Controls showInteractive={false} />
