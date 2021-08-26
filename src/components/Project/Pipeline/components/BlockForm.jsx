@@ -16,7 +16,6 @@ const Container = styled.div`
 `;
 
 const Header = styled.div`
-  margin-bottom: 20px;
   font-size: 1.5em;
   font-weight: bold;
   text-transform: capitalize;
@@ -29,11 +28,11 @@ const Header = styled.div`
 const Body = styled.div`
   display: flex;
   height: 100%;
-  margin: auto 0;
+  overflow: hidden;
+  padding: 20px 0;
 `;
 
 const Footer = styled.div`
-  margin-top: 20px;
   align-self: flex-end;
   
   :empty {
