@@ -28,17 +28,21 @@ const Pipelines = () => {
 
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId)) || {};
 
-  const [ pipelineToManage, setPipelineToManage ] = useState(null);
-  const [ pipelineToDelete, setPipelineToDelete ] = useState(null);
-  const [ refresher, setRefresher ] = useState(null);
+  const [pipelineToManage, setPipelineToManage] = useState(null);
+  const [pipelineToDelete, setPipelineToDelete] = useState(null);
+  const [refresher, setRefresher] = useState(null);
 
   const onManagePipelineModalOpen = useCallback(
-    (pipeline) => { setPipelineToManage(pipeline); },
+    (pipeline) => {
+      setPipelineToManage(pipeline);
+    },
     [],
   );
 
   const onManagePipelineModalClose = useCallback(
-    () => { setPipelineToManage(null); },
+    () => {
+      setPipelineToManage(null);
+    },
     [],
   );
 
@@ -60,12 +64,16 @@ const Pipelines = () => {
   );
 
   const onDeletePipelineModalOpen = useCallback(
-    (pipeline) => { setPipelineToDelete(pipeline); },
+    (pipeline) => {
+      setPipelineToDelete(pipeline);
+    },
     [],
   );
 
   const onDeletePipelineModalClose = useCallback(
-    () => { setPipelineToDelete(null); },
+    () => {
+      setPipelineToDelete(null);
+    },
     [],
   );
 

@@ -28,7 +28,8 @@ const intersection = (a, b) => {
 
 const union = (a, b) => ([...a, ...not(b, a)]);
 
-const onNoop = () => {};
+const onNoop = () => {
+};
 
 /**
  * A transfer list (or "shuttle") enables the user to move one or more list items between lists.
@@ -215,7 +216,7 @@ const TransferList = styled((props) => {
   height: 100%;
   position: relative;
   overflow: hidden;
-  
+
   .list {
     width: 100%;
     height: 100%;
@@ -238,9 +239,11 @@ const TransferList = styled((props) => {
         .MuiCardHeader-content {
           display: flex;
           flex-direction: row;
+
           span {
             white-space: nowrap;
           }
+
           span + span {
             margin-left: auto;
           }
@@ -275,6 +278,7 @@ const TransferList = styled((props) => {
 
   .buttons-container {
     width: 60px;
+
     ${Button} + ${Button} {
       margin-top: 8px;
     }
