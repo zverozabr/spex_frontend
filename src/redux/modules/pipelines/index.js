@@ -177,7 +177,12 @@ const slice = createSlice({
         initApi();
         try {
           const jobUrl = '/jobs';
-          const { data } = yield call(api.post, jobUrl, job);
+          const createParams = {
+            name: job.name,
+            content: JSON.stringify(job.content),
+            omeroIds: job.omeroIds,
+          };
+          const { data } = yield call(api.post, jobUrl, createParams);
           yield put(jobsActions.createJobSuccess(data.data));
 
           const pipelineUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
@@ -203,7 +208,7 @@ const slice = createSlice({
         try {
           const updateParams = {
             name: job.name,
-            content: job.content,
+            content: JSON.stringify(job.content),
             omeroIds: job.omeroIds,
           };
           const jobUrl = `/jobs/${job.id}`;

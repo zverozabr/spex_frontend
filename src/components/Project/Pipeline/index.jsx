@@ -214,16 +214,14 @@ const Pipeline = () => {
 
       delete values.single;
       delete values.slices;
+      if (values.id === 'new') {
+        delete values.id;
+      }
 
       const normalizedJob = {
         ...values,
         omeroIds,
-        content: JSON.stringify(content),
       };
-
-      if (normalizedJob.id === 'new') {
-        delete normalizedJob.id;
-      }
 
       if (normalizedJob.id) {
         dispatch(pipelineActions.updateJob(normalizedJob));
