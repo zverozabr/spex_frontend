@@ -21,6 +21,7 @@ import BlocksModal from './components/BlocksModal';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
+import TasksTable from './components/TasksTable';
 import SegmentationForm from './forms/SegmentationForm';
 
 const jobRefreshInterval = 6e4; // 1 minute
@@ -380,7 +381,14 @@ const Pipeline = () => {
         </FlowWrapper>
 
         <OutputWrapper>
-          Output
+          {!selectedBlock?.tasks?.length && (
+            <NoData>
+              Select block
+            </NoData>
+          )}
+          {selectedBlock?.tasks?.length && (
+            <TasksTable tasks={selectedBlock.tasks} />
+          )}
         </OutputWrapper>
 
         {actionWithBlock === 'add' && selectedBlock && (
