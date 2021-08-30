@@ -47,8 +47,8 @@ const slice = createSlice({
 
     fetchTasksSuccess: (state, { payload: tasks }) => {
       stopFetching(state);
-      const normalizedTasks = tasks.map(normalizeTask);
-      state.tasks = hash(normalizedTasks || [], 'id');
+      const normalizedTasks = (Array.isArray(tasks) ? tasks : []).map(normalizeTask);
+      state.tasks = hash(normalizedTasks, 'id');
     },
 
     fetchTaskImageSuccess: (state, { payload: { id, image } }) => {

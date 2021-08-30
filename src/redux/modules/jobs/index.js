@@ -83,7 +83,7 @@ const slice = createSlice({
         try {
           const url = `${baseUrl}`;
           const { data } = yield call(api.get, url);
-          const result = data.data.filter((job) => job.tasks.length > 0);
+          const result = (Array.isArray(data.data) ? data.data : []).filter((job) => job.tasks.length > 0);
           yield put(actions.fetchJobsSuccess(result));
         } catch (error) {
           yield put(actions.requestFail(error));

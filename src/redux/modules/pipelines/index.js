@@ -181,6 +181,7 @@ const slice = createSlice({
             name: job.name,
             content: JSON.stringify(job.content),
             omeroIds: job.omeroIds,
+            status: 0,
           };
           const { data } = yield call(api.post, jobUrl, createParams);
           yield put(jobsActions.createJobSuccess(data.data));
