@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import classNames from 'classnames';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -7,7 +7,7 @@ import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import SideBarToggleIcon from 'mdi-react/MenuRightIcon';
 import PropTypes from 'prop-types';
-import { MapContainer, ZoomControl, FeatureGroup, Rectangle } from 'react-leaflet';
+import { MapContainer, ZoomControl, FeatureGroup, Rectangle, ImageOverlay } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import { useToggle } from 'react-use';
 
@@ -33,6 +33,7 @@ const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/webgateway/render_image_reg
 const ImageViewer = (props) => {
   const {
     className,
+    image,
     data,
     value,
     editable,
@@ -46,6 +47,22 @@ const ImageViewer = (props) => {
   const [channels, setChannels] = useState(cloneDeep(data.channels));
   const [sidebarCollapsed, toggleSidebar] = useToggle(true);
   const [rectangleBounds, setRectangleBounds] = useState(null);
+
+  const imageLatLngBounds = useMemo(
+    () => {
+      if (!omeroLayerRef.current || !map?.options?.crs || !data?.size) {
+        return;
+      }
+      const { maxZoom } = omeroLayerRef.current;
+      const { width: imageWidth, height: imageHeight } = data.size;
+      const p1 = L.point(0, 0);
+      const p2 = L.point(imageWidth, imageHeight);
+      const latlng1 = map.options.crs.pointToLatLng(p1, maxZoom);
+      const latlng2 = map.options.crs.pointToLatLng(p2, maxZoom);
+      return L.latLngBounds(latlng1, latlng2);
+    },
+    [data.size, map],
+  );
 
   const onSidebarMouseEnter = useCallback(
     () => {
@@ -150,8 +167,8 @@ const ImageViewer = (props) => {
 
       const { maxZoom } = omeroLayerRef.current;
       const p1 = L.point(value[0].x, value[0].y);
-      const latlng1 = map.options.crs.pointToLatLng(p1, maxZoom);
       const p2 = L.point(value[1].x, value[1].y);
+      const latlng1 = map.options.crs.pointToLatLng(p1, maxZoom);
       const latlng2 = map.options.crs.pointToLatLng(p2, maxZoom);
       const bounds = [latlng1, latlng2];
 
@@ -161,7 +178,7 @@ const ImageViewer = (props) => {
   );
 
   return (
-    <Container className={classNames(className, { editable, 'with-rectangle': rectangleBounds })}>
+    <Container className={classNames(className, 'image-viewer', { editable, 'with-rectangle': rectangleBounds })}>
       <MapContainer
         crs={L.CRS.Simple}
         center={[0, 0]}
@@ -172,14 +189,24 @@ const ImageViewer = (props) => {
         zoomControl={false}
         whenCreated={setMap}
       >
-        <OmeroLayer
-          ref={omeroLayerRef}
-          data={data}
-          options={{
-            baseUrl,
-            channels,
-          }}
-        />
+        {data && channels && baseUrl && (
+          <OmeroLayer
+            ref={omeroLayerRef}
+            data={data}
+            options={{
+              baseUrl,
+              channels,
+            }}
+          />
+        )}
+
+        {image && imageLatLngBounds && (
+          <ImageOverlay
+            url={image}
+            bounds={imageLatLngBounds}
+            zIndex={10}
+          />
+        )}
 
         <FullscreenControl position="topright" />
 
@@ -221,7 +248,7 @@ const ImageViewer = (props) => {
         </SidebarToggle>
 
         <Channels>
-          {channels.map((channel, index) => (
+          {(channels || []).map((channel, index) => (
             <Channel key={channel.label}>
               <Checkbox
                 $color={`#${channel.color}`}
@@ -253,6 +280,10 @@ ImageViewer.propTypes = {
    */
   className: PropTypes.string,
   /**
+   * Image for canvas layer.
+   */
+  image: PropTypes.string,
+  /**
    * Omero image data object
    */
   data: PropTypes.shape({
@@ -278,6 +309,7 @@ ImageViewer.propTypes = {
 
 ImageViewer.defaultProps = {
   className: '',
+  image: null,
   data: {},
   value: null,
   editable: false,

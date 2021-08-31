@@ -20,6 +20,7 @@ const FormModal = styled((props) => {
     submitButtonText,
     open,
     modalProps,
+    hideSubmitButton,
     onClose,
     onSubmit,
     onForm,
@@ -60,13 +61,15 @@ const FormModal = styled((props) => {
               >
                 {closeButtonText}
               </Button>
-              <Button
-                type="submit"
-                color={ButtonColors.primary}
-                disabled={submitting}
-              >
-                {submitButtonText}
-              </Button>
+              {!hideSubmitButton && (
+                <Button
+                  type="submit"
+                  color={ButtonColors.primary}
+                  disabled={submitting}
+                >
+                  {submitButtonText}
+                </Button>
+              )}
             </ModalFooter>
           </FormRenderer>
         </Modal>
@@ -130,6 +133,10 @@ const propTypes = {
    */
   modalProps: PropTypes.shape({}),
   /**
+   * If true, submit button will be hidden.
+   */
+  hideSubmitButton: PropTypes.bool,
+  /**
    * Callback fired when the component requests to be closed. .
    */
   onClose: PropTypes.func,
@@ -148,6 +155,7 @@ const defaultProps = {
   submitButtonText: 'Submit',
   open: false,
   modalProps: null,
+  hideSubmitButton: false,
   onClose: () => {},
   onSubmit: () => {},
 };
@@ -158,5 +166,5 @@ FormModal.defaultProps = defaultProps;
 export {
   FormModal as default,
   propTypes,
-  defaultProps
+  defaultProps,
 };

@@ -365,9 +365,7 @@ const Pipeline = () => {
 
           <BlockFormWrapper>
             {!selectedBlock?.name && (
-              <NoData>
-                Select block
-              </NoData>
+              <NoData>Select block</NoData>
             )}
             {selectedBlock?.name === 'segmentation' && (
               <SegmentationForm
@@ -382,9 +380,7 @@ const Pipeline = () => {
 
         <OutputWrapper>
           {!selectedBlock?.tasks?.length && (
-            <NoData>
-              Select block
-            </NoData>
+            <NoData>Select block</NoData>
           )}
           {selectedBlock?.tasks?.length && (
             <TasksTable tasks={selectedBlock.tasks} />

@@ -26,6 +26,8 @@ const TasksTable = styled((props) => {
       id: 'status',
       accessor: 'status',
       Header: 'Status',
+      minWidth: 30,
+      maxWidth: 30,
       Cell: ({ row: { original: { status } } }) => useMemo(
         () => {
           if (status == null) {
@@ -45,6 +47,8 @@ const TasksTable = styled((props) => {
       id: 'omeroId',
       accessor: 'omeroId',
       Header: 'Omero Image ID',
+      minWidth: 30,
+      maxWidth: 30,
     }, {
       id: 'csvdata',
       accessor: 'csvdata',
@@ -52,8 +56,8 @@ const TasksTable = styled((props) => {
     }, {
       id: 'actions',
       Header: 'Actions',
-      minWidth: 50,
-      maxWidth: 50,
+      minWidth: 30,
+      maxWidth: 30,
       Cell: ({ row: { original } }) => useMemo(
         () => (
           <ButtonsCell>
@@ -63,7 +67,7 @@ const TasksTable = styled((props) => {
               variant="outlined"
               onClick={() => onManageTaskModalOpen(original)}
             >
-              Result Image
+              Image
             </Button>
           </ButtonsCell>
         ),
@@ -86,6 +90,7 @@ const TasksTable = styled((props) => {
         <TaskFormModal
           header="Task Results"
           initialValues={taskToManage}
+          closeButtonText="Close"
           onClose={onManageTaskModalClose}
           onSubmit={onManageTaskModalClose}
           open

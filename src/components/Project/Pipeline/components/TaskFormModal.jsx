@@ -8,6 +8,7 @@ import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/mo
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
 import FormModal from '+components/FormModal';
+import ImageViewer from '+components/ImageViewer';
 
 const TaskFormModal = styled((props) => {
   const {
@@ -27,8 +28,8 @@ const TaskFormModal = styled((props) => {
   const omeroImageId = initialValues?.omeroId;
 
   const taskImage = useSelector(tasksSelectors.getTaskImage(taskId));
-  const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroImageId));
-  console.log(taskImage);
+  const imageDetails = useSelector(omeroSelectors.getImageDetails(omeroImageId));
+
   useEffect(
     () => {
       if (!taskId) {
@@ -45,16 +46,13 @@ const TaskFormModal = styled((props) => {
 
   useEffect(
     () => {
-      if (!omeroImageId) {
+      if (!omeroImageId || imageDetails) {
         return undefined;
       }
 
       dispatch(omeroActions.fetchImageDetails(omeroImageId));
-      return () => {
-        dispatch(omeroActions.clearImageDetails(omeroImageId));
-      };
     },
-    [dispatch, omeroImageId],
+    [dispatch, imageDetails, omeroImageId],
   );
 
   return (
@@ -67,25 +65,30 @@ const TaskFormModal = styled((props) => {
       open={open}
       onClose={onClose}
       onSubmit={onSubmit}
+      hideSubmitButton
     >
-      {taskImage && <img src={taskImage} alt={`result of task ${taskId}`} />}
+      <ImageViewer
+        image={taskImage}
+        data={imageDetails}
+        editable={false}
+      />
     </FormModal>
   );
-})`
+})`  
   .modal-content {
-    width: 80%;
-    min-width: 840px;
-    max-width: 1280px;
+    width: 70%;
+    height: 90%;
+  }
+  
+  .modal-body, 
+  .image-viewer,
+  form {
+    width: 100%;
+    height: 100%;
   }
   
   .modal-body {
-    display: flex;
-    flex-direction: row;
-    min-height: 540px;
-  }
-  
-  img {
-    background: #000;
+    padding: unset;
   }
 `;
 

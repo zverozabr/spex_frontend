@@ -25,7 +25,7 @@ const SegmentationForm = styled((props) => {
     onClose,
     onSubmit,
   } = props;
-
+  console.log(initialValues);
   const dispatch = useDispatch();
 
   const formRef = useRef(null);
