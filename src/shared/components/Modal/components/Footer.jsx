@@ -12,6 +12,7 @@ export default styled.div.attrs((props) => ({
   padding: 0 15px;
   background-color: white;
   height: 60px;
+  min-height: 60px;
   
   .MuiButton-root + .MuiButton-root {
     margin-left: 15px;

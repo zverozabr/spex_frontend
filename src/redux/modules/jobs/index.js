@@ -1,4 +1,4 @@
-import { call, put } from 'redux-saga/effects';
+import { all, call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
@@ -8,6 +8,7 @@ const initialState = {
   isFetching: false,
   error: '',
   jobs: {},
+  jobTypes: {},
 };
 
 let api;
@@ -37,27 +38,32 @@ const slice = createSlice({
   name: 'jobs',
   initialState,
   reducers: {
-    fetchJobs: startFetching,
-    createJob: startFetching,
-    updateJob: startFetching,
-    deleteJob: startFetching,
+    fetchJobTypes: startFetching,
+    fetchJobTypesSuccess: (state, { payload: jobTypes }) => {
+      stopFetching(state);
+      state.jobTypes = jobTypes;
+    },
 
+    fetchJobs: startFetching,
     fetchJobsSuccess: (state, { payload: jobs }) => {
       stopFetching(state);
       const normalizedJobs = jobs.map(normalizeJob);
       state.jobs = hash(normalizedJobs || [], 'id');
     },
 
-    updateJobSuccess: (state, { payload: job }) => {
-      stopFetching(state);
-      state.jobs[job.id] = normalizeJob(job);
-    },
-
+    createJob: startFetching,
     createJobSuccess: (state, { payload: job }) => {
       stopFetching(state);
       state.jobs[job.id] = normalizeJob(job);
     },
 
+    updateJob: startFetching,
+    updateJobSuccess: (state, { payload: job }) => {
+      stopFetching(state);
+      state.jobs[job.id] = normalizeJob(job);
+    },
+
+    deleteJob: startFetching,
     deleteJobSuccess(state, { payload: id }) {
       stopFetching(state);
       delete state.jobs[id];
@@ -65,6 +71,10 @@ const slice = createSlice({
 
     clearJobs: (state) => {
       state.jobs = {};
+    },
+
+    clearJobTypes: (state) => {
+      state.jobTypes = {};
     },
 
     requestFail(state, { payload: { message } }) {
@@ -76,6 +86,46 @@ const slice = createSlice({
   },
 
   sagas: (actions) => ({
+    [actions.fetchJobTypes]: {
+      * saga() {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/type`;
+          const { data: { data: types } } = yield call(api.get, url);
+
+          const responses = yield all(types.map((type) => call(api.get, `${url}/${type}`)));
+
+          const jobTypes = responses.reduce((acc, el, i) => {
+            const type = types[i];
+
+            const { stages, ...blocks } = el.data.data;
+
+            const mappedStages = Object.keys(stages).reduce((mapped, key, order) => {
+              return {
+                ...mapped,
+                [key]: {
+                  order,
+                  name: stages[key],
+                  blocks: blocks[key],
+                },
+              };
+            }, {});
+
+            return {
+              ...acc,
+              [type]: { name: type, description: '', stages: mappedStages },
+            };
+          }, {});
+          yield put(actions.fetchJobTypesSuccess(jobTypes));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
     [actions.fetchJobs]: {
       * saga() {
         initApi();
@@ -145,17 +195,22 @@ const slice = createSlice({
   selectors: (getState) => ({
     isFetching: createSelector(
       [getState],
-      (state) => state?.isFetching,
+      (state) => state.isFetching,
+    ),
+
+    getJobTypes: createSelector(
+      [getState],
+      (state) => state.jobTypes,
     ),
 
     getJobs: createSelector(
       [getState],
-      (state) => state?.jobs,
+      (state) => state.jobs,
     ),
 
     getJob: (id) => createSelector(
       [getState],
-      (state) => state?.jobs[id],
+      (state) => state.jobs[id],
     ),
   }),
 });

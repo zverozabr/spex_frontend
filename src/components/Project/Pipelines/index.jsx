@@ -28,9 +28,6 @@ const Pipelines = () => {
 
   const pipelines = useSelector(pipelineSelectors.getPipelines(projectId)) || {};
 
-  // TODO: Remove me after debug
-  console.log({ pipelines });
-
   const [pipelineToManage, setPipelineToManage] = useState(null);
   const [pipelineToDelete, setPipelineToDelete] = useState(null);
   const [refresher, setRefresher] = useState(null);

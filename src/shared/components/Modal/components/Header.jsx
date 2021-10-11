@@ -13,4 +13,5 @@ export default styled.div.attrs((props) => ({
   color: white;
   text-transform: capitalize;
   height: 40px;
+  min-height: 40px;
 `;
