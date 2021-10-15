@@ -191,7 +191,7 @@ ImagePicker.propTypes = {
 
 ImagePicker.defaultProps = {
   className: '',
-  options: {},
+  options: [],
   input: null,
   value: [],
   area: null,

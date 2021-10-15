@@ -1,10 +1,10 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
-import Form, { FormRenderer } from '+components/Form';
+import Form, { Controls, Field, FormRenderer, Validators } from '+components/Form';
 
 const Container = styled.div`
   width: 100%;
@@ -27,9 +27,12 @@ const Header = styled.div`
 
 const Body = styled.div`
   display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
   padding: 20px 0;
+  
+  gap: 20px;
 `;
 
 const Footer = styled.div`
@@ -44,12 +47,20 @@ const Footer = styled.div`
   }
 `;
 
-const BlockForm = (props) => {
+const getFieldComponent = (type) => {
+  switch (type) {
+    case 'omeroIds':
+      return Controls.ImagePicker;
+    default:
+      return Controls.TextField;
+  }
+};
+
+const BlockSettingsForm = (props) => {
   const {
     className,
-    header,
     children,
-    initialValues,
+    block,
     closeButtonText,
     submitButtonText,
     onClose,
@@ -57,9 +68,28 @@ const BlockForm = (props) => {
     onForm,
     ...tail
   } = props;
+  console.log(block);
+  const header = block.description || block.name;
+
+  const blockParamsMeta = useMemo(
+    () => (block.start_params.reduce((acc, el) => {
+      const { type, description, ...param } = el;
+      const [name] = Object.keys(param);
+      return { ...acc, [name]: { name, label: description, type } };
+    }, {})),
+    [block.start_params],
+  );
+  console.log(Object.values(blockParamsMeta));
+  const blockInitialValues = useMemo(
+    () => (block.start_params.reduce((acc, el) => {
+      const { type, description, ...param } = el;
+      return { ...acc, ...param };
+    }, {})),
+    [block.start_params],
+  );
 
   const render = useCallback(
-    ({ handleSubmit, form, submitting }) => {
+    ({ form, handleSubmit, submitting }) => {
       if (onForm) {
         onForm(form);
       }
@@ -73,7 +103,18 @@ const BlockForm = (props) => {
             }}
           >
             <Header>{header}</Header>
-            <Body>{children}</Body>
+            <Body>
+              {Object.values(blockParamsMeta).map((params) => (
+                <Field
+                  key={params.name}
+                  name={params.name}
+                  label={params.label}
+                  block={block}
+                  component={getFieldComponent(params.type)}
+                  validate={Validators.required}
+                />
+              ))}
+            </Body>
             <Footer>
               <Button
                 color={ButtonColors.secondary}
@@ -96,19 +137,19 @@ const BlockForm = (props) => {
         </Container>
       );
     },
-    [onForm, className, header, children, closeButtonText, submitButtonText, onClose],
+    [onForm, className, header, blockParamsMeta, closeButtonText, submitButtonText, block, onClose],
   );
 
   return (
     <Form
       {...tail}
+      initialValues={blockInitialValues}
+      render={render}
       mutators={{
         setValue: ([field, value], state, { changeValue }) => {
           changeValue(state, field, () => value);
         },
       }}
-      initialValues={initialValues}
-      render={render}
       onSubmit={onSubmit}
     />
   );
@@ -120,17 +161,17 @@ const propTypes = {
    */
   className: PropTypes.string,
   /**
-   * Modal title.
-   */
-  header: PropTypes.string,
-  /**
    * Form fields.
    */
   children: PropTypes.oneOfType([ PropTypes.node, PropTypes.object, PropTypes.func ]),
   /**
    * Initial values.
    */
-  initialValues: PropTypes.shape({}),
+  block: PropTypes.shape({
+    name: PropTypes.string,
+    description: PropTypes.string,
+    start_params: PropTypes.arrayOf(PropTypes.shape({})),
+  }),
   /**
    * Text for the close button.
    */
@@ -163,9 +204,8 @@ const propTypes = {
 
 const defaultProps = {
   className: '',
-  header: '',
   children: null,
-  initialValues: null,
+  block: null,
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
   open: false,
@@ -175,11 +215,11 @@ const defaultProps = {
   onSubmit: () => {},
 };
 
-BlockForm.propTypes = propTypes;
-BlockForm.defaultProps = defaultProps;
+BlockSettingsForm.propTypes = propTypes;
+BlockSettingsForm.defaultProps = defaultProps;
 
 export {
-  BlockForm as default,
+  BlockSettingsForm as default,
   propTypes,
   defaultProps,
 };

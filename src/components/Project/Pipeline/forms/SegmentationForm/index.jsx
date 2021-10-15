@@ -12,7 +12,7 @@ import {
 } from '+components/Form';
 import { propTypes, defaultProps } from '+components/FormModal';
 
-import Form from '../../components/BlockForm';
+import Form from '../../components/BlockSettingsForm';
 import Col from './components/Col';
 import Group from './components/Group';
 import Row from './components/Row';

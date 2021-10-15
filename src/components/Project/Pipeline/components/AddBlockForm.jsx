@@ -12,7 +12,7 @@ import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
 import { ScrollBarMixin } from '+components/ScrollBar';
 import Tabs, { Tab, TabPanel } from '+components/Tabs';
 
-const BlocksModal = styled((props) => {
+const AddBlockForm = styled((props) => {
   const {
     className,
     header,
@@ -69,7 +69,7 @@ const BlocksModal = styled((props) => {
                     <Grid
                       key={`${block.name}_${blockIndex}`}
                       className="block"
-                      onClick={() => onBlockClick(block.name)}
+                      onClick={() => onBlockClick(block)}
                       item
                     >
                       <div className="block__name">{block.name}</div>
@@ -170,7 +170,7 @@ const BlocksModal = styled((props) => {
   }
 `;
 
-BlocksModal.propTypes = {
+AddBlockForm.propTypes = {
   className: PropTypes.string,
   header: PropTypes.string,
   open: PropTypes.bool,
@@ -178,7 +178,7 @@ BlocksModal.propTypes = {
   onClose: PropTypes.func,
 };
 
-BlocksModal.defaultProps = {
+AddBlockForm.defaultProps = {
   className: '',
   header: '',
   open: false,
@@ -186,4 +186,4 @@ BlocksModal.defaultProps = {
   onClose: () => {},
 };
 
-export default BlocksModal;
+export default AddBlockForm;

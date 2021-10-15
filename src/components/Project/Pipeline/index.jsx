@@ -16,8 +16,9 @@ import NoData from '+components/NoData';
 
 import JobBlock from './blocks/JobBlock';
 import StartBlock from './blocks/StartBlock';
-import BlockFormWrapper from './components/BlockFormWrapper';
-import BlocksModal from './components/BlocksModal';
+import AddBlockForm from './components/AddBlockForm';
+import BlockSettingsForm from './components/BlockSettingsForm';
+import BlockSettingsFormWrapper from './components/BlockSettingsFormWrapper';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
@@ -253,14 +254,15 @@ const Pipeline = () => {
   );
 
   const onBlockAdd = useCallback(
-    (type) => {
+    (block) => {
+      console.log(block);
       setActionWithBlock(null);
       setSelectedBlock((prevValue) => ({
         projectId,
         pipelineId,
         rootId: prevValue?.id,
         id: 'new',
-        ...(defaultJobs[type] || {}),
+        ...block,
       }));
     },
     [pipelineId, projectId],
@@ -360,19 +362,18 @@ const Pipeline = () => {
             <Background />
           </ReactFlow>
 
-          <BlockFormWrapper>
+          <BlockSettingsFormWrapper>
             {!selectedBlock?.name && (
               <NoData>Select block</NoData>
             )}
-            {selectedBlock?.name === 'segmentation' && (
-              <SegmentationForm
-                header={selectedBlock.name}
-                initialValues={selectedBlock}
+            {selectedBlock?.name && (
+              <BlockSettingsForm
+                block={selectedBlock}
                 onClose={onJobCancel}
                 onSubmit={onJobSubmit}
               />
             )}
-          </BlockFormWrapper>
+          </BlockSettingsFormWrapper>
         </FlowWrapper>
 
         <OutputWrapper>
@@ -385,7 +386,7 @@ const Pipeline = () => {
         </OutputWrapper>
 
         {actionWithBlock === 'add' && selectedBlock && (
-          <BlocksModal
+          <AddBlockForm
             header="Add Block"
             onClose={() => setActionWithBlock(null)}
             onBlockClick={onBlockAdd}
