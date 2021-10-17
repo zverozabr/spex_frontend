@@ -19,7 +19,7 @@ const JobBlock = (props) => {
   return (
     <Container>
       <div>
-        {data.label && <strong>{data.label}</strong>}
+        {data.name && <strong>{data.name}</strong>}
 
         {data.onDelete && (
           <IconButton
@@ -58,7 +58,7 @@ const JobBlock = (props) => {
 JobBlock.propTypes = {
   data: PropTypes.shape({
     id: PropTypes.string,
-    label: PropTypes.string,
+    name: PropTypes.string,
     value: PropTypes.string,
     direction: PropTypes.string,
     onAdd: PropTypes.func,

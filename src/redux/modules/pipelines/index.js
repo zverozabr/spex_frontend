@@ -179,7 +179,7 @@ const slice = createSlice({
           const jobUrl = '/jobs';
           const createParams = {
             name: job.name,
-            content: JSON.stringify(job.content),
+            content: 'empty',
             omeroIds: job.omeroIds,
             status: 0,
           };

@@ -7,7 +7,7 @@ import { selectors as projectsSelectors } from '@/redux/modules/projects';
 import TransferList from '+components/TransferList';
 
 const SelectOmeroImages = (props) => {
-  const { projectId } = props;
+  const { projectId, ...tail } = props;
 
   const dispatch = useDispatch();
 
@@ -32,7 +32,7 @@ const SelectOmeroImages = (props) => {
   );
 
   return (
-    <TransferList {...props} options={projectImages} />
+    <TransferList {...tail} options={projectImages} />
   );
 };
 

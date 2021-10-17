@@ -1,11 +1,8 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import Grid from '@material-ui/core/Grid';
 import PropTypes from 'prop-types';
-import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
-
-import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 
 import Button, { ButtonColors } from '+components/Button';
 import Modal, { ModalHeader, ModalBody, ModalFooter } from '+components/Modal';
@@ -16,15 +13,12 @@ const AddBlockForm = styled((props) => {
   const {
     className,
     header,
+    jobTypes,
     open,
     onBlockClick,
     onClose,
   } = props;
 
-  const dispatch = useDispatch();
-  const jobTypes = useSelector(jobsSelectors.getJobTypes);
-  // TODO: Remove me after debug
-  console.log(jobTypes);
   const [activeDataTab, setActiveDataTab] = useState(0);
 
   const onDataTabChange = useCallback(
@@ -32,16 +26,6 @@ const AddBlockForm = styled((props) => {
       setActiveDataTab(id);
     },
     [],
-  );
-
-  useEffect(
-    () => {
-      dispatch(jobsActions.fetchJobTypes());
-      return () => {
-        dispatch(jobsActions.clearJobTypes());
-      };
-    },
-    [dispatch],
   );
 
   return (
@@ -173,6 +157,7 @@ const AddBlockForm = styled((props) => {
 AddBlockForm.propTypes = {
   className: PropTypes.string,
   header: PropTypes.string,
+  jobTypes: PropTypes.shape({}),
   open: PropTypes.bool,
   onBlockClick: PropTypes.func,
   onClose: PropTypes.func,
@@ -181,6 +166,7 @@ AddBlockForm.propTypes = {
 AddBlockForm.defaultProps = {
   className: '',
   header: '',
+  jobTypes: {},
   open: false,
   onBlockClick: () => {},
   onClose: () => {},

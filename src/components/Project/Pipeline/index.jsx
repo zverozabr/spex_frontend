@@ -6,7 +6,6 @@ import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'reac
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
-import Blocks from '@/models/Blocks';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
@@ -23,7 +22,6 @@ import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
 import TasksTable from './components/TasksTable';
-import SegmentationForm from './forms/SegmentationForm';
 
 const jobRefreshInterval = 6e4; // 1 minute
 
@@ -34,16 +32,6 @@ const nodeHeight = 36;
 const nodeTypes = {
   start: StartBlock,
   job: JobBlock,
-};
-
-const defaultJobs = {
-  segmentation: {
-    name: 'segmentation',
-    omeroIds: [],
-    single: true,
-    slices: false,
-    content: {},
-  },
 };
 
 const addNewVirtualJobToPipeline = (rootId, newJob, node) => {
@@ -74,9 +62,8 @@ const createElements = (inputData, result, options = {}, selectedBlock) => {
         selected: job.id === selectedBlock?.id,
       }),
       data: {
-        ...(Blocks[job.name] || {}),
+        ...job,
         ...options.data,
-        id: job.id,
       },
     });
 
@@ -138,6 +125,7 @@ const Pipeline = () => {
 
   const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
   const jobs = useSelector(jobsSelectors.getJobs);
+  const jobTypes = useSelector(jobsSelectors.getJobTypes);
 
   const [refresher, setRefresher] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
@@ -198,34 +186,18 @@ const Pipeline = () => {
       setActionWithBlock(null);
       setSelectedBlock(null);
 
-      const omeroIds = values.omeroIds.map((el) => el.id || el);
-
-      const { content } = values;
-      if (!content.segment) {
-        delete values.content.segment;
-        delete values.content.start;
-        delete values.content.stop;
-      }
-
-      if (!values.slices) {
-        delete values.content.slice;
-      }
-
-      delete values.single;
-      delete values.slices;
-      if (values.id === 'new') {
-        delete values.id;
-      }
-
-      const normalizedJob = {
+      const normalizedValues = {
         ...values,
-        omeroIds,
       };
 
-      if (normalizedJob.id) {
-        dispatch(pipelineActions.updateJob(normalizedJob));
+      if (normalizedValues.id === 'new') {
+        delete normalizedValues.id;
+      }
+
+      if (normalizedValues.id) {
+        dispatch(pipelineActions.updateJob(normalizedValues));
       } else {
-        dispatch(pipelineActions.createJob(normalizedJob));
+        dispatch(pipelineActions.createJob(normalizedValues));
       }
     },
     [dispatch],
@@ -255,7 +227,6 @@ const Pipeline = () => {
 
   const onBlockAdd = useCallback(
     (block) => {
-      console.log(block);
       setActionWithBlock(null);
       setSelectedBlock((prevValue) => ({
         projectId,
@@ -343,6 +314,17 @@ const Pipeline = () => {
     [elements, reactFlowInstance],
   );
 
+  useEffect(
+    () => {
+      dispatch(jobsActions.fetchJobTypes());
+      return () => {
+        dispatch(jobsActions.clearJobTypes());
+      };
+    },
+    [dispatch],
+  );
+
+
   return (
     <ReactFlowProvider>
       <Container>
@@ -388,6 +370,7 @@ const Pipeline = () => {
         {actionWithBlock === 'add' && selectedBlock && (
           <AddBlockForm
             header="Add Block"
+            jobTypes={jobTypes}
             onClose={() => setActionWithBlock(null)}
             onBlockClick={onBlockAdd}
             open

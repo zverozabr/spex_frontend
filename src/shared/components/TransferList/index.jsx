@@ -55,30 +55,35 @@ const TransferList = styled((props) => {
     [options, value],
   );
 
+  const fixedValue = useMemo(
+    () => (value.map((val) => options.find((opt) => opt.id === val))),
+    [options, value],
+  );
+
   const leftChecked = useMemo(
     () => (intersection(checked, fixedOptions)),
     [checked, fixedOptions],
   );
 
   const rightChecked = useMemo(
-    () => (intersection(checked, value)),
-    [checked, value],
+    () => (intersection(checked, fixedValue)),
+    [checked, fixedValue],
   );
 
   const onCheckedLeft = useCallback(
     () => {
-      onChange(not(value, rightChecked));
+      onChange(not(fixedValue, rightChecked));
       setChecked(not(checked, rightChecked));
     },
-    [checked, onChange, value, rightChecked],
+    [checked, onChange, fixedValue, rightChecked],
   );
 
   const onCheckedRight = useCallback(
     () => {
-      onChange(value.concat(leftChecked));
+      onChange(fixedValue.concat(leftChecked));
       setChecked(not(checked, leftChecked));
     },
-    [checked, leftChecked, onChange, value],
+    [checked, leftChecked, onChange, fixedValue],
   );
 
   const numberOfChecked = useCallback(
@@ -201,7 +206,7 @@ const TransferList = styled((props) => {
       </Grid>
 
       <Grid className={classNames('list', 'list-right')} item>
-        {customList(rightTitle, value)}
+        {customList(rightTitle, fixedValue)}
         {invalid && <p className="MuiFormHelperText-root MuiFormHelperText-contained Mui-error">{meta.error}</p>}
       </Grid>
     </Grid>
@@ -309,7 +314,7 @@ TransferList.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.shape({})),
   input: PropTypes.shape({
-    value: PropTypes.arrayOf(PropTypes.shape({})),
+    value: PropTypes.arrayOf(PropTypes.string),
     onChange: PropTypes.func,
   }),
   value: PropTypes.arrayOf(PropTypes.shape({})),

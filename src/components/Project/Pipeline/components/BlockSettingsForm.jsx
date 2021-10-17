@@ -1,10 +1,11 @@
 /* eslint-disable react/jsx-sort-default-props */
 import React, { useMemo, useCallback } from 'react';
+import createFocusOnFirstFieldDecorator from 'final-form-focus-on-first-field';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
-import Form, { Controls, Field, FormRenderer, Validators } from '+components/Form';
+import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
 import SelectOmeroImages from '+components/SelectOmeroImages';
 
 const Container = styled.div`
@@ -60,6 +61,17 @@ const getFieldComponent = (type) => {
   }
 };
 
+const getFieldParser = (type) => {
+  switch (type) {
+    case 'omeroIds':
+      return Parsers.omeroIds;
+    default:
+      return undefined;
+  }
+};
+
+const focusOnFirstFieldDecorator = createFocusOnFirstFieldDecorator();
+
 const BlockSettingsForm = (props) => {
   const {
     className,
@@ -76,7 +88,7 @@ const BlockSettingsForm = (props) => {
   const header = block.description || block.name;
 
   const blockParamsMeta = useMemo(
-    () => (block.start_params.reduce((acc, el) => {
+    () => ((block.start_params || []).reduce((acc, el) => {
       const { type, description, ...param } = el;
       const [name] = Object.keys(param);
       const meta = { name, label: description, type: type || typeof param[name] };
@@ -86,11 +98,19 @@ const BlockSettingsForm = (props) => {
   );
 
   const blockInitialValues = useMemo(
-    () => (block.start_params.reduce((acc, el) => {
-      const { type, description, ...param } = el;
-      return { ...acc, ...param };
-    }, {})),
-    [block.start_params],
+    () => {
+      const values = (block.start_params || []).reduce((acc, el) => {
+        const { type, description, ...param } = el;
+        return { ...acc, ...param };
+      }, {});
+      return {
+        ...values,
+        name: block.name,
+        projectId: block.projectId,
+        pipelineId: block.pipelineId,
+      };
+    },
+    [block.name, block.pipelineId, block.projectId, block.start_params],
   );
 
   const render = useCallback(
@@ -116,6 +136,7 @@ const BlockSettingsForm = (props) => {
                   label={params.label}
                   projectId={block.projectId}
                   component={getFieldComponent(params.type)}
+                  parse={getFieldParser(params.type)}
                   validate={Validators.required}
                 />
               ))}
@@ -155,6 +176,7 @@ const BlockSettingsForm = (props) => {
           changeValue(state, field, () => value);
         },
       }}
+      decorators={[focusOnFirstFieldDecorator]}
       onSubmit={onSubmit}
     />
   );
@@ -176,6 +198,7 @@ const propTypes = {
     name: PropTypes.string,
     description: PropTypes.string,
     projectId: PropTypes.string,
+    pipelineId: PropTypes.string,
     start_params: PropTypes.arrayOf(PropTypes.shape({})),
   }),
   /**
