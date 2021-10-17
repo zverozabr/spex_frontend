@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators } from '+components/Form';
+import SelectOmeroImages from '+components/SelectOmeroImages';
 
 const Container = styled.div`
   width: 100%;
@@ -50,7 +51,10 @@ const Footer = styled.div`
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omeroIds':
-      return Controls.ImagePicker;
+      return Controls.SelectOmeroImages;
+    case 'number':
+      return Controls.NumberField;
+    case 'string':
     default:
       return Controls.TextField;
   }
@@ -68,18 +72,19 @@ const BlockSettingsForm = (props) => {
     onForm,
     ...tail
   } = props;
-  console.log(block);
+
   const header = block.description || block.name;
 
   const blockParamsMeta = useMemo(
     () => (block.start_params.reduce((acc, el) => {
       const { type, description, ...param } = el;
       const [name] = Object.keys(param);
-      return { ...acc, [name]: { name, label: description, type } };
+      const meta = { name, label: description, type: type || typeof param[name] };
+      return { ...acc, [name]: meta };
     }, {})),
     [block.start_params],
   );
-  console.log(Object.values(blockParamsMeta));
+
   const blockInitialValues = useMemo(
     () => (block.start_params.reduce((acc, el) => {
       const { type, description, ...param } = el;
@@ -109,7 +114,7 @@ const BlockSettingsForm = (props) => {
                   key={params.name}
                   name={params.name}
                   label={params.label}
-                  block={block}
+                  projectId={block.projectId}
                   component={getFieldComponent(params.type)}
                   validate={Validators.required}
                 />
@@ -170,6 +175,7 @@ const propTypes = {
   block: PropTypes.shape({
     name: PropTypes.string,
     description: PropTypes.string,
+    projectId: PropTypes.string,
     start_params: PropTypes.arrayOf(PropTypes.shape({})),
   }),
   /**

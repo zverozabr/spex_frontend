@@ -202,28 +202,31 @@ const TransferList = styled((props) => {
 
       <Grid className={classNames('list', 'list-right')} item>
         {customList(rightTitle, value)}
+        {invalid && <p className="MuiFormHelperText-root MuiFormHelperText-contained Mui-error">{meta.error}</p>}
       </Grid>
-
-      {meta.error && meta.touched && (
-        <Grid className="error" xs={12} item>
-          <p className="MuiFormHelperText-root MuiFormHelperText-contained Mui-error">{meta.error}</p>
-        </Grid>
-      )}
     </Grid>
   );
 })`
   width: 100%;
   height: 100%;
-  position: relative;
   overflow: hidden;
+
+  .list-left {
+    max-width: calc(50% - 45px) !important;
+    flex-basis: calc(50% - 45px) !important;
+  }
+
+  .list-right {
+    position: relative;
+    max-width: calc(50% - 45px) !important;
+    flex-basis: calc(50% - 45px) !important;
+  }
 
   .list {
     width: 100%;
     height: 100%;
     padding: 0;
     overflow: hidden;
-    max-width: calc(50% - 30px) !important;
-    flex-basis: calc(50% - 30px) !important;
 
     .MuiCard-root {
       display: flex;
@@ -289,13 +292,16 @@ const TransferList = styled((props) => {
     }
   }
 
-  &.invalid .list {
+  &.invalid .list-right {
     border: 1px solid #f44336;
     border-radius: 4px;
   }
 
-  .error {
-    padding: unset;
+  .Mui-error {
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    color: #f44336;
   }
 `;
 
@@ -317,7 +323,7 @@ TransferList.propTypes = {
 
 TransferList.defaultProps = {
   className: '',
-  options: {},
+  options: [],
   input: null,
   value: [],
   leftTitle: 'Choices',
