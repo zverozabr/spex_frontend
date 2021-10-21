@@ -15,7 +15,7 @@ const AddBlockForm = styled((props) => {
     header,
     jobTypes,
     open,
-    onBlockClick,
+    onSubmit,
     onClose,
   } = props;
 
@@ -41,25 +41,26 @@ const AddBlockForm = styled((props) => {
           {Object.values(jobTypes).map((type) => (<Tab key={type.name} label={type.name} />))}
         </Tabs>
 
-        {Object.values(jobTypes).map((type, typeIndex) => (
-          <TabPanel key={`${type.name}_${typeIndex}`} value={activeDataTab} index={typeIndex}>
+        {Object.values(jobTypes).map((jobType, typeIndex) => (
+          <TabPanel key={`${jobType.name}_${typeIndex}`} value={activeDataTab} index={typeIndex}>
             <Grid container>
-              {Object.values(type.stages).map((stage, stageIndex) => (
+              {Object.values(jobType.stages).map((stage, stageIndex) => (
                 <Grid container key={`${stage.name}_${stageIndex}`}>
                   <Grid className="stage" item>
                     <div className="stage__name">{stageIndex === 0 ? 'Start' : stage.name}</div>
                   </Grid>
-                  {stage.blocks.map((block, blockIndex) => (
+                  {(stage.blocks || []).map((block, blockIndex) => (
                     <Grid
                       key={`${block.name}_${blockIndex}`}
                       className="block"
-                      onClick={() => onBlockClick(block)}
+                      onClick={() => onSubmit({ ...block, folder: jobType.name, script: jobType.name })}
                       item
                     >
                       <div className="block__name">{block.name}</div>
                       <div className="block__description">{block.description}</div>
-                      <ul className="block__input">Input: {block.start_params.map((el, i) => <li key={i}>{el.description}</li>)}</ul>
-                      <ul className="block__output">Output: {block.return.map((el, i) => <li key={i}>{el.description}</li>)}</ul>
+                      { /* eslint-disable-next-line max-len */ }
+                      <ul className="block__input">Input: {Object.values(block.params_meta || {}).filter((param) => !param.hidden).map((el, i) => <li key={i}>{el.description}</li>)}</ul>
+                      <ul className="block__output">Output: {(block.return || []).map((el, i) => <li key={i}>{el.description}</li>)}</ul>
                     </Grid>
                   ))}
                 </Grid>
@@ -168,7 +169,7 @@ AddBlockForm.defaultProps = {
   header: '',
   jobTypes: {},
   open: false,
-  onBlockClick: () => {},
+  onSubmit: () => {},
   onClose: () => {},
 };
 

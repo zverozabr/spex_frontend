@@ -75,7 +75,7 @@ const FormModal = styled((props) => {
         </Modal>
       );
       },
-    [onForm, modalProps, className, open, header, children, closeButtonText, submitButtonText, onClose],
+    [onForm, modalProps, className, open, header, children, closeButtonText, hideSubmitButton, submitButtonText, onClose],
   );
 
   return (

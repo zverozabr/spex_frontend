@@ -50,14 +50,14 @@ const TransferList = styled((props) => {
 
   const [checked, setChecked] = useState([]);
 
-  const fixedOptions = useMemo(
-    () => (not(options, value)),
+  const fixedValue = useMemo(
+    () => (value.map((val) => options.find((opt) => opt.id === val) || { id: val })),
     [options, value],
   );
 
-  const fixedValue = useMemo(
-    () => (value.map((val) => options.find((opt) => opt.id === val))),
-    [options, value],
+  const fixedOptions = useMemo(
+    () => (not(options, fixedValue)),
+    [options, fixedValue],
   );
 
   const leftChecked = useMemo(
@@ -306,6 +306,7 @@ const TransferList = styled((props) => {
     position: absolute;
     top: 50%;
     right: 50%;
+    transform: translateX(50%);
     color: #f44336;
   }
 `;

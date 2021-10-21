@@ -98,9 +98,7 @@ const slice = createSlice({
 
           const jobTypes = responses.reduce((acc, el, i) => {
             const type = types[i];
-
             const { stages, ...blocks } = el.data.data;
-
             const mappedStages = Object.keys(stages).reduce((mapped, key, order) => {
               return {
                 ...mapped,
@@ -111,7 +109,6 @@ const slice = createSlice({
                 },
               };
             }, {});
-
             return {
               ...acc,
               [type]: { name: type, description: '', stages: mappedStages },

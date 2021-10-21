@@ -179,9 +179,12 @@ const slice = createSlice({
           const jobUrl = '/jobs';
           const createParams = {
             name: job.name,
+            folder: job.folder,
+            script: job.script,
+            part: job.part,
+            params: job.params,
+            ...(job.params.omeroIds ? { omeroIds: job.params.omeroIds } : {}),
             content: 'empty',
-            omeroIds: job.omeroIds,
-            status: 0,
           };
           const { data } = yield call(api.post, jobUrl, createParams);
           yield put(jobsActions.createJobSuccess(data.data));
@@ -209,8 +212,12 @@ const slice = createSlice({
         try {
           const updateParams = {
             name: job.name,
-            content: JSON.stringify(job.content),
-            omeroIds: job.omeroIds,
+            folder: job.folder,
+            script: job.script,
+            part: job.part,
+            params: job.params,
+            ...(job.params.omeroIds ? { omeroIds: job.params.omeroIds } : {}),
+            content: 'empty',
           };
           const jobUrl = `/jobs/${job.id}`;
           const { data } = yield call(api.put, jobUrl, updateParams);

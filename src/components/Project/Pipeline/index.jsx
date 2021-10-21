@@ -212,17 +212,39 @@ const Pipeline = () => {
   );
 
   const onBlockClick = useCallback(
-    (_, blocks) => {
-      if (blocks.id === 'new') {
+    (_, block) => {
+      if (block.id === 'new') {
         return;
       }
+
+      const job = jobs[block.id];
+
+      if (!job) {
+        setSelectedBlock({
+          projectId,
+          pipelineId,
+          ...block,
+        });
+        return;
+      }
+
+      const { params } = job.tasks[0];
+      const jobTypeBlocks = Object.values((jobTypes[params.script] || {}).stages || {}).reduce((acc, el) => el.blocks ? [...acc, ...el.blocks] : acc, []);
+      const { params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
+
       setSelectedBlock({
         projectId,
         pipelineId,
-        ...(jobs[blocks.id] || blocks),
+        id: job.id,
+        name: job.name,
+        folder: params.folder,
+        script: params.script,
+        script_path: params.part,
+        params,
+        params_meta,
       });
     },
-    [jobs, pipelineId, projectId],
+    [jobTypes, jobs, pipelineId, projectId],
   );
 
   const onBlockAdd = useCallback(
@@ -324,7 +346,6 @@ const Pipeline = () => {
     [dispatch],
   );
 
-
   return (
     <ReactFlowProvider>
       <Container>
@@ -372,7 +393,7 @@ const Pipeline = () => {
             header="Add Block"
             jobTypes={jobTypes}
             onClose={() => setActionWithBlock(null)}
-            onBlockClick={onBlockAdd}
+            onSubmit={onBlockAdd}
             open
           />
         )}

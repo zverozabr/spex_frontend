@@ -6,7 +6,6 @@ import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
-import SelectOmeroImages from '+components/SelectOmeroImages';
 
 const Container = styled.div`
   width: 100%;
@@ -51,7 +50,7 @@ const Footer = styled.div`
 
 const getFieldComponent = (type) => {
   switch (type) {
-    case 'omeroIds':
+    case 'omero':
       return Controls.SelectOmeroImages;
     case 'number':
       return Controls.NumberField;
@@ -63,10 +62,19 @@ const getFieldComponent = (type) => {
 
 const getFieldParser = (type) => {
   switch (type) {
-    case 'omeroIds':
+    case 'omero':
       return Parsers.omeroIds;
     default:
       return undefined;
+  }
+};
+
+const getFieldAdditionalProps = (type, block) => {
+  switch (type) {
+    case 'omero':
+      return { projectId: block.projectId };
+    default:
+      return {};
   }
 };
 
@@ -87,30 +95,40 @@ const BlockSettingsForm = (props) => {
 
   const header = block.description || block.name;
 
-  const blockParamsMeta = useMemo(
-    () => ((block.start_params || []).reduce((acc, el) => {
-      const { type, description, ...param } = el;
-      const [name] = Object.keys(param);
-      const meta = { name, label: description, type: type || typeof param[name] };
-      return { ...acc, [name]: meta };
+  const fields = useMemo(
+    () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
+      const { name, description, type, hidden, required } = block.params_meta[el];
+      if (hidden) {
+        return acc;
+      }
+      const param = {
+        name: `params.${name}`,
+        label: name,
+        placeholder: description,
+        type,
+        required,
+      };
+      return { ...acc, [name]: param };
     }, {})),
-    [block.start_params],
+    [block.params_meta],
   );
 
-  const blockInitialValues = useMemo(
+  const initialValues = useMemo(
     () => {
-      const values = (block.start_params || []).reduce((acc, el) => {
-        const { type, description, ...param } = el;
-        return { ...acc, ...param };
-      }, {});
       return {
-        ...values,
+        id: block.id,
         name: block.name,
         projectId: block.projectId,
         pipelineId: block.pipelineId,
+        params: {
+          ...block.params,
+          folder: block.folder,
+          script: block.script,
+          part: block.script_path,
+        },
       };
     },
-    [block.name, block.pipelineId, block.projectId, block.start_params],
+    [block],
   );
 
   const render = useCallback(
@@ -129,15 +147,16 @@ const BlockSettingsForm = (props) => {
           >
             <Header>{header}</Header>
             <Body>
-              {Object.values(blockParamsMeta).map((params) => (
+              {Object.values(fields).map((params) => (
                 <Field
                   key={params.name}
                   name={params.name}
                   label={params.label}
-                  projectId={block.projectId}
+                  placeholder={params.placeholder}
                   component={getFieldComponent(params.type)}
                   parse={getFieldParser(params.type)}
-                  validate={Validators.required}
+                  validate={params.required ? Validators.required : undefined}
+                  {...getFieldAdditionalProps(params.type, block)}
                 />
               ))}
             </Body>
@@ -163,13 +182,13 @@ const BlockSettingsForm = (props) => {
         </Container>
       );
     },
-    [onForm, className, header, blockParamsMeta, closeButtonText, submitButtonText, block, onClose],
+    [onForm, className, header, fields, closeButtonText, submitButtonText, block, onClose],
   );
 
   return (
     <Form
       {...tail}
-      initialValues={blockInitialValues}
+      initialValues={initialValues}
       render={render}
       mutators={{
         setValue: ([field, value], state, { changeValue }) => {
@@ -195,11 +214,16 @@ const propTypes = {
    * Initial values.
    */
   block: PropTypes.shape({
+    id: PropTypes.string,
     name: PropTypes.string,
     description: PropTypes.string,
     projectId: PropTypes.string,
     pipelineId: PropTypes.string,
-    start_params: PropTypes.arrayOf(PropTypes.shape({})),
+    script_path: PropTypes.string,
+    folder: PropTypes.string,
+    script: PropTypes.string,
+    params_meta: PropTypes.shape({}),
+    params: PropTypes.shape({}),
   }),
   /**
    * Text for the close button.
