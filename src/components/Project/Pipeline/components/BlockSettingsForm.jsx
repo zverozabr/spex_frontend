@@ -6,6 +6,7 @@ import styled from 'styled-components';
 
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
+import NoData from '+components/NoData';
 
 const Container = styled.div`
   width: 100%;
@@ -97,13 +98,13 @@ const BlockSettingsForm = (props) => {
 
   const fields = useMemo(
     () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
-      const { name, description, type, hidden, required } = block.params_meta[el];
+      const { name, label, description, type, hidden, required } = block.params_meta[el];
       if (hidden) {
         return acc;
       }
       const param = {
         name: `params.${name}`,
-        label: name,
+        label: label || name,
         placeholder: description,
         type,
         required,
@@ -120,6 +121,7 @@ const BlockSettingsForm = (props) => {
         name: block.name,
         projectId: block.projectId,
         pipelineId: block.pipelineId,
+        rootId: block.rootId,
         params: {
           ...block.params,
           folder: block.folder,
@@ -147,6 +149,9 @@ const BlockSettingsForm = (props) => {
           >
             <Header>{header}</Header>
             <Body>
+              {Object.values(fields).length === 0 && (
+                <NoData>No block params to display</NoData>
+              )}
               {Object.values(fields).map((params) => (
                 <Field
                   key={params.name}
@@ -219,6 +224,7 @@ const propTypes = {
     description: PropTypes.string,
     projectId: PropTypes.string,
     pipelineId: PropTypes.string,
+    rootId: PropTypes.string,
     script_path: PropTypes.string,
     folder: PropTypes.string,
     script: PropTypes.string,

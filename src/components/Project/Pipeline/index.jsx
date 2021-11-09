@@ -188,6 +188,7 @@ const Pipeline = () => {
 
       const normalizedValues = {
         ...values,
+        omeroIds: values.params?.omeroIds || jobs[values.rootId]?.omeroIds,
       };
 
       if (normalizedValues.id === 'new') {
@@ -200,7 +201,7 @@ const Pipeline = () => {
         dispatch(pipelineActions.createJob(normalizedValues));
       }
     },
-    [dispatch],
+    [dispatch, jobs],
   );
 
   const onPaneClick = useCallback(
@@ -230,13 +231,14 @@ const Pipeline = () => {
 
       const { params } = job.tasks[0];
       const jobTypeBlocks = Object.values((jobTypes[params.script] || {}).stages || {}).reduce((acc, el) => el.blocks ? [...acc, ...el.blocks] : acc, []);
-      const { params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
+      const { description, params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
 
       setSelectedBlock({
         projectId,
         pipelineId,
         id: job.id,
         name: job.name,
+        description,
         folder: params.folder,
         script: params.script,
         script_path: params.part,
@@ -366,10 +368,10 @@ const Pipeline = () => {
           </ReactFlow>
 
           <BlockSettingsFormWrapper>
-            {!selectedBlock?.name && (
+            {!selectedBlock?.id && (
               <NoData>Select block</NoData>
             )}
-            {selectedBlock?.name && (
+            {selectedBlock?.id && (
               <BlockSettingsForm
                 block={selectedBlock}
                 onClose={onJobCancel}
@@ -388,17 +390,18 @@ const Pipeline = () => {
           )}
         </OutputWrapper>
 
-        {actionWithBlock === 'add' && selectedBlock && (
+        {actionWithBlock === 'add' && selectedBlock?.id && (
           <AddBlockForm
             header="Add Block"
             jobTypes={jobTypes}
+            selectedBlock={selectedBlock}
             onClose={() => setActionWithBlock(null)}
             onSubmit={onBlockAdd}
             open
           />
         )}
 
-        {actionWithBlock === 'delete' && selectedBlock && (
+        {actionWithBlock === 'delete' && selectedBlock?.id && (
           <ConfirmModal
             action={ConfirmActions.delete}
             item={selectedBlock.name}

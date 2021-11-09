@@ -1,12 +1,14 @@
 /* eslint-disable react/jsx-handler-names */
-import React, { memo } from 'react';
+import React, { Fragment, memo } from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
 import PropTypes from 'prop-types';
 import { Handle } from 'react-flow-renderer';
 
+import Buttons from './components/Buttons';
 import Container from './components/Container';
+import Name from './components/Name';
 
 const JobBlock = (props) => {
   const {
@@ -17,28 +19,30 @@ const JobBlock = (props) => {
   const isHorizontal = data.direction === 'LR';
 
   return (
-    <Container>
-      <div>
-        {data.name && <strong>{data.name}</strong>}
+    <Fragment>
+      <Container>
+        {data.name && <Name>{data.name}</Name>}
 
-        {data.onDelete && (
-          <IconButton
-            disabled={data.id === 'new'}
-            onClick={() => data.onDelete(data)}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        )}
+        <Buttons>
+          {data.onDelete && (
+            <IconButton
+              disabled={data.id === 'new'}
+              onClick={() => data.onDelete(data)}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
 
-        {data.onAdd && (
-          <IconButton
-            disabled={data.id === 'new'}
-            onClick={() => data.onAdd(data)}
-          >
-            <AddIcon fontSize="small" />
-          </IconButton>
-        )}
-      </div>
+          {data.onAdd && (
+            <IconButton
+              disabled={data.id === 'new'}
+              onClick={() => data.onAdd(data)}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Buttons>
+      </Container>
 
       <Handle
         type="target"
@@ -51,7 +55,7 @@ const JobBlock = (props) => {
         position={isHorizontal ? 'right' : 'bottom'}
         isConnectable={isConnectable}
       />
-    </Container>
+    </Fragment>
   );
 };
 
