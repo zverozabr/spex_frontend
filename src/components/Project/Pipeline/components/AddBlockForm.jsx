@@ -54,9 +54,9 @@ const AddBlockForm = styled((props) => {
                   {(stage.blocks || []).map((block, blockIndex) => {
                     let enabled;
                     if (selectedBlock.type === 'start') {
-                      enabled = !block.depends_and_script.length;
+                      enabled = !block.depends_and_script.length && !block.depends_or_script?.length;
                     } else {
-                      enabled = block.depends_and_script.includes(selectedBlock.script_path);
+                      enabled = block.depends_and_script?.includes(selectedBlock.script_path) || block.depends_or_script?.includes(selectedBlock.script_path);
                     }
                     return (
                       <Grid
@@ -69,8 +69,15 @@ const AddBlockForm = styled((props) => {
                           <div className="block__name">{block.name}</div>
                           <div className="block__description">{block.description}</div>
                           { /* eslint-disable-next-line max-len */ }
-                          <ul className="block__input">Input: {Object.values(block.params_meta || {}).filter((param) => !param.hidden).map((el, i) => <li key={i}>{el.description}</li>)}</ul>
-                          <ul className="block__output">Output: {(block.return || []).map((el, i) => <li key={i}>{el.description}</li>)}</ul>
+                          <ul className="block__input">Input:
+                            {Object.values(block.params_meta || {})
+                              .filter((param) => !param.hidden)
+                              .map((el, i) => <li key={i}>{el.name}: {el.description}</li>)}
+                          </ul>
+                          <ul className="block__output">Output:
+                            {(block.return || [])
+                              .map(({ description, ...tail }, i) => <li key={i}>{Object.keys(tail)[0]}: {description}</li>)}
+                          </ul>
                         </div>
                       </Grid>
                     );

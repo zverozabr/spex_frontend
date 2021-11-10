@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
 import NoData from '+components/NoData';
+import { ScrollBarMixin } from '+components/ScrollBar';
 
 const Container = styled.div`
   width: 100%;
@@ -31,8 +32,11 @@ const Body = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
   padding: 20px 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+
+  ${ScrollBarMixin};
   
   gap: 20px;
 `;
@@ -53,7 +57,7 @@ const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
       return Controls.SelectOmeroImages;
-    case 'number':
+    case 'int':
       return Controls.NumberField;
     case 'string':
     default:

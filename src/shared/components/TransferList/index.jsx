@@ -51,7 +51,7 @@ const TransferList = styled((props) => {
   const [checked, setChecked] = useState([]);
 
   const fixedValue = useMemo(
-    () => (value.map((val) => options.find((opt) => opt.id === val) || { id: val })),
+    () => ((Array.isArray(value) ? value : [value]).map((val) => options.find((opt) => opt.id === val) || { id: val })),
     [options, value],
   );
 
@@ -315,7 +315,7 @@ TransferList.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.shape({})),
   input: PropTypes.shape({
-    value: PropTypes.arrayOf(PropTypes.string),
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
     onChange: PropTypes.func,
   }),
   value: PropTypes.arrayOf(PropTypes.shape({})),
@@ -330,7 +330,7 @@ TransferList.propTypes = {
 TransferList.defaultProps = {
   className: '',
   options: [],
-  input: null,
+  input: {},
   value: [],
   leftTitle: 'Choices',
   rightTitle: 'Chosen',
