@@ -53,17 +53,29 @@ const Footer = styled.div`
   }
 `;
 
+const TextField = styled(Controls.TextField)`
+  max-width: 300px;
+`;
+
+const NumberField = styled(Controls.NumberField)`
+  max-width: 300px;
+`;
+
+const SelectOmeroChannels = styled(Controls.SelectOmeroChannels)`
+  max-width: 300px;
+`;
+
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
       return Controls.SelectOmeroImages;
     case 'channels':
-      return Controls.SelectOmeroChannels;
+      return SelectOmeroChannels;
     case 'int':
-      return Controls.NumberField;
+      return NumberField;
     case 'string':
     default:
-      return Controls.TextField;
+      return TextField;
   }
 };
 

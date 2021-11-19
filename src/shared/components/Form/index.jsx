@@ -24,7 +24,6 @@ const TextField = styled(TextFieldOrigin).attrs((props) => ({
 const NumberField = styled(TextField).attrs((props) => ({
   type: props.type || 'number',
 }))`
-  width: 200px;
 `;
 
 const Controls = {

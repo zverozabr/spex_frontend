@@ -3,10 +3,19 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-
+import styled from 'styled-components';
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 import { selectors as pipelineSelectors } from '@/redux/modules/pipelines';
+
+const Option = styled.div`
+  :after {
+    content: '---';
+    margin-left: 10px;
+    color: ${(props) => `#${props.$color}`} !important;
+    background-color: ${(props) => `#${props.$color}`} !important;
+  }
+`;
 
 const SelectOmeroChannels = (props) => {
   const {
@@ -73,6 +82,7 @@ const SelectOmeroChannels = (props) => {
         />
       )}
       getOptionLabel={(option) => option.label}
+      renderOption={(option) => <Option key={option.value} $color={option.color}>{option.label}</Option>}
       options={options}
       value={fixedValue}
       onChange={doChange}
