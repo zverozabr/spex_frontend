@@ -72,6 +72,7 @@ const getFieldComponent = (type) => {
     case 'channels':
       return SelectOmeroChannels;
     case 'int':
+    case 'float':
       return NumberField;
     case 'string':
     default:
