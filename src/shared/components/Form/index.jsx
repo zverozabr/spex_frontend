@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import ImagePicker from '+components/ImagePicker';
 import { Option as SelectOption } from '+components/Select';
+import SelectOmeroChannels from '+components/SelectOmeroChannels';
 import SelectOmeroImages from '+components/SelectOmeroImages';
 import Slider from '+components/Slider';
 import TransferList from '+components/TransferList';
@@ -21,7 +22,7 @@ const TextField = styled(TextFieldOrigin).attrs((props) => ({
 `;
 
 const NumberField = styled(TextField).attrs((props) => ({
-  type: 'number',
+  type: props.type || 'number',
 }))`
   width: 200px;
 `;
@@ -35,6 +36,7 @@ const Controls = {
   Select,
   SelectOption,
   SelectOmeroImages,
+  SelectOmeroChannels,
   Slider,
   TransferList,
   ImagePicker,

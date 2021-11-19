@@ -57,6 +57,8 @@ const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
       return Controls.SelectOmeroImages;
+    case 'channels':
+      return Controls.SelectOmeroChannels;
     case 'int':
       return Controls.NumberField;
     case 'string':
@@ -69,6 +71,8 @@ const getFieldParser = (type) => {
   switch (type) {
     case 'omero':
       return Parsers.omeroIds;
+    case 'channels':
+      return Parsers.channels;
     default:
       return undefined;
   }
@@ -78,6 +82,8 @@ const getFieldAdditionalProps = (type, block) => {
   switch (type) {
     case 'omero':
       return { projectId: block.projectId };
+    case 'channels':
+      return { projectId: block.projectId, pipelineId: block.pipelineId };
     default:
       return {};
   }

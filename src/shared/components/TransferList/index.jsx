@@ -318,7 +318,7 @@ TransferList.propTypes = {
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
     onChange: PropTypes.func,
   }),
-  value: PropTypes.arrayOf(PropTypes.shape({})),
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
   not: PropTypes.func,
