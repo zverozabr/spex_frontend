@@ -16,7 +16,6 @@
 # misc
 package-lock.json
 .DS_Store
-.env
 .env.local
 # .env.development.local
 .env.test.local
@@ -38,6 +37,4 @@ frontend.*
 *.iws
 .vscode
 /tmp
-.eslintignore
-.eslintrc
 .shelf
