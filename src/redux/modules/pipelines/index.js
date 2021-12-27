@@ -35,8 +35,6 @@ const slice = createSlice({
     updateJob: startFetching,
     deleteJob: startFetching,
 
-    createEdge: startFetching,
-
     fetchPipelinesSuccess: (state, { payload: { projectId, data } }) => {
       stopFetching(state);
       const hashedPipelines = hash(data || [], 'id');
@@ -75,15 +73,6 @@ const slice = createSlice({
       stopFetching(state);
     },
 
-    createEdgeSuccess: (state, { payload: pipeline }) => {
-      stopFetching(state);
-      const hashedKey = hash(pipeline.pipe || [], 'id');
-      state.pipelines[pipeline.projectId] = {
-        ...state.pipelines[pipeline.projectId],
-        ...hashedKey,
-      };
-    },
-
     clearPipelines: (state) => {
       state.pipelines = {};
     },
@@ -102,7 +91,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/${projectId}`;
+          const url = `${baseUrl}s/${projectId}`;
           const { data } = yield call(api.get, url);
           yield put(actions.fetchPipelinesSuccess({ projectId: projectId, data: data.data['pipelines'] }));
         } catch (error) {
@@ -118,7 +107,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/path/${pipelineId}`;
+          const url = `${baseUrl}/${pipelineId}`;
           const { data } = yield call(api.get, url);
           yield put(actions.fetchPipelinesSuccess({ projectId, data: data.data['pipelines'] }));
         } catch (error) {
@@ -134,7 +123,7 @@ const slice = createSlice({
         initApi();
 
         try {
-          const url = `${baseUrl}/create/${pipeline.project}`;
+          const url = `${baseUrl}s/${pipeline.project}`;
           const { data } = yield call(api.post, url, pipeline);
           yield put(actions.createPipelineSuccess(data.data));
         } catch (error) {
@@ -165,7 +154,7 @@ const slice = createSlice({
       * saga({ payload: [projectId, pipelineId] }) {
         initApi();
         try {
-          const url = `${baseUrl}/delete/${projectId}/${pipelineId}`;
+          const url = `${baseUrl}/${pipelineId}`;
           yield call(api.delete, url);
           yield put(actions.deletePipelineSuccess([projectId, pipelineId]));
         } catch (error) {
@@ -186,8 +175,8 @@ const slice = createSlice({
             throw new Error('Job cannot be empty');
           }
 
-          const pipelineUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${job_id}/${job.pipelineId}`;
-          yield call(api.get, pipelineUrl);
+          const pipelineUrl = `${baseUrl}/link/${job.rootId ?? job.pipelineId}/${job_id}/${job.pipelineId}`;
+          yield call(api.post, pipelineUrl);
 
           yield put(actions.fetchPipeline({
             projectId: job.projectId,
@@ -219,7 +208,7 @@ const slice = createSlice({
           const { data } = yield call(api.post, jobUrl, createParams);
           yield put(jobsActions.createJobSuccess(data.data));
 
-          const pipelineUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
+          const pipelineUrl = `${baseUrl}/link/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
           yield call(api.get, pipelineUrl);
 
           yield put(actions.fetchPipeline({
@@ -271,7 +260,7 @@ const slice = createSlice({
       * saga({ payload: { projectId, pipelineId, jobId } }) {
         initApi();
         try {
-          const pipelineUrl = `${baseUrl}/delete/${pipelineId}/${jobId}`;
+          const pipelineUrl = `${baseUrl}/link/${pipelineId}/${jobId}`;
           yield call(api.delete, pipelineUrl);
 
           const jobUrl = `/jobs/${jobId}`;
@@ -281,30 +270,6 @@ const slice = createSlice({
           yield put(actions.fetchPipeline({ projectId, pipelineId }));
 
           yield put(actions.deleteJobSuccess());
-        } catch (error) {
-          yield put(actions.requestFail(error));
-          // eslint-disable-next-line no-console
-          console.error(error.message);
-        }
-      },
-    },
-
-    [actions.createEdge]: {
-      * saga({ payload: pipeline }) {
-        initApi();
-        try {
-          const url = `${baseUrl}/${pipeline.projectId}/${pipeline.boxId}`;
-          let createData = { 'name': 'edge', 'project': pipeline.projectId };
-          if (pipeline.tasks_ids) {
-            createData.tasks_ids = pipeline.tasks_ids;
-          }
-          if (pipeline.resource_ids) {
-            createData.resource_ids = pipeline.resource_ids;
-          }
-          yield call(api.post, url, createData );
-          const pipeUrl = `${baseUrl}/path/${pipeline.projectId}/${pipeline.pipeline}`;
-          const pipe = yield call(api.get, pipeUrl);
-          yield put(actions.createEdgeSuccess({ ...pipeline, pipe: pipe['data']['data']['pipelines'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
