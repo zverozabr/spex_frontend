@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import ImagePicker from '+components/ImagePicker';
 import { Option as SelectOption } from '+components/Select';
+import SelectJobs from '+components/SelectJobs';
 import SelectOmeroChannels from '+components/SelectOmeroChannels';
 import SelectOmeroImages from '+components/SelectOmeroImages';
 import Slider from '+components/Slider';
@@ -35,6 +36,7 @@ const Controls = {
   Select,
   SelectOption,
   SelectOmeroImages,
+  SelectJobs,
   SelectOmeroChannels,
   Slider,
   TransferList,

@@ -52,12 +52,12 @@ const AddBlockForm = styled((props) => {
                     <div className="stage__name">{stageIndex === 0 ? 'Start' : stage.name}</div>
                   </Grid>
                   {(stage.blocks || []).map((block, blockIndex) => {
-                    let enabled;
-                    if (selectedBlock.type === 'start') {
-                      enabled = !block.depends_and_script.length && !block.depends_or_script?.length;
-                    } else {
-                      enabled = block.depends_and_script?.includes(selectedBlock.script_path) || block.depends_or_script?.includes(selectedBlock.script_path);
+                    let enabled = !block.depends_and_script.length && !block.depends_or_script?.length;
+                    if (selectedBlock.type !== 'start') {
+                      enabled = block.depends_and_script?.includes(selectedBlock.script_path)
+                        || block.depends_or_script?.includes(selectedBlock.script_path);
                     }
+
                     return (
                       <Grid
                         key={`${block.name}_${blockIndex}`}

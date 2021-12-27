@@ -9,6 +9,7 @@ const initialState = {
   error: '',
   jobs: {},
   jobTypes: {},
+  jobsFeatureExtraction: {},
 };
 
 let api;
@@ -44,6 +45,13 @@ const slice = createSlice({
       state.jobTypes = jobTypes;
     },
 
+    fetchJobFeatureExtraction: startFetching,
+    fetchJobFeatureExtractionSuccess: (state, { payload: jobs }) => {
+      stopFetching(state);
+      const normalizedJobs = jobs.map(normalizeJob);
+      state.jobsFeatureExtraction = hash(normalizedJobs || [], 'id');
+    },
+
     fetchJobs: startFetching,
     fetchJobsSuccess: (state, { payload: jobs }) => {
       stopFetching(state);
@@ -75,6 +83,10 @@ const slice = createSlice({
 
     clearJobTypes: (state) => {
       state.jobTypes = {};
+    },
+
+    clearJobFeatureExtraction: (state) => {
+      state.jobsFeatureExtraction = {};
     },
 
     requestFail(state, { payload: { message } }) {
@@ -115,6 +127,25 @@ const slice = createSlice({
             };
           }, {});
           yield put(actions.fetchJobTypesSuccess(jobTypes));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchJobFeatureExtraction]: {
+      * saga() {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/find/feature_extraction/100`;
+          const { data } = yield call(api.get, url);
+          const result = (Array.isArray(data.data) ? data.data : [])
+            .filter((job) => job.tasks.length > 0);
+
+          yield put(actions.fetchJobFeatureExtractionSuccess(result));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -203,6 +234,11 @@ const slice = createSlice({
     getJobs: createSelector(
       [getState],
       (state) => state.jobs,
+    ),
+
+    getJobsByParams: () => createSelector(
+      [getState],
+      (state) => state.jobsFeatureExtraction,
     ),
 
     getJob: (id) => createSelector(

@@ -69,6 +69,8 @@ const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
       return Controls.SelectOmeroImages;
+    case 'job_id':
+      return Controls.SelectJobs;
     case 'channels':
       return SelectOmeroChannels;
     case 'int':
@@ -117,7 +119,7 @@ const BlockSettingsForm = (props) => {
     ...tail
   } = props;
 
-  const header = block.description || block.name;
+  const header = `${block.description || block.name} id: ${block.id}`;
 
   const fields = useMemo(
     () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {

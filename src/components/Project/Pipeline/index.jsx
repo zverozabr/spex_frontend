@@ -197,9 +197,16 @@ const Pipeline = () => {
 
       if (normalizedValues.id) {
         dispatch(pipelineActions.updateJob(normalizedValues));
-      } else {
-        dispatch(pipelineActions.createJob(normalizedValues));
+        return;
       }
+
+      const [rootId] = normalizedValues.params?.job || [];
+      if (rootId != null) {
+        dispatch(pipelineActions.createConn(normalizedValues));
+        normalizedValues.rootId = rootId;
+      }
+
+      dispatch(pipelineActions.createJob(normalizedValues));
     },
     [dispatch, jobs],
   );

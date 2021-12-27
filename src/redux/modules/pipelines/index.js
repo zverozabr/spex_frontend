@@ -29,6 +29,7 @@ const slice = createSlice({
     createPipeline: startFetching,
     updatePipeline: startFetching,
     deletePipeline: startFetching,
+    createConn: startFetching,
 
     createJob: startFetching,
     updateJob: startFetching,
@@ -76,8 +77,11 @@ const slice = createSlice({
 
     createEdgeSuccess: (state, { payload: pipeline }) => {
       stopFetching(state);
-      const hashedKey = hash(pipeline['pipe'] || [], 'id');
-      state.pipelines[pipeline.projectId] = { ...state.pipelines[pipeline.projectId], ...hashedKey };
+      const hashedKey = hash(pipeline.pipe || [], 'id');
+      state.pipelines[pipeline.projectId] = {
+        ...state.pipelines[pipeline.projectId],
+        ...hashedKey,
+      };
     },
 
     clearPipelines: (state) => {
@@ -164,6 +168,31 @@ const slice = createSlice({
           const url = `${baseUrl}/delete/${projectId}/${pipelineId}`;
           yield call(api.delete, url);
           yield put(actions.deletePipelineSuccess([projectId, pipelineId]));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.createConn]: {
+      * saga({ payload: job }) {
+        initApi();
+        try {
+          const [job_id] = job.params?.job || [];
+
+          if (job_id == null) {
+            throw new Error('Job cannot be empty');
+          }
+
+          const pipelineUrl = `${baseUrl}/conn/${job.rootId ?? job.pipelineId}/${job_id}/${job.pipelineId}`;
+          yield call(api.get, pipelineUrl);
+
+          yield put(actions.fetchPipeline({
+            projectId: job.projectId,
+            pipelineId: job.pipelineId,
+          }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
