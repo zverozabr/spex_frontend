@@ -237,7 +237,12 @@ const Pipeline = () => {
       }
 
       const { params } = job.tasks[0];
-      const jobTypeBlocks = Object.values((jobTypes[params.script] || {}).stages || {}).reduce((acc, el) => el.blocks ? [...acc, ...el.blocks] : acc, []);
+      const jobTypeBlocks = (jobTypes[params.script]?.stages || [])
+        .reduce((acc, stage) => [
+          ...acc,
+          ...stage.scripts,
+        ], []);
+
       const { description, params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
 
       setSelectedBlock({

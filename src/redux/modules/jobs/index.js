@@ -108,25 +108,26 @@ const slice = createSlice({
 
           const responses = yield all(types.map((type) => call(api.get, `${url}/${type}`)));
 
-          const jobTypes = responses.reduce((acc, el, i) => {
-            const type = types[i];
-            const { stages, ...blocks } = el.data.data;
-            const mappedStages = Object.keys(stages).reduce((mapped, key, order) => {
-              return {
-                ...mapped,
-                [key]: {
-                  order,
-                  name: stages[key],
-                  blocks: blocks[key],
-                },
-              };
-            }, {});
+          const scriptTypes = responses.reduce((acc, response, i) => {
+            const { data: { data: scriptType } } = response;
+
+            scriptType.stages.forEach((stage) => {
+              stage.scripts.forEach((script) => {
+                script.params_meta = script.params || {};
+                script.params = Object.entries(script.params).reduce((acc, [key, value]) => ({
+                  ...acc,
+                  [key]: value.default,
+                }), {});
+              });
+            });
+
             return {
               ...acc,
-              [type]: { name: type, description: '', stages: mappedStages },
+              [scriptType.key]: scriptType,
             };
           }, {});
-          yield put(actions.fetchJobTypesSuccess(jobTypes));
+
+          yield put(actions.fetchJobTypesSuccess(scriptTypes));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

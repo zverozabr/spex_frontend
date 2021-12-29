@@ -51,22 +51,23 @@ const TransferList = styled((props) => {
   const [checked, setChecked] = useState([]);
 
   const fixedValue = useMemo(
-    () => ((Array.isArray(value) ? value : [value]).map((val) => options.find((opt) => opt.id === val) || { id: val })),
+    () => (Array.isArray(value) ? value : [value])
+      .map((val) => options.find((opt) => opt.id === val) || { id: val }),
     [options, value],
   );
 
   const fixedOptions = useMemo(
-    () => (not(options, fixedValue)),
+    () => not(options, fixedValue),
     [options, fixedValue],
   );
 
   const leftChecked = useMemo(
-    () => (intersection(checked, fixedOptions)),
+    () => intersection(checked, fixedOptions),
     [checked, fixedOptions],
   );
 
   const rightChecked = useMemo(
-    () => (intersection(checked, fixedValue)),
+    () => intersection(checked, fixedValue),
     [checked, fixedValue],
   );
 
@@ -80,7 +81,10 @@ const TransferList = styled((props) => {
 
   const onCheckedRight = useCallback(
     () => {
-      onChange(fixedValue.concat(leftChecked));
+      onChange([
+        ...fixedValue,
+        ...leftChecked,
+      ]);
       setChecked(not(checked, leftChecked));
     },
     [checked, leftChecked, onChange, fixedValue],
@@ -315,10 +319,20 @@ TransferList.propTypes = {
   className: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.shape({})),
   input: PropTypes.shape({
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+    value: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({}),
+      PropTypes.arrayOf(PropTypes.string),
+      PropTypes.arrayOf(PropTypes.shape({})),
+    ]),
     onChange: PropTypes.func,
   }),
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+  value: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.shape({}),
+    PropTypes.arrayOf(PropTypes.string),
+    PropTypes.arrayOf(PropTypes.shape({})),
+  ]),
   leftTitle: PropTypes.string,
   rightTitle: PropTypes.string,
   not: PropTypes.func,

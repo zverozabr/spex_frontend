@@ -9,18 +9,27 @@ import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/mo
 import { selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
 const Option = styled.div`
-  :after {
+  :before {
     content: '---';
-    margin-left: 10px;
-    color: ${(props) => `#${props.$color}`} !important;
-    background-color: ${(props) => `#${props.$color}`} !important;
+    margin-right: 10px;
+    color: #${(props) => props.$color} !important;
+    background-color: #${(props) => props.$color} !important;
   }
 `;
+
+const getOptionLabel = (option) => option.label;
+
+const renderOption = (option) => (
+  <Option key={option.value} $color={option.color}>
+    {option.label}
+  </Option>
+);
 
 const SelectOmeroChannels = (props) => {
   const {
     projectId,
     pipelineId,
+    onlyOneValue,
     input,
     meta,
     ...tail
@@ -46,19 +55,38 @@ const SelectOmeroChannels = (props) => {
 
   const fixedValue = useMemo(
     () => {
-      const value = input?.value || props.value || [];
-      return (Array.isArray(value) ? value : [value]).map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
+      let value = input?.value || props.value;
+      if (onlyOneValue) {
+        return value == null
+          ? value
+          : options.find((opt) => opt.value === value) || { value, label: value };
+      }
+
+      value = value || [];
+      return (Array.isArray(value) ? value : [value])
+        .map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
     },
-    [input?.value, options, props.value],
+    [input?.value, options, props.value, onlyOneValue],
   );
 
   const doChange = useCallback(
     (_, val) => {
-      if (onChange) {
-        onChange(val.map((el) => el.value));
-      }
+      onChange?.(onlyOneValue ? val?.value : val?.map((el) => el.value));
     },
-    [onChange],
+    [onChange, onlyOneValue],
+  );
+
+  const renderInput = useCallback(
+    (params) => (
+      <TextField
+        {...params}
+        helperText={showError ? meta.error || meta.submitError : undefined}
+        error={showError}
+        label={tail.label || ''}
+        variant="outlined"
+      />
+    ),
+    [tail.label, showError, meta.error, meta.submitError],
   );
 
   useEffect(
@@ -73,20 +101,14 @@ const SelectOmeroChannels = (props) => {
 
   return (
     <Autocomplete
+      multiple={!onlyOneValue}
       {...tail}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          helperText={showError ? meta.error || meta.submitError : undefined}
-          error={showError}
-        />
-      )}
-      getOptionLabel={(option) => option.label}
-      renderOption={(option) => <Option key={option.value} $color={option.color}>{option.label}</Option>}
+      renderInput={renderInput}
+      getOptionLabel={getOptionLabel}
+      renderOption={renderOption}
       options={options}
       value={fixedValue}
       onChange={doChange}
-      multiple
     />
   );
 };
@@ -116,6 +138,7 @@ SelectOmeroChannels.propTypes = {
     PropTypes.arrayOf(PropTypes.string),
   ]),
   onChange: PropTypes.func,
+  onlyOneValue: PropTypes.bool,
 };
 
 SelectOmeroChannels.defaultProps = {
@@ -125,6 +148,7 @@ SelectOmeroChannels.defaultProps = {
   meta: {},
   value: null,
   onChange: null,
+  onlyOneValue: false,
 };
 
 export default SelectOmeroChannels;

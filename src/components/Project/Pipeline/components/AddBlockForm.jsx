@@ -40,18 +40,29 @@ const AddBlockForm = styled((props) => {
 
       <ModalBody>
         <Tabs value={activeDataTab} onChange={onDataTabChange}>
-          {Object.values(jobTypes).map((type) => (<Tab key={type.name} label={type.name} />))}
+          {Object.values(jobTypes).map((type) => (
+            <Tab
+              key={type.key}
+              label={type.name}
+            />
+          ))}
         </Tabs>
 
         {Object.values(jobTypes).map((jobType, typeIndex) => (
-          <TabPanel key={`${jobType.name}_${typeIndex}`} value={activeDataTab} index={typeIndex}>
+          <TabPanel
+            key={`${jobType.key}_${typeIndex}`}
+            value={activeDataTab}
+            index={typeIndex}
+          >
             <Grid container>
               {Object.values(jobType.stages).map((stage, stageIndex) => (
                 <Grid container key={`${stage.name}_${stageIndex}`}>
                   <Grid className="stage" item>
-                    <div className="stage__name">{stageIndex === 0 ? 'Start' : stage.name}</div>
+                    <div className="stage__name">
+                      {stageIndex === 0 ? 'Start' : stage.name}
+                    </div>
                   </Grid>
-                  {(stage.blocks || []).map((block, blockIndex) => {
+                  {(stage.scripts || []).map((block, blockIndex) => {
                     let enabled = !block.depends_and_script.length && !block.depends_or_script?.length;
                     if (selectedBlock.type !== 'start') {
                       enabled = block.depends_and_script?.includes(selectedBlock.script_path)
@@ -62,21 +73,38 @@ const AddBlockForm = styled((props) => {
                       <Grid
                         key={`${block.name}_${blockIndex}`}
                         className={classNames('block', { disabled: !enabled })}
-                        onClick={enabled ? () => onSubmit({ ...block, folder: jobType.name, script: jobType.name }) : undefined}
+                        onClick={enabled ? () => onSubmit({
+                          ...block,
+                          folder: jobType.key,
+                          script: jobType.key,
+                        }) : undefined}
                         item
                       >
                         <div className="block__body">
-                          <div className="block__name">{block.name}</div>
-                          <div className="block__description">{block.description}</div>
-                          { /* eslint-disable-next-line max-len */ }
-                          <ul className="block__input">Input:
+                          <div className="block__name">
+                            {block.name}
+                          </div>
+                          <div className="block__description">
+                            {block.description}
+                          </div>
+                          <ul className="block__input">
+                            Input:
                             {Object.values(block.params_meta || {})
                               .filter((param) => !param.hidden)
-                              .map((el, i) => <li key={i}>{el.name}: {el.description}</li>)}
+                              .map((el, i) => (
+                                <li key={i}>
+                                  {el.name}: {el.description}
+                                </li>
+                              ))}
                           </ul>
-                          <ul className="block__output">Output:
+                          <ul className="block__output">
+                            Output:
                             {(block.return || [])
-                              .map(({ description, ...tail }, i) => <li key={i}>{Object.keys(tail)[0]}: {description}</li>)}
+                              .map(({ description, ...tail }, i) => (
+                                <li key={i}>
+                                  {Object.keys(tail)[0]}: {description}
+                                </li>
+                              ))}
                           </ul>
                         </div>
                       </Grid>

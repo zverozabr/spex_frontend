@@ -3,24 +3,16 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
-import styled from 'styled-components';
 
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 
-const Option = styled((props) => (
-  <div className={props.className}>
-    {props.label}
-  </div>
-))`
-  :after {
-    content: '---';
-    margin-left: 10px;
-    color: ${(props) => `#${props.$color}`} !important;
-    background-color: ${(props) => `#${props.$color}`} !important;
-  }
-`;
-
 const getOptionLabel = ({ label }) => label;
+
+const renderOption = (option) => (
+  <div key={getOptionLabel(option)}>
+    {getOptionLabel(option)}
+  </div>
+);
 
 const SelectJobs = (props) => {
   const {
@@ -82,9 +74,11 @@ const SelectJobs = (props) => {
         {...params}
         helperText={showError ? meta.error || meta.submitError : undefined}
         error={showError}
+        label={tail.label || ''}
+        variant="outlined"
       />
     ),
-    [showError, meta.error, meta.submitError],
+    [tail.label, showError, meta.error, meta.submitError],
   );
 
   return (
@@ -92,11 +86,10 @@ const SelectJobs = (props) => {
       {...tail}
       renderInput={renderItem}
       getOptionLabel={getOptionLabel}
-      renderOption={Option}
+      renderOption={renderOption}
       options={options}
       value={fixedValue}
       onChange={doChange}
-      multiple
     />
   );
 };

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
-import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
 import FormModal from '+components/FormModal';
@@ -27,7 +27,6 @@ const TaskFormModal = styled((props) => {
   const omeroImageId = initialValues?.omeroId;
 
   const taskImage = useSelector(tasksSelectors.getTaskImage(taskId));
-  const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroImageId));
 
   useEffect(
     () => {

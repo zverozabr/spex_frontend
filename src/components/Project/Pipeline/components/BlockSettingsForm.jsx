@@ -71,6 +71,7 @@ const getFieldComponent = (type) => {
       return Controls.SelectOmeroImages;
     case 'job_id':
       return Controls.SelectJobs;
+    case 'channel':
     case 'channels':
       return SelectOmeroChannels;
     case 'int':
@@ -88,6 +89,8 @@ const getFieldParser = (type) => {
       return Parsers.omeroIds;
     case 'channels':
       return Parsers.channels;
+    case 'channel':
+      return Parsers.channel;
     default:
       return undefined;
   }
@@ -98,7 +101,16 @@ const getFieldAdditionalProps = (type, block) => {
     case 'omero':
       return { projectId: block.projectId };
     case 'channels':
-      return { projectId: block.projectId, pipelineId: block.pipelineId };
+      return {
+        projectId: block.projectId,
+        pipelineId: block.pipelineId,
+      };
+    case 'channel':
+      return {
+        onlyOneValue: true,
+        projectId: block.projectId,
+        pipelineId: block.pipelineId,
+      };
     default:
       return {};
   }
@@ -123,10 +135,16 @@ const BlockSettingsForm = (props) => {
 
   const fields = useMemo(
     () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
-      const { name, label, description, type, hidden, required } = block.params_meta[el];
+      const {
+        name, label,
+        description, type,
+        hidden, required,
+      } = block.params_meta[el];
+
       if (hidden) {
         return acc;
       }
+
       const param = {
         name: `params.${name}`,
         label: label || name,
@@ -134,7 +152,10 @@ const BlockSettingsForm = (props) => {
         type,
         required,
       };
-      return { ...acc, [name]: param };
+      return {
+        ...acc,
+        [name]: param,
+      };
     }, {})),
     [block.params_meta],
   );
@@ -169,7 +190,7 @@ const BlockSettingsForm = (props) => {
           <FormRenderer
             onSubmit={(event) => {
               // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
-              handleSubmit(event)?.then(() => form.restart());
+              return handleSubmit(event)?.then(() => form.restart());
             }}
           >
             <Header>{header}</Header>
@@ -212,7 +233,12 @@ const BlockSettingsForm = (props) => {
         </Container>
       );
     },
-    [onForm, className, header, fields, closeButtonText, submitButtonText, block, onClose],
+    [
+      onForm, className,
+      header, fields,
+      closeButtonText, submitButtonText,
+      block, onClose,
+    ],
   );
 
   return (

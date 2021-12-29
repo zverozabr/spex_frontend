@@ -13,8 +13,10 @@ const SelectOmeroImages = (props) => {
 
   const project = useSelector(projectsSelectors.getProject(projectId));
   const projectThumbnails = useSelector(omeroSelectors.getThumbnails(projectId));
+
   const projectImages = useMemo(
-    () => (Object.keys(projectThumbnails || {}).map((id) => ({ id, img: projectThumbnails[id] }))),
+    () => (Object.keys(projectThumbnails || {})
+      .map((id) => ({ id, img: projectThumbnails[id] }))),
     [projectThumbnails],
   );
 
@@ -22,7 +24,10 @@ const SelectOmeroImages = (props) => {
     () => {
       const projectImageIds = project?.omeroIds || [];
       if (projectImageIds.length) {
-        dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: projectImageIds }));
+        dispatch(omeroActions.fetchThumbnails({
+          groupId: projectId,
+          imageIds: projectImageIds,
+        }));
       }
       return () => {
         dispatch(omeroActions.clearThumbnails(projectId));
@@ -32,7 +37,10 @@ const SelectOmeroImages = (props) => {
   );
 
   return (
-    <TransferList {...tail} options={projectImages} />
+    <TransferList
+      {...tail}
+      options={projectImages}
+    />
   );
 };
 
