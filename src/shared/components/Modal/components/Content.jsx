@@ -6,8 +6,9 @@ export default styled.div.attrs((props) => ({
 }))`
   display: flex;
   flex-direction: column;
-  width: 560px;
-  max-height: 100%;
+  min-width: 560px;
+  max-width: 90vw;
+  max-height: 90vh;
   border-radius: 4px;
   overflow: hidden;
   outline: 0;

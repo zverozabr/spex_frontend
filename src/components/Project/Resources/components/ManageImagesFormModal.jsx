@@ -7,12 +7,20 @@ import styled from 'styled-components';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
 import { Field, Controls } from '+components/Form';
-import FormModal from '+components/FormModal';
+import Parsers from '+components/Form/utils/Parsers';
+import FormModalOrigin from '+components/FormModal';
+import Content from '+components/Modal/components/Content';
 import Select, { Option } from '+components/Select';
 
 import Row from '../../components/Row';
 
 const none = 'none';
+
+const FormModal = styled(FormModalOrigin)`
+  ${Content} {
+    min-width: 60vw;
+  }
+`;
 
 const ManageImagesFormModal = styled((props) => {
   const {
@@ -38,8 +46,20 @@ const ManageImagesFormModal = styled((props) => {
   const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
 
   const options = useMemo(
-    () => (Object.keys(omeroDatasetThumbnails || {}).map((id) => ({ id, img: omeroDatasetThumbnails[id] }))),
-    [omeroDatasetThumbnails],
+    () => {
+      const names = (omeroDatasetImages || []).reduce((acc, image) => ({
+        ...acc,
+        [image.id]: image.name,
+      }), {});
+
+      return Object.entries(omeroDatasetThumbnails || {})
+        .map(([id, img]) => ({
+          id,
+          img,
+          title: names[id],
+        }));
+    },
+    [omeroDatasetThumbnails, omeroDatasetImages],
   );
 
   const onProjectChange = useCallback(
@@ -150,6 +170,7 @@ const ManageImagesFormModal = styled((props) => {
           label="Omero IDs"
           component={Controls.TransferList}
           options={options}
+          parse={Parsers.omeroIds}
         />
       </Row>
     </FormModal>
