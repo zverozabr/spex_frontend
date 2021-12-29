@@ -1,0 +1,6 @@
+config/
+scripts/
+build/
+src/serviceWorker.js
+src/setupTests.js
+jsconfig.json
