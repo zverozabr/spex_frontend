@@ -209,7 +209,7 @@ const slice = createSlice({
           yield put(jobsActions.createJobSuccess(data.data));
 
           const pipelineUrl = `${baseUrl}/link/${job.rootId ?? job.pipelineId}/${data.data.id}/${job.pipelineId}`;
-          yield call(api.get, pipelineUrl);
+          yield call(api.post, pipelineUrl);
 
           yield put(actions.fetchPipeline({
             projectId: job.projectId,
