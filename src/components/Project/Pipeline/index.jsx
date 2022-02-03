@@ -9,6 +9,7 @@ import { matchPath, useLocation } from 'react-router-dom';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
+import { actions as tasksActions } from '@/redux/modules/tasks';
 
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
@@ -211,6 +212,54 @@ const Pipeline = () => {
     [dispatch, jobs],
   );
 
+  const onJobRestart = useCallback(
+    (values) => {
+      const job = {
+        id: jobs[selectedBlock.id].id,
+        status: 0,
+        tasks: jobs[selectedBlock.id].tasks,
+      };
+
+
+      if (job.id) {
+        job.tasks.forEach((el) => {
+          const task = {
+            id: el.id, status: 0, result: '',
+          };
+
+          dispatch(tasksActions.updateTask(task));
+        });
+        delete job.tasks;
+        dispatch(jobsActions.updateJob(job));
+      }
+    },
+    [dispatch, jobs, selectedBlock],
+  );
+
+  const onJobRefresh = useCallback(
+    (values) => {
+      const job = {
+        id: jobs[selectedBlock.id].id,
+        status: 0,
+        tasks: jobs[selectedBlock.id].tasks,
+      };
+
+
+      if (job.id) {
+        job.tasks.forEach((el) => {
+          const task = {
+            id: el.id, status: 0, result: '',
+          };
+
+          dispatch(tasksActions.updateTask(task));
+        });
+        delete job.tasks;
+        dispatch(jobsActions.updateJob(job));
+      }
+    },
+    [dispatch, jobs, selectedBlock],
+  );
+
   const onPaneClick = useCallback(
     () => {
       setActionWithBlock(null);
@@ -244,12 +293,12 @@ const Pipeline = () => {
         ], []);
 
       const { description, params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
-
       setSelectedBlock({
         projectId,
         pipelineId,
         id: job.id,
         name: job.name,
+        status: job.status,
         description,
         folder: params.folder,
         script: params.script,
@@ -269,6 +318,7 @@ const Pipeline = () => {
         pipelineId,
         rootId: prevValue?.id,
         id: 'new',
+        status: 0,
         ...block,
       }));
     },
@@ -388,6 +438,8 @@ const Pipeline = () => {
                 block={selectedBlock}
                 onClose={onJobCancel}
                 onSubmit={onJobSubmit}
+                onRestart={onJobRestart}
+                onRefresh={onJobRefresh}
               />
             )}
           </BlockSettingsFormWrapper>

@@ -125,13 +125,17 @@ const BlockSettingsForm = (props) => {
     block,
     closeButtonText,
     submitButtonText,
+    restartButtonText,
+    refreshButtonText,
     onClose,
     onSubmit,
+    onRestart,
+    onRefresh,
     onForm,
     ...tail
   } = props;
 
-  const header = `${block.description || block.name} id: ${block.id}`;
+  const header = `${block.description || block.name} id: ${block.id} status: ${block.status}`;
 
   const fields = useMemo(
     () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
@@ -228,6 +232,25 @@ const BlockSettingsForm = (props) => {
               >
                 {submitButtonText}
               </Button>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
+                  form.restart();
+                  onRestart(event);
+                }}
+              >
+                {restartButtonText}
+              </Button>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
+                  form.restart();
+                  onRefresh(event);
+                }}
+              >
+                {refreshButtonText}
+              </Button>
+
             </Footer>
           </FormRenderer>
         </Container>
@@ -236,8 +259,8 @@ const BlockSettingsForm = (props) => {
     [
       onForm, className,
       header, fields,
-      closeButtonText, submitButtonText,
-      block, onClose,
+      closeButtonText, submitButtonText, restartButtonText, refreshButtonText,
+      block, onClose, onRestart,
     ],
   );
 
@@ -275,6 +298,7 @@ const propTypes = {
     description: PropTypes.string,
     projectId: PropTypes.string,
     pipelineId: PropTypes.string,
+    status: PropTypes.number,
     rootId: PropTypes.string,
     script_path: PropTypes.string,
     folder: PropTypes.string,
@@ -290,6 +314,12 @@ const propTypes = {
    * Text for the confirm button.
    */
   submitButtonText: PropTypes.string,
+  /* Text for the restart button.
+   */
+  restartButtonText: PropTypes.string,
+  /* Text for the restart button.
+   */
+  refreshButtonText: PropTypes.string,
   /**
    * If true, the modal is open.
    */
@@ -310,6 +340,12 @@ const propTypes = {
    * A callback fired when confirm button clicked.
    */
   onSubmit: PropTypes.func,
+  /** A callback fired when restart button clicked.
+    */
+  onRestart: PropTypes.func,
+  /** A callback fired when refresh button clicked.
+   */
+  onRefresh: PropTypes.func,
 };
 
 const defaultProps = {
@@ -318,11 +354,15 @@ const defaultProps = {
   block: null,
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
+  restartButtonText: 'Restart',
+  refreshButtonText: 'Reload',
   open: false,
   modalProps: null,
   onForm: () => {},
   onClose: () => {},
   onSubmit: () => {},
+  onRestart: () => {},
+  onRefresh: () => {},
 };
 
 BlockSettingsForm.propTypes = propTypes;
