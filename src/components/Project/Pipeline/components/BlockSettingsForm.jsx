@@ -126,11 +126,11 @@ const BlockSettingsForm = (props) => {
     closeButtonText,
     submitButtonText,
     restartButtonText,
-    refreshButtonText,
+    reloadButtonText,
     onClose,
     onSubmit,
     onRestart,
-    onRefresh,
+    onReload,
     onForm,
     ...tail
   } = props;
@@ -244,11 +244,11 @@ const BlockSettingsForm = (props) => {
               <Button
                 color={ButtonColors.secondary}
                 onClick={(event) => {
+                  onReload(event);
                   form.restart();
-                  onRefresh(event);
                 }}
               >
-                {refreshButtonText}
+                {reloadButtonText}
               </Button>
 
             </Footer>
@@ -259,8 +259,8 @@ const BlockSettingsForm = (props) => {
     [
       onForm, className,
       header, fields,
-      closeButtonText, submitButtonText, restartButtonText, refreshButtonText,
-      block, onClose, onRestart,
+      closeButtonText, submitButtonText, restartButtonText, reloadButtonText,
+      block, onClose, onRestart, onReload,
     ],
   );
 
@@ -319,7 +319,7 @@ const propTypes = {
   restartButtonText: PropTypes.string,
   /* Text for the restart button.
    */
-  refreshButtonText: PropTypes.string,
+  reloadButtonText: PropTypes.string,
   /**
    * If true, the modal is open.
    */
@@ -345,7 +345,7 @@ const propTypes = {
   onRestart: PropTypes.func,
   /** A callback fired when refresh button clicked.
    */
-  onRefresh: PropTypes.func,
+  onReload: PropTypes.func,
 };
 
 const defaultProps = {
@@ -355,14 +355,14 @@ const defaultProps = {
   closeButtonText: 'Cancel',
   submitButtonText: 'Submit',
   restartButtonText: 'Restart',
-  refreshButtonText: 'Reload',
+  reloadButtonText: 'Reload',
   open: false,
   modalProps: null,
   onForm: () => {},
   onClose: () => {},
   onSubmit: () => {},
   onRestart: () => {},
-  onRefresh: () => {},
+  onReload: () => {},
 };
 
 BlockSettingsForm.propTypes = propTypes;

@@ -236,30 +236,6 @@ const Pipeline = () => {
     [dispatch, jobs, selectedBlock],
   );
 
-  const onJobRefresh = useCallback(
-    (values) => {
-      const job = {
-        id: jobs[selectedBlock.id].id,
-        status: 0,
-        tasks: jobs[selectedBlock.id].tasks,
-      };
-
-
-      if (job.id) {
-        job.tasks.forEach((el) => {
-          const task = {
-            id: el.id, status: 0, result: '',
-          };
-
-          dispatch(tasksActions.updateTask(task));
-        });
-        delete job.tasks;
-        dispatch(jobsActions.updateJob(job));
-      }
-    },
-    [dispatch, jobs, selectedBlock],
-  );
-
   const onPaneClick = useCallback(
     () => {
       setActionWithBlock(null);
@@ -275,7 +251,6 @@ const Pipeline = () => {
       }
 
       const job = jobs[block.id];
-
       if (!job) {
         setSelectedBlock({
           projectId,
@@ -308,6 +283,20 @@ const Pipeline = () => {
       });
     },
     [jobTypes, jobs, pipelineId, projectId],
+  );
+
+  const onJobReload = useCallback(
+    (_) => {
+      if (selectedBlock.id === 'new') {
+        return;
+      }
+
+      if (selectedBlock.id) {
+        dispatch(jobsActions.fetchJob(selectedBlock.id));
+        onBlockClick(_, selectedBlock);
+      }
+    },
+    [dispatch, selectedBlock, onBlockClick],
   );
 
   const onBlockAdd = useCallback(
@@ -354,6 +343,49 @@ const Pipeline = () => {
       dispatch(pipelineActions.fetchPipeline({ projectId, pipelineId }));
     },
     [dispatch, pipeline, projectId, pipelineId],
+  );
+
+  useEffect(
+    () => {
+      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]) {
+        return;
+      }
+      if (selectedBlock.status !== jobs[selectedBlock.id].status) {
+        selectedBlock.status = jobs[selectedBlock.id].status;
+        const job = jobs[selectedBlock.id];
+        if (!job) {
+          setSelectedBlock({
+            projectId,
+            pipelineId,
+            ...selectedBlock,
+          });
+          return;
+        }
+
+        const { params } = job.tasks[0];
+        const jobTypeBlocks = (jobTypes[params.script]?.stages || [])
+          .reduce((acc, stage) => [
+            ...acc,
+            ...stage.scripts,
+          ], []);
+
+        const { description, params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
+        setSelectedBlock({
+          projectId,
+          pipelineId,
+          id: job.id,
+          name: job.name,
+          status: job.status,
+          description,
+          folder: params.folder,
+          script: params.script,
+          script_path: params.part,
+          params,
+          params_meta,
+        });
+      }
+    },
+    [selectedBlock, jobs, projectId, pipelineId, jobTypes],
   );
 
   useEffect(
@@ -439,7 +471,7 @@ const Pipeline = () => {
                 onClose={onJobCancel}
                 onSubmit={onJobSubmit}
                 onRestart={onJobRestart}
-                onRefresh={onJobRefresh}
+                onReload={onJobReload}
               />
             )}
           </BlockSettingsFormWrapper>
