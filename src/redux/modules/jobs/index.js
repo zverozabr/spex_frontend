@@ -62,7 +62,9 @@ const slice = createSlice({
     fetchJob: startFetching,
     fetchJobSuccess: (state, { payload: job }) => {
       stopFetching(state);
-      state.jobs[job.id] = normalizeJob(job);
+      if (job) {
+        state.jobs[job.id] = normalizeJob(job);
+      }
     },
 
     createJob: startFetching,
@@ -187,7 +189,7 @@ const slice = createSlice({
           let { data: { data } = {} } = yield call(api.get, url) || {};
 
           data = Array.isArray(data) ? data : [data];
-          data = data.filter((job) => job?.tasks?.length > 0);
+          [data] = data.filter((job) => job?.tasks?.length > 0);
 
           yield put(actions.fetchJobSuccess(data));
         } catch (error) {
