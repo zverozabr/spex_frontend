@@ -59,6 +59,14 @@ const slice = createSlice({
       state.jobs = hash(normalizedJobs || [], 'id');
     },
 
+    fetchJob: startFetching,
+    fetchJobSuccess: (state, { payload: job }) => {
+      stopFetching(state);
+      if (job) {
+        state.jobs[job.id] = normalizeJob(job);
+      }
+    },
+
     createJob: startFetching,
     createJobSuccess: (state, { payload: job }) => {
       stopFetching(state);
@@ -164,6 +172,26 @@ const slice = createSlice({
           const { data } = yield call(api.get, url);
           const result = (Array.isArray(data.data) ? data.data : []).filter((job) => job.tasks.length > 0);
           yield put(actions.fetchJobsSuccess(result));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchJob]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const url = `${baseUrl}/${id}`;
+          let { data: { data } = {} } = yield call(api.get, url) || {};
+
+          data = Array.isArray(data) ? data : [data];
+          [data] = data.filter((job) => job?.tasks?.length > 0);
+
+          yield put(actions.fetchJobSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
