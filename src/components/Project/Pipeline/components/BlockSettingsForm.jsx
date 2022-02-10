@@ -220,22 +220,6 @@ const BlockSettingsForm = (props) => {
                 color={ButtonColors.secondary}
                 onClick={(event) => {
                   form.restart();
-                  onClose(event);
-                }}
-              >
-                {closeButtonText}
-              </Button>
-              <Button
-                type="submit"
-                color={ButtonColors.primary}
-                disabled={submitting}
-              >
-                {submitButtonText}
-              </Button>
-              <Button
-                color={ButtonColors.secondary}
-                onClick={(event) => {
-                  form.restart();
                   onRestart(event);
                 }}
               >
@@ -249,6 +233,22 @@ const BlockSettingsForm = (props) => {
                 }}
               >
                 {reloadButtonText}
+              </Button>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
+                  form.restart();
+                  onClose(event);
+                }}
+              >
+                {closeButtonText}
+              </Button>
+              <Button
+                type="submit"
+                color={ButtonColors.primary}
+                disabled={submitting}
+              >
+                {submitButtonText}
               </Button>
 
             </Footer>
