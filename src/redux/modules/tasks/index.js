@@ -1,4 +1,4 @@
-import { call, put } from 'redux-saga/effects';
+import { call, put, all } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
@@ -9,6 +9,7 @@ const initialState = {
   error: '',
   tasks: {},
   images: {},
+  taskKeys: {},
 };
 
 let api;
@@ -41,6 +42,7 @@ const slice = createSlice({
     fetchTasksByIds: startFetching,
     fetchTasks: startFetching,
     fetchTaskImage: startFetching,
+    fetchTaskKeys: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
     deleteTask: startFetching,
@@ -54,6 +56,11 @@ const slice = createSlice({
     fetchTaskImageSuccess: (state, { payload: { id, image } }) => {
       stopFetching(state);
       state.images[id] = image;
+    },
+
+    fetchTaskKeysSuccess: (state, { payload: task }) => {
+      stopFetching(state);
+      state.tasks[task.id] = normalizeTask(task);
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -97,8 +104,8 @@ const slice = createSlice({
 
         try {
           const url = `${baseUrl}`;
-          const { data } = yield call(api.get, url);
-          yield put(actions.fetchTasksSuccess(data.data));
+          const { data: { data } } = yield call(api.get, url);
+          yield put(actions.fetchTasksSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -113,8 +120,8 @@ const slice = createSlice({
 
         try {
           const url = `${baseUrl}/list`;
-          const { data } = yield call(api.post, url, { ids });
-          yield put(actions.fetchTasksSuccess(data.data));
+          const { data: { data } } = yield call(api.post, url, { ids });
+          yield put(actions.fetchTasksSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -139,14 +146,39 @@ const slice = createSlice({
       },
     },
 
+    [actions.fetchTaskKeys]: {
+      * saga({ payload: id }) {
+        initApi();
+
+        try {
+          const url_keys = `${baseUrl}/file/${id}`;
+          const url_tasks = `${baseUrl}/${id}`;
+
+          const [
+            { data: { data: keys } },
+            { data: { data: task } },
+          ] = yield all([
+            call(api.get, url_keys),
+            call(api.get, url_tasks),
+          ]);
+          task.keys = keys;
+          yield put(actions.fetchTaskKeysSuccess(task));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
     [actions.createTask]: {
       * saga({ payload: task }) {
         initApi();
 
         try {
           const url = `${baseUrl}`;
-          const { data } = yield call(api.post, url, task);
-          yield put(actions.createTaskSuccess(data.data));
+          const { data: { data } } = yield call(api.post, url, task);
+          yield put(actions.createTaskSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -161,8 +193,8 @@ const slice = createSlice({
 
         try {
           const url = `${baseUrl}/${task.id}`;
-          const { data } = yield call(api.put, url, task);
-          yield put(actions.updateTaskSuccess(data.data));
+          const { data: { data } } = yield call(api.put, url, task);
+          yield put(actions.updateTaskSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -201,12 +233,17 @@ const slice = createSlice({
 
     getTask: (id) => createSelector(
       [getState],
-      (state) => state?.tasks[id],
+      (state) => state?.tasks?.[id],
     ),
 
     getTaskImage: (id) => createSelector(
       [getState],
-      (state) => state?.images[id],
+      (state) => state?.images?.[id],
+    ),
+
+    getTaskKeys: (id) => createSelector(
+      [getState],
+      (state) => state?.taskKeys?.[id],
     ),
   }),
 });

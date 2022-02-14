@@ -1,4 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
 import classNames from 'classnames';
 import dagre from 'dagre';
 import cloneDeep from 'lodash/cloneDeep';
@@ -9,7 +13,7 @@ import { matchPath, useLocation } from 'react-router-dom';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
-import { actions as tasksActions } from '@/redux/modules/tasks';
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
@@ -22,7 +26,6 @@ import BlockSettingsFormWrapper from './components/BlockSettingsFormWrapper';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
-import TasksTable from './components/TasksTable';
 
 const jobRefreshInterval = 6e4; // 1 minute
 
@@ -126,12 +129,14 @@ const Pipeline = () => {
 
   const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
   const jobs = useSelector(jobsSelectors.getJobs);
+  const tasks = useSelector(tasksSelectors.getTasks);
   const jobTypes = useSelector(jobsSelectors.getJobTypes);
 
   const [refresher, setRefresher] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [actionWithBlock, setActionWithBlock] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
+  const [toSelectKeys, setToSelectKeys] = useState([]);
 
   const elements = useMemo(
     () => {
@@ -213,7 +218,7 @@ const Pipeline = () => {
   );
 
   const onJobRestart = useCallback(
-    (values) => {
+    (_) => {
       const job = {
         id: jobs[selectedBlock.id].id,
         status: 0,
@@ -281,8 +286,16 @@ const Pipeline = () => {
         params,
         params_meta,
       });
+
+      let keys = [];
+      job.tasks.forEach((el) => {
+        if (tasks[el.id] && tasks[el.id].keys && tasks[el.id].keys.length > 0) {
+          keys = [...keys, ...tasks[el.id].keys];
+        }
+      });
+      setToSelectKeys(keys);
     },
-    [jobTypes, jobs, pipelineId, projectId],
+    [jobTypes, jobs, pipelineId, projectId, setToSelectKeys, tasks],
   );
 
   const onJobReload = useCallback(
@@ -333,6 +346,47 @@ const Pipeline = () => {
       setReactFlowInstance(instance);
     },
     [setReactFlowInstance],
+  );
+
+  const onLoadTaskKeys = useCallback(
+    (_) => {
+      if (!selectedBlock || !jobs || !jobs[selectedBlock.id].tasks || !tasks) {
+        return;
+      }
+      let keys = [];
+      const job = jobs[selectedBlock.id];
+
+      job.tasks.forEach((el) => {
+        dispatch(tasksActions.fetchTaskKeys(el.id));
+        if (tasks[el.id]) {
+          if (!tasks[el.id].keys || tasks[el.id].keys.length === 0) {
+            keys = [];
+          } else {
+            keys = [...keys, ...tasks[el.id].keys];
+          }
+        }
+      });
+      setToSelectKeys(keys);
+    },
+    [selectedBlock, dispatch, jobs, setToSelectKeys, tasks],
+  );
+
+  useEffect(
+    () => {
+      if (!selectedBlock || !tasks || !selectedBlock.data || !selectedBlock.data.tasks) {
+        return;
+      }
+
+      let keys = [];
+
+      selectedBlock.data.tasks.forEach((el) => {
+        if (tasks[el.id] && tasks[el.id].keys && tasks[el.id].keys.length > 0) {
+          keys = [...keys, ...tasks[el.id].keys];
+        }
+      });
+      setToSelectKeys(keys);
+    },
+    [selectedBlock, jobs, tasks, setToSelectKeys],
   );
 
   useEffect(
@@ -435,8 +489,10 @@ const Pipeline = () => {
   useEffect(
     () => {
       dispatch(jobsActions.fetchJobTypes());
+      dispatch(tasksActions.fetchTasks());
       return () => {
         dispatch(jobsActions.clearJobTypes());
+        dispatch(tasksActions.clearTasks());
       };
     },
     [dispatch],
@@ -472,18 +528,25 @@ const Pipeline = () => {
                 onSubmit={onJobSubmit}
                 onRestart={onJobRestart}
                 onReload={onJobReload}
+                onLoadKeys={onLoadTaskKeys}
               />
             )}
           </BlockSettingsFormWrapper>
         </FlowWrapper>
 
         <OutputWrapper>
-          {!selectedBlock?.tasks?.length && (
-            <NoData>Select block</NoData>
-          )}
-          {selectedBlock?.tasks?.length && (
-            <TasksTable tasks={selectedBlock.tasks} />
-          )}
+          <List dense component="div" role="list">
+            {toSelectKeys.map((el) => {
+              const id = `result-list-keys-${el}-label`;
+              return (
+                <ListItem key={id} role="listitem" button>
+                  <ListItemIcon />
+                  {el && <ListItemText id={id} primary={el} />}
+                </ListItem>
+              );
+            })}
+            <ListItem />
+          </List>
         </OutputWrapper>
 
         {actionWithBlock === 'add' && selectedBlock?.id && (

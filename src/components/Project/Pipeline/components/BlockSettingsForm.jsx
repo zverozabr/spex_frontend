@@ -127,11 +127,13 @@ const BlockSettingsForm = (props) => {
     submitButtonText,
     restartButtonText,
     reloadButtonText,
+    onLoadKeysButtonText,
     onClose,
     onSubmit,
     onRestart,
     onReload,
     onForm,
+    onLoadKeys,
     ...tail
   } = props;
 
@@ -219,6 +221,14 @@ const BlockSettingsForm = (props) => {
               <Button
                 color={ButtonColors.secondary}
                 onClick={(event) => {
+                  onLoadKeys(event);
+                }}
+              >
+                {onLoadKeysButtonText}
+              </Button>
+              <Button
+                color={ButtonColors.secondary}
+                onClick={(event) => {
                   form.restart();
                   onRestart(event);
                 }}
@@ -250,7 +260,6 @@ const BlockSettingsForm = (props) => {
               >
                 {submitButtonText}
               </Button>
-
             </Footer>
           </FormRenderer>
         </Container>
@@ -259,8 +268,8 @@ const BlockSettingsForm = (props) => {
     [
       onForm, className,
       header, fields,
-      closeButtonText, submitButtonText, restartButtonText, reloadButtonText,
-      block, onClose, onRestart, onReload,
+      closeButtonText, submitButtonText, restartButtonText, reloadButtonText, onLoadKeysButtonText,
+      block, onClose, onRestart, onReload, onLoadKeys,
     ],
   );
 
@@ -320,6 +329,9 @@ const propTypes = {
   /* Text for the restart button.
    */
   reloadButtonText: PropTypes.string,
+  /* Text for the load keys button.
+  */
+  onLoadKeysButtonText: PropTypes.string,
   /**
    * If true, the modal is open.
    */
@@ -346,6 +358,9 @@ const propTypes = {
   /** A callback fired when refresh button clicked.
    */
   onReload: PropTypes.func,
+  /** A callback fired when load keys button clicked.
+   */
+  onLoadKeys: PropTypes.func,
 };
 
 const defaultProps = {
@@ -356,6 +371,7 @@ const defaultProps = {
   submitButtonText: 'Submit',
   restartButtonText: 'Restart',
   reloadButtonText: 'Reload',
+  onLoadKeysButtonText: 'Result',
   open: false,
   modalProps: null,
   onForm: () => {},
@@ -363,6 +379,7 @@ const defaultProps = {
   onSubmit: () => {},
   onRestart: () => {},
   onReload: () => {},
+  onLoadKeys: () => {},
 };
 
 BlockSettingsForm.propTypes = propTypes;
