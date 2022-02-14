@@ -279,6 +279,7 @@ const Pipeline = () => {
         id: job.id,
         name: job.name,
         status: job.status,
+        omeroIds: job.omeroIds,
         description,
         folder: params.folder,
         script: params.script,
@@ -321,10 +322,11 @@ const Pipeline = () => {
         rootId: prevValue?.id,
         id: 'new',
         status: 0,
+        omeroIds: jobs[prevValue?.id]?.omeroIds,
         ...block,
       }));
     },
-    [pipelineId, projectId],
+    [jobs, pipelineId, projectId],
   );
 
   const onBlockDelete = useCallback(
@@ -430,6 +432,7 @@ const Pipeline = () => {
           id: job.id,
           name: job.name,
           status: job.status,
+          omeroIds: job.omeroIds,
           description,
           folder: params.folder,
           script: params.script,
@@ -518,10 +521,7 @@ const Pipeline = () => {
           </ReactFlow>
 
           <BlockSettingsFormWrapper>
-            {!selectedBlock?.id && (
-              <NoData>Select block</NoData>
-            )}
-            {selectedBlock?.id && (
+            {selectedBlock?.id ? (
               <BlockSettingsForm
                 block={selectedBlock}
                 onClose={onJobCancel}
@@ -530,6 +530,8 @@ const Pipeline = () => {
                 onReload={onJobReload}
                 onLoadKeys={onLoadTaskKeys}
               />
+            ) : (
+              <NoData>Select block</NoData>
             )}
           </BlockSettingsFormWrapper>
         </FlowWrapper>
