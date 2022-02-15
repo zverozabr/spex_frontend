@@ -10,6 +10,7 @@ const initialState = {
   tasks: {},
   images: {},
   taskKeys: {},
+  results: {},
 };
 
 let api;
@@ -43,6 +44,7 @@ const slice = createSlice({
     fetchTasks: startFetching,
     fetchTaskImage: startFetching,
     fetchTaskKeys: startFetching,
+    fetchTaskResult: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
     deleteTask: startFetching,
@@ -61,6 +63,11 @@ const slice = createSlice({
     fetchTaskKeysSuccess: (state, { payload: task }) => {
       stopFetching(state);
       state.tasks[task.id] = normalizeTask(task);
+    },
+
+    fetchTaskResultSuccess: (state, { payload: result }) => {
+      stopFetching(state);
+      state.results[result.id] = result;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -161,8 +168,37 @@ const slice = createSlice({
             call(api.get, url_keys),
             call(api.get, url_tasks),
           ]);
+
           task.keys = keys;
+
           yield put(actions.fetchTaskKeysSuccess(task));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchTaskResult]: {
+      * saga({ payload: { id, key } }) {
+        initApi();
+
+        try {
+          const url_keys = `${baseUrl}/file/${id}?key=${key}`;
+          const url_tasks = `${baseUrl}/${id}`;
+
+          const [
+            { data: { data: keys } },
+            { data: { data: task } },
+          ] = yield all([
+            call(api.get, url_keys),
+            call(api.get, url_tasks),
+          ]);
+
+          task.keys = keys;
+
+          yield put(actions.fetchTaskResultSuccess(task));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -244,6 +280,11 @@ const slice = createSlice({
     getTaskKeys: (id) => createSelector(
       [getState],
       (state) => state?.taskKeys?.[id],
+    ),
+
+    getTaskResults: (id) => createSelector(
+      [getState],
+      (state) => state?.results[id],
     ),
   }),
 });

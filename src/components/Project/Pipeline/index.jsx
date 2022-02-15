@@ -10,11 +10,13 @@ import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'reac
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
+import ButtonsContainer from '@/components/Jobs/components/ButtonsContainer';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
+import Button from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
 
@@ -296,7 +298,7 @@ const Pipeline = () => {
       });
       setToSelectKeys(keys);
     },
-    [jobTypes, jobs, pipelineId, projectId, setToSelectKeys, tasks],
+    [jobTypes, jobs, pipelineId, projectId, tasks],
   );
 
   const onJobReload = useCallback(
@@ -352,7 +354,7 @@ const Pipeline = () => {
 
   const onLoadTaskKeys = useCallback(
     (_) => {
-      if (!selectedBlock || !jobs || !jobs[selectedBlock.id].tasks || !tasks) {
+      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]?.tasks || !tasks) {
         return;
       }
       let keys = [];
@@ -368,27 +370,55 @@ const Pipeline = () => {
           }
         }
       });
-      setToSelectKeys(keys);
     },
-    [selectedBlock, dispatch, jobs, setToSelectKeys, tasks],
+    [selectedBlock, dispatch, jobs, tasks],
   );
+
+
+  const loadValue = useCallback(
+    (key) => {
+      if (!key || !selectedBlock || !tasks || !jobs?.tasks) {
+        return;
+      }
+      const job = jobs[selectedBlock.id];
+
+      job.tasks.forEach((el) => {
+        dispatch(tasksActions.fetchTaskResult({ id: el.id, key: key }));
+      });
+    },
+    [selectedBlock, tasks, jobs, dispatch],
+  );
+
 
   useEffect(
     () => {
-      if (!selectedBlock || !tasks || !selectedBlock.data || !selectedBlock.data.tasks) {
+      if (!selectedBlock || !tasks || Object.keys(tasks).length === 0) {
         return;
       }
 
       let keys = [];
 
-      selectedBlock.data.tasks.forEach((el) => {
-        if (tasks[el.id] && tasks[el.id].keys && tasks[el.id].keys.length > 0) {
-          keys = [...keys, ...tasks[el.id].keys];
+      Object.keys(tasks).forEach((el) => {
+        if (tasks[el]?.keys && tasks[el].keys.length > 0 && tasks[el].parent === selectedBlock.id) {
+          let all_params = [...tasks[el].keys];
+
+          if (selectedBlock.params_meta) {
+            Object.keys(selectedBlock.params_meta).forEach((key) => {
+              const index = all_params.indexOf(key);
+              if (index > -1) {
+                all_params.splice(index, 1);
+              }
+            });
+          }
+          keys = [...keys, ...all_params];
         }
       });
-      setToSelectKeys(keys);
+
+      if (keys.length > 0) {
+        setToSelectKeys(keys);
+      }
     },
-    [selectedBlock, jobs, tasks, setToSelectKeys],
+    [selectedBlock, tasks],
   );
 
   useEffect(
@@ -403,7 +433,7 @@ const Pipeline = () => {
 
   useEffect(
     () => {
-      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]) {
+      if (!selectedBlock || !jobs?.[selectedBlock.id]) {
         return;
       }
       if (selectedBlock.status !== jobs[selectedBlock.id].status) {
@@ -541,9 +571,14 @@ const Pipeline = () => {
             {toSelectKeys.map((el) => {
               const id = `result-list-keys-${el}-label`;
               return (
-                <ListItem key={id} role="listitem" button>
+                <ListItem key={id} role="listitem">
                   <ListItemIcon />
                   {el && <ListItemText id={id} primary={el} />}
+                  <ButtonsContainer>
+                    <Button onClick={() => loadValue(el)} size="small">
+                      🔍
+                    </Button>
+                  </ButtonsContainer>
                 </ListItem>
               );
             })}
