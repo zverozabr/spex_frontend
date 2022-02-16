@@ -55,14 +55,14 @@ const SelectOmeroChannels = (props) => {
 
   const fixedValue = useMemo(
     () => {
-      let value = input?.value || props.value;
+      let value = input?.value ?? props.value;
       if (onlyOneValue) {
         return value == null
           ? value
           : options.find((opt) => opt.value === value) || { value, label: value };
       }
 
-      value = value || [];
+      value = value ?? [];
       return (Array.isArray(value) ? value : [value])
         .map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
     },

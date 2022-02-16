@@ -147,6 +147,8 @@ const getFieldParser = (type) => {
       return Parsers.channels;
     case 'channel':
       return Parsers.channel;
+    case 'int':
+      return Parsers.number;
     default:
       return undefined;
   }
@@ -317,16 +319,16 @@ const BlockSettingsForm = (props) => {
                   {Object.values(fields).length === 0 && (
                     <NoData>No block params to display</NoData>
                   )}
-                  {Object.values(fields).map((params) => (
+                  {Object.values(fields).map((field) => (
                     <Field
-                      key={params.name}
-                      name={params.name}
-                      label={params.label}
-                      placeholder={params.placeholder}
-                      component={getFieldComponent(params.type)}
-                      parse={getFieldParser(params.type)}
-                      validate={params.required ? Validators.required : undefined}
-                      {...getFieldAdditionalProps(params.type, block)}
+                      key={field.name}
+                      name={field.name}
+                      label={field.label}
+                      placeholder={field.placeholder}
+                      component={getFieldComponent(field.type)}
+                      parse={getFieldParser(field.type)}
+                      validate={field.required ? Validators.required : undefined}
+                      {...getFieldAdditionalProps(field.type, block)}
                     />
                   ))}
                 </RightPanel>
