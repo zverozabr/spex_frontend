@@ -108,6 +108,19 @@ const SelectOmeroChannels = styled(Controls.SelectOmeroChannels)`
   max-width: 300px;
 `;
 
+const statusFormatter = (status) => {
+  if (status == null) {
+    return 'N/A';
+  }
+  if (Math.round(status) === 0) {
+    return 'Waiting To Process';
+  }
+  if (Math.round(status) === 100) {
+    return 'Done';
+  }
+  return 'In Progress';
+};
+
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
@@ -188,7 +201,7 @@ const BlockSettingsForm = (props) => {
   const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroId));
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
 
-  const header = `${block.description || block.name} id: ${block.id} status: ${block.status}`;
+  const header = `${block.description || block.name} [${statusFormatter(block.status)}]`;
 
   const fields = useMemo(
     () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
