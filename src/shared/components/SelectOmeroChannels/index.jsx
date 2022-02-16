@@ -55,6 +55,9 @@ const SelectOmeroChannels = (props) => {
 
   const fixedValue = useMemo(
     () => {
+      if (!options.length) {
+        return null;
+      }
       let value = input?.value ?? props.value;
       if (onlyOneValue) {
         return value == null

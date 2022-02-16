@@ -206,35 +206,33 @@ const BlockSettingsForm = (props) => {
   const header = `${block.description || block.name} [${statusFormatter(block.status)}]`;
 
   const fields = useMemo(
-    () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
-      const {
-        name, label,
-        description, type,
-        hidden, required,
-      } = block.params_meta[el];
-
-      if (hidden) {
+    () => (Object.entries(block.params_meta || {}).reduce((acc, [key, item]) => {
+      if (item.hidden) {
         return acc;
       }
 
+      const {
+        name,
+        label,
+        description,
+        type,
+        required,
+      } = item;
+
       const param = {
-        name: `params.${name}`,
+        name: `params.${key}`,
         label: label || name,
         placeholder: description,
         type,
         required,
       };
-      return {
-        ...acc,
-        [name]: param,
-      };
+      return { ...acc, [name]: param };
     }, {})),
     [block.params_meta],
   );
 
   const initialValues = useMemo(
-    () => {
-      return {
+    () => ({
         id: block.id,
         name: block.name,
         projectId: block.projectId,
@@ -246,8 +244,7 @@ const BlockSettingsForm = (props) => {
           script: block.script,
           part: block.script_path,
         },
-      };
-    },
+      }),
     [block],
   );
 
@@ -316,7 +313,7 @@ const BlockSettingsForm = (props) => {
                 )}
 
                 <RightPanel>
-                  {Object.values(fields).length === 0 && (
+                  {Object.keys(fields).length === 0 && (
                     <NoData>No block params to display</NoData>
                   )}
                   {Object.values(fields).map((field) => (
