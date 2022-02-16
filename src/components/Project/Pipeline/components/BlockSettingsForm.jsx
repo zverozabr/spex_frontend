@@ -1,11 +1,14 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import createFocusOnFirstFieldDecorator from 'final-form-focus-on-first-field';
 import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
+import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
+import ImageViewer from '+components/ImageViewer';
 import NoData from '+components/NoData';
 import { ScrollBarMixin } from '+components/ScrollBar';
 
@@ -30,15 +33,44 @@ const Header = styled.div`
 
 const Body = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100%;
-  padding: 20px 0;
   overflow-x: hidden;
   overflow-y: scroll;
 
   ${ScrollBarMixin};
   
   gap: 20px;
+`;
+
+const LeftPanel = styled.div`
+  padding: 20px 0;
+  
+  display: flex;
+  flex-direction: column;
+  width: 60%;
+  height: 100%;
+  overflow: hidden;
+`;
+
+const RightPanel = styled.div`
+  padding: 20px 0;
+  
+  width: 40%;
+  height: 100%;
+  
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: scroll;
+
+  ${ScrollBarMixin};
+
+  gap: 20px;
+  
+  :only-child {
+    width: 100%;
+  }
 `;
 
 const Footer = styled.div`
@@ -51,6 +83,17 @@ const Footer = styled.div`
   .MuiButton-root + .MuiButton-root {
     margin-left: 15px;
   }
+`;
+
+const ImageViewerContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background-color: #ccc;
+  border-radius: 4px;
+  overflow: hidden;
 `;
 
 const TextField = styled(Controls.TextField)`
@@ -127,13 +170,23 @@ const BlockSettingsForm = (props) => {
     submitButtonText,
     restartButtonText,
     reloadButtonText,
+    onLoadKeysButtonText,
     onClose,
     onSubmit,
     onRestart,
     onReload,
     onForm,
+    onLoadKeys,
     ...tail
   } = props;
+
+  const dispatch = useDispatch();
+
+  // If 'omeroIds' in params_meta then this is block with Select Omero Image component
+  // and we don't need to display omero image preview
+  const [omeroId] = block.params_meta?.omeroIds ? [] : block.omeroIds || [];
+  const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroId));
+  const isOmeroFetching = useSelector(omeroSelectors.isFetching);
 
   const header = `${block.description || block.name} id: ${block.id} status: ${block.status}`;
 
@@ -183,92 +236,137 @@ const BlockSettingsForm = (props) => {
     [block],
   );
 
-  const render = useCallback(
-    ({ form, handleSubmit, submitting }) => {
-      if (onForm) {
-        onForm(form);
+  const omeroImageErrorMsg = useMemo(
+    () => {
+      switch (true) {
+        case block.omeroIds && block.omeroIds?.length > 0:
+          return null;
+        case omeroId == null:
+          return 'Select image to analyse';
+        case omeroId >= 0 && !omeroImageDetails && isOmeroFetching:
+          return 'Image is loading...';
+        case omeroId >= 0 && !omeroImageDetails:
+          return 'Image not found';
+        default:
+          return null;
       }
-
-      return (
-        <Container className={className}>
-          <FormRenderer
-            onSubmit={(event) => {
-              // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
-              return handleSubmit(event)?.then(() => form.restart());
-            }}
-          >
-            <Header>{header}</Header>
-            <Body>
-              {Object.values(fields).length === 0 && (
-                <NoData>No block params to display</NoData>
-              )}
-              {Object.values(fields).map((params) => (
-                <Field
-                  key={params.name}
-                  name={params.name}
-                  label={params.label}
-                  placeholder={params.placeholder}
-                  component={getFieldComponent(params.type)}
-                  parse={getFieldParser(params.type)}
-                  validate={params.required ? Validators.required : undefined}
-                  {...getFieldAdditionalProps(params.type, block)}
-                />
-              ))}
-            </Body>
-            <Footer>
-              <Button
-                color={ButtonColors.secondary}
-                onClick={(event) => {
-                  form.restart();
-                  onRestart(event);
-                }}
-              >
-                {restartButtonText}
-              </Button>
-              <Button
-                color={ButtonColors.secondary}
-                onClick={(event) => {
-                  onReload(event);
-                  form.restart();
-                }}
-              >
-                {reloadButtonText}
-              </Button>
-              <Button
-                color={ButtonColors.secondary}
-                onClick={(event) => {
-                  form.restart();
-                  onClose(event);
-                }}
-              >
-                {closeButtonText}
-              </Button>
-              <Button
-                type="submit"
-                color={ButtonColors.primary}
-                disabled={submitting}
-              >
-                {submitButtonText}
-              </Button>
-
-            </Footer>
-          </FormRenderer>
-        </Container>
-      );
     },
-    [
-      onForm, className,
-      header, fields,
-      closeButtonText, submitButtonText, restartButtonText, reloadButtonText,
-      block, onClose, onRestart, onReload,
-    ],
+    [omeroImageDetails, omeroId, block.omeroIds, isOmeroFetching],
+  );
+
+  useEffect(
+    () => {
+      if (!omeroId || omeroImageDetails) {
+        return;
+      }
+      dispatch(omeroActions.fetchImageDetails(omeroId));
+    },
+    [omeroId, dispatch, omeroImageDetails],
   );
 
   return (
     <Form
       {...tail}
       initialValues={initialValues}
-      render={render}
+      render={({ form, handleSubmit, submitting }) => {
+        if (onForm) {
+          onForm(form);
+        }
+        return (
+          <Container className={className}>
+            <FormRenderer
+              onSubmit={(event) => {
+                // eslint-disable-next-line promise/catch-or-return,promise/prefer-await-to-then
+                return handleSubmit(event)?.then(() => form.restart());
+              }}
+            >
+              <Header>{header}</Header>
+
+              <Body>
+                {omeroId && (
+                  <LeftPanel>
+                    <ImageViewerContainer>
+                      {omeroImageErrorMsg && <NoData>{omeroImageErrorMsg}</NoData>}
+                      {!omeroImageErrorMsg && omeroImageDetails && <ImageViewer data={omeroImageDetails} />}
+                      {/*{imageIds.length > 0 && (*/}
+                      {/*  <ThumbnailsViewer*/}
+                      {/*    thumbnails={thumbnails.filter(({ id }) => imageIds.includes(id))}*/}
+                      {/*    allowSelect={false}*/}
+                      {/*    $size={2}*/}
+                      {/*    $center*/}
+                      {/*  />*/}
+                      {/*)}*/}
+                    </ImageViewerContainer>
+                  </LeftPanel>
+                )}
+
+                <RightPanel>
+                  {Object.values(fields).length === 0 && (
+                    <NoData>No block params to display</NoData>
+                  )}
+                  {Object.values(fields).map((params) => (
+                    <Field
+                      key={params.name}
+                      name={params.name}
+                      label={params.label}
+                      placeholder={params.placeholder}
+                      component={getFieldComponent(params.type)}
+                      parse={getFieldParser(params.type)}
+                      validate={params.required ? Validators.required : undefined}
+                      {...getFieldAdditionalProps(params.type, block)}
+                    />
+                  ))}
+                </RightPanel>
+              </Body>
+
+              <Footer>
+                <Button
+                  color={ButtonColors.secondary}
+                  onClick={(event) => {
+                    onLoadKeys(event);
+                  }}
+                >
+                  {onLoadKeysButtonText}
+                </Button>
+                <Button
+                  color={ButtonColors.secondary}
+                  onClick={(event) => {
+                    form.restart();
+                    onRestart(event);
+                  }}
+                >
+                  {restartButtonText}
+                </Button>
+                <Button
+                  color={ButtonColors.secondary}
+                  onClick={(event) => {
+                    onReload(event);
+                    form.restart();
+                  }}
+                >
+                  {reloadButtonText}
+                </Button>
+                <Button
+                  color={ButtonColors.secondary}
+                  onClick={(event) => {
+                    form.restart();
+                    onClose(event);
+                  }}
+                >
+                  {closeButtonText}
+                </Button>
+                <Button
+                  type="submit"
+                  color={ButtonColors.primary}
+                  disabled={submitting}
+                >
+                  {submitButtonText}
+                </Button>
+              </Footer>
+            </FormRenderer>
+          </Container>
+        );
+      }}
       mutators={{
         setValue: ([field, value], state, { changeValue }) => {
           changeValue(state, field, () => value);
@@ -299,11 +397,12 @@ const propTypes = {
     projectId: PropTypes.string,
     pipelineId: PropTypes.string,
     status: PropTypes.number,
+    omeroIds: PropTypes.arrayOf(PropTypes.string),
     rootId: PropTypes.string,
     script_path: PropTypes.string,
     folder: PropTypes.string,
     script: PropTypes.string,
-    params_meta: PropTypes.shape({}),
+    params_meta: PropTypes.shape(),
     params: PropTypes.shape({}),
   }),
   /**
@@ -320,6 +419,9 @@ const propTypes = {
   /* Text for the restart button.
    */
   reloadButtonText: PropTypes.string,
+  /* Text for the load keys button.
+  */
+  onLoadKeysButtonText: PropTypes.string,
   /**
    * If true, the modal is open.
    */
@@ -346,6 +448,9 @@ const propTypes = {
   /** A callback fired when refresh button clicked.
    */
   onReload: PropTypes.func,
+  /** A callback fired when load keys button clicked.
+   */
+  onLoadKeys: PropTypes.func,
 };
 
 const defaultProps = {
@@ -356,6 +461,7 @@ const defaultProps = {
   submitButtonText: 'Submit',
   restartButtonText: 'Restart',
   reloadButtonText: 'Reload',
+  onLoadKeysButtonText: 'Result',
   open: false,
   modalProps: null,
   onForm: () => {},
@@ -363,6 +469,7 @@ const defaultProps = {
   onSubmit: () => {},
   onRestart: () => {},
   onReload: () => {},
+  onLoadKeys: () => {},
 };
 
 BlockSettingsForm.propTypes = propTypes;

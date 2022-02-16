@@ -1,4 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
 import classNames from 'classnames';
 import dagre from 'dagre';
 import cloneDeep from 'lodash/cloneDeep';
@@ -6,11 +10,13 @@ import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'reac
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
+import ButtonsContainer from '@/components/Jobs/components/ButtonsContainer';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
-import { actions as tasksActions } from '@/redux/modules/tasks';
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
+import Button from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
 
@@ -22,7 +28,6 @@ import BlockSettingsFormWrapper from './components/BlockSettingsFormWrapper';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
-import TasksTable from './components/TasksTable';
 
 const jobRefreshInterval = 6e4; // 1 minute
 
@@ -126,12 +131,14 @@ const Pipeline = () => {
 
   const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
   const jobs = useSelector(jobsSelectors.getJobs);
+  const tasks = useSelector(tasksSelectors.getTasks);
   const jobTypes = useSelector(jobsSelectors.getJobTypes);
 
   const [refresher, setRefresher] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [actionWithBlock, setActionWithBlock] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
+  const [toSelectKeys, setToSelectKeys] = useState([]);
 
   const elements = useMemo(
     () => {
@@ -213,7 +220,7 @@ const Pipeline = () => {
   );
 
   const onJobRestart = useCallback(
-    (values) => {
+    (_) => {
       const job = {
         id: jobs[selectedBlock.id].id,
         status: 0,
@@ -274,6 +281,7 @@ const Pipeline = () => {
         id: job.id,
         name: job.name,
         status: job.status,
+        omeroIds: job.omeroIds,
         description,
         folder: params.folder,
         script: params.script,
@@ -281,8 +289,16 @@ const Pipeline = () => {
         params,
         params_meta,
       });
+
+      let keys = [];
+      job.tasks.forEach((el) => {
+        if (tasks[el.id] && tasks[el.id].keys && tasks[el.id].keys.length > 0) {
+          keys = [...keys, ...tasks[el.id].keys];
+        }
+      });
+      setToSelectKeys(keys);
     },
-    [jobTypes, jobs, pipelineId, projectId],
+    [jobTypes, jobs, pipelineId, projectId, tasks],
   );
 
   const onJobReload = useCallback(
@@ -308,10 +324,11 @@ const Pipeline = () => {
         rootId: prevValue?.id,
         id: 'new',
         status: 0,
+        omeroIds: jobs[prevValue?.id]?.omeroIds,
         ...block,
       }));
     },
-    [pipelineId, projectId],
+    [jobs, pipelineId, projectId],
   );
 
   const onBlockDelete = useCallback(
@@ -335,6 +352,75 @@ const Pipeline = () => {
     [setReactFlowInstance],
   );
 
+  const onLoadTaskKeys = useCallback(
+    (_) => {
+      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]?.tasks || !tasks) {
+        return;
+      }
+      let keys = [];
+      const job = jobs[selectedBlock.id];
+
+      job.tasks.forEach((el) => {
+        dispatch(tasksActions.fetchTaskKeys(el.id));
+        if (tasks[el.id]) {
+          if (!tasks[el.id].keys || tasks[el.id].keys.length === 0) {
+            keys = [];
+          } else {
+            keys = [...keys, ...tasks[el.id].keys];
+          }
+        }
+      });
+    },
+    [selectedBlock, dispatch, jobs, tasks],
+  );
+
+
+  const loadValue = useCallback(
+    (key) => {
+      if (!key || !selectedBlock || !tasks || !jobs?.tasks) {
+        return;
+      }
+      const job = jobs[selectedBlock.id];
+
+      job.tasks.forEach((el) => {
+        dispatch(tasksActions.fetchTaskResult({ id: el.id, key: key }));
+      });
+    },
+    [selectedBlock, tasks, jobs, dispatch],
+  );
+
+
+  useEffect(
+    () => {
+      if (!selectedBlock || !tasks || Object.keys(tasks).length === 0) {
+        return;
+      }
+
+      let keys = [];
+
+      Object.keys(tasks).forEach((el) => {
+        if (tasks[el]?.keys && tasks[el].keys.length > 0 && tasks[el].parent === selectedBlock.id) {
+          let all_params = [...tasks[el].keys];
+
+          if (selectedBlock.params_meta) {
+            Object.keys(selectedBlock.params_meta).forEach((key) => {
+              const index = all_params.indexOf(key);
+              if (index > -1) {
+                all_params.splice(index, 1);
+              }
+            });
+          }
+          keys = [...keys, ...all_params];
+        }
+      });
+
+      if (keys.length > 0) {
+        setToSelectKeys(keys);
+      }
+    },
+    [selectedBlock, tasks],
+  );
+
   useEffect(
     () => {
       if (pipeline || !projectId || !pipelineId) {
@@ -347,7 +433,7 @@ const Pipeline = () => {
 
   useEffect(
     () => {
-      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]) {
+      if (!selectedBlock || !jobs?.[selectedBlock.id]) {
         return;
       }
       if (selectedBlock.status !== jobs[selectedBlock.id].status) {
@@ -376,6 +462,7 @@ const Pipeline = () => {
           id: job.id,
           name: job.name,
           status: job.status,
+          omeroIds: job.omeroIds,
           description,
           folder: params.folder,
           script: params.script,
@@ -435,8 +522,10 @@ const Pipeline = () => {
   useEffect(
     () => {
       dispatch(jobsActions.fetchJobTypes());
+      dispatch(tasksActions.fetchTasks());
       return () => {
         dispatch(jobsActions.clearJobTypes());
+        dispatch(tasksActions.clearTasks());
       };
     },
     [dispatch],
@@ -462,28 +551,39 @@ const Pipeline = () => {
           </ReactFlow>
 
           <BlockSettingsFormWrapper>
-            {!selectedBlock?.id && (
-              <NoData>Select block</NoData>
-            )}
-            {selectedBlock?.id && (
+            {selectedBlock?.id ? (
               <BlockSettingsForm
                 block={selectedBlock}
                 onClose={onJobCancel}
                 onSubmit={onJobSubmit}
                 onRestart={onJobRestart}
                 onReload={onJobReload}
+                onLoadKeys={onLoadTaskKeys}
               />
+            ) : (
+              <NoData>Select block</NoData>
             )}
           </BlockSettingsFormWrapper>
         </FlowWrapper>
 
         <OutputWrapper>
-          {!selectedBlock?.tasks?.length && (
-            <NoData>Select block</NoData>
-          )}
-          {selectedBlock?.tasks?.length && (
-            <TasksTable tasks={selectedBlock.tasks} />
-          )}
+          <List dense component="div" role="list">
+            {toSelectKeys.map((el) => {
+              const id = `result-list-keys-${el}-label`;
+              return (
+                <ListItem key={id} role="listitem">
+                  <ListItemIcon />
+                  {el && <ListItemText id={id} primary={el} />}
+                  <ButtonsContainer>
+                    <Button onClick={() => loadValue(el)} size="small">
+                      🔍
+                    </Button>
+                  </ButtonsContainer>
+                </ListItem>
+              );
+            })}
+            <ListItem />
+          </List>
         </OutputWrapper>
 
         {actionWithBlock === 'add' && selectedBlock?.id && (
