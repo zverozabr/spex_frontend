@@ -42,6 +42,9 @@ const nodeTypes = {
 
 const addNewVirtualJobToPipeline = (rootId, newJob, node) => {
   if (node.id === rootId) {
+    if (!node.jobs) {
+      node.jobs = [];
+    }
     node.jobs.push(newJob);
   } else {
     for (let i = 0; i < node.jobs.length; i++) {
