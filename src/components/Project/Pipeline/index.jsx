@@ -10,7 +10,6 @@ import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'reac
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
-import ButtonsContainer from '@/components/Jobs/components/ButtonsContainer';
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
@@ -25,6 +24,7 @@ import StartBlock from './blocks/StartBlock';
 import AddBlockForm from './components/AddBlockForm';
 import BlockSettingsForm from './components/BlockSettingsForm';
 import BlockSettingsFormWrapper from './components/BlockSettingsFormWrapper';
+import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
