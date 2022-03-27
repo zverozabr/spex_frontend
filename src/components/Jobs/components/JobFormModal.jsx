@@ -42,9 +42,9 @@ const JobFormModal = styled((props) => {
   const omeroProjects = useSelector(omeroSelectors.getProjects);
   const omeroProjectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
   const omeroDatasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
-  const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
+  const omeroDatasetThumbnails = useSelector(omeroSelectors.getImagesThumbnails(omeroDatasetId));
 
-  const jobThumbnails = useSelector(omeroSelectors.getThumbnails(initialValues.id));
+  const jobThumbnails = useSelector(omeroSelectors.getImagesThumbnails(initialValues.id));
 
   const imageDetails = useSelector(omeroSelectors.getImageDetails(formValues.omeroIds?.[0]?.id));
 
@@ -167,7 +167,7 @@ const JobFormModal = styled((props) => {
       }
 
       const imageIds = omeroDatasetImages.map((item) => item.id);
-      dispatch(omeroActions.fetchThumbnails({ groupId: omeroDatasetId, imageIds }));
+      dispatch(omeroActions.fetchImagesThumbnails({ groupId: omeroDatasetId, imageIds }));
       return () => {
         dispatch(omeroActions.clearThumbnails(omeroDatasetId));
       };
@@ -179,7 +179,7 @@ const JobFormModal = styled((props) => {
     () => {
       const { id, omeroIds } = initialValues;
       if (omeroIds.length > 0) {
-        dispatch(omeroActions.fetchThumbnails({ groupId: id, imageIds: omeroIds }));
+        dispatch(omeroActions.fetchImagesThumbnails({ groupId: id, imageIds: omeroIds }));
       }
       return () => {
         dispatch(omeroActions.clearThumbnails(id));

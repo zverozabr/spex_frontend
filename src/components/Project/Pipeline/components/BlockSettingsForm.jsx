@@ -1,16 +1,20 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import createFocusOnFirstFieldDecorator from 'final-form-focus-on-first-field';
+import intersectionBy from 'lodash/intersectionBy';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+
+import { selectors as projectsSelectors } from '@/redux/modules/projects';
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
 import ImageViewer from '+components/ImageViewer';
 import NoData from '+components/NoData';
 import { ScrollBarMixin } from '+components/ScrollBar';
+import ThumbnailsViewer from '+components/ThumbnailsViewer';
 
 const Container = styled.div`
   width: 100%;
@@ -93,7 +97,7 @@ const ImageViewerContainer = styled.div`
   height: 100%;
   background-color: #ccc;
   border-radius: 4px;
-  overflow: hidden;
+  //overflow: hidden;
 `;
 
 const TextField = styled(Controls.TextField)`
@@ -104,7 +108,7 @@ const NumberField = styled(Controls.NumberField)`
   max-width: 300px;
 `;
 
-const SelectOmeroChannels = styled(Controls.SelectOmeroChannels)`
+const Select = styled(Controls.SelectNew)`
   max-width: 300px;
 `;
 
@@ -124,12 +128,12 @@ const statusFormatter = (status) => {
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
-      return Controls.SelectOmeroImages;
+      return Controls.TransferList;
     case 'job_id':
       return Controls.SelectJobs;
     case 'channel':
     case 'channels':
-      return SelectOmeroChannels;
+      return Select;
     case 'int':
     case 'float':
       return NumberField;
@@ -154,20 +158,16 @@ const getFieldParser = (type) => {
   }
 };
 
-const getFieldAdditionalProps = (type, block) => {
+const getFieldAdditionalProps = (type, block, { imagesOptions, imagesChannelsOptions }) => {
   switch (type) {
     case 'omero':
-      return { projectId: block.projectId };
+      return { options: imagesOptions };
     case 'channels':
-      return {
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
-      };
+      return { options: imagesChannelsOptions };
     case 'channel':
       return {
         onlyOneValue: true,
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
+        options: imagesChannelsOptions,
       };
     default:
       return {};
@@ -197,13 +197,35 @@ const BlockSettingsForm = (props) => {
 
   const dispatch = useDispatch();
 
-  // If 'omeroIds' in params_meta then this is block with Select Omero Image component
-  // and we don't need to display omero image preview
-  const [omeroId] = block.params_meta?.omeroIds ? [] : block.omeroIds || [];
-  const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroId));
-  const isOmeroFetching = useSelector(omeroSelectors.isFetching);
+  const project = useSelector(projectsSelectors.getProject(block.projectId));
+  const projectImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(project?.omeroIds || []));
+  const projectImagesDetails = useSelector(omeroSelectors.getImagesDetails(project?.omeroIds || []));
+  const [activeImageIds, setActiveImageIds] = useState(block.omeroIds || []);
 
-  const header = `${block.description || block.name} [${statusFormatter(block.status)}]`;
+  const projectImagesOptions = useMemo(
+    () => Object.entries(projectImagesThumbnails || {}).map(([id, img]) => ({
+      id,
+      img,
+      title: projectImagesDetails[id]?.meta.imageName,
+      description: `s: ${projectImagesDetails[id]?.size.width} x ${projectImagesDetails[id]?.size.height}, c: ${projectImagesDetails[id]?.size.c}`,
+    })),
+    [projectImagesThumbnails, projectImagesDetails],
+  );
+
+  const projectImagesChannelsOptions = useMemo(
+    () => {
+      const channels = Object.values(projectImagesDetails).map((item) => item.channels);
+      const intersectionChannels = intersectionBy(...channels, 'color');
+      return intersectionChannels.map((el, i) => ({
+        value: i,
+        label: el.label,
+        color: el.color,
+      }));
+    },
+    [projectImagesDetails],
+  );
+
+  const header = `${block.description || block.name || ''} [${statusFormatter(block.status)}]`;
 
   const fields = useMemo(
     () => (Object.entries(block.params_meta || {}).reduce((acc, [key, item]) => {
@@ -248,32 +270,23 @@ const BlockSettingsForm = (props) => {
     [block],
   );
 
-  const omeroImageErrorMsg = useMemo(
+  useEffect(
     () => {
-      switch (true) {
-        case block.omeroIds && block.omeroIds?.length > 0:
-          return null;
-        case omeroId == null:
-          return 'Select image to analyse';
-        case omeroId >= 0 && !omeroImageDetails && isOmeroFetching:
-          return 'Image is loading...';
-        case omeroId >= 0 && !omeroImageDetails:
-          return 'Image not found';
-        default:
-          return null;
+      if (!project?.omeroIds.length) {
+        return;
       }
+
+      dispatch(omeroActions.fetchImagesThumbnails(project?.omeroIds));
+      dispatch(omeroActions.fetchImagesDetails(project?.omeroIds));
     },
-    [omeroImageDetails, omeroId, block.omeroIds, isOmeroFetching],
+    [dispatch, project?.omeroIds],
   );
 
   useEffect(
     () => {
-      if (!omeroId || omeroImageDetails) {
-        return;
-      }
-      dispatch(omeroActions.fetchImageDetails(omeroId));
+      setActiveImageIds(block.omeroIds || []);
     },
-    [omeroId, dispatch, omeroImageDetails],
+    [block.omeroIds],
   );
 
   return (
@@ -295,19 +308,15 @@ const BlockSettingsForm = (props) => {
               <Header>{header}</Header>
 
               <Body>
-                {omeroId && (
+                {!block.params_meta?.omeroIds && activeImageIds[0] && (
                   <LeftPanel>
                     <ImageViewerContainer>
-                      {omeroImageErrorMsg && <NoData>{omeroImageErrorMsg}</NoData>}
-                      {!omeroImageErrorMsg && omeroImageDetails && <ImageViewer data={omeroImageDetails} />}
-                      {/*{imageIds.length > 0 && (*/}
-                      {/*  <ThumbnailsViewer*/}
-                      {/*    thumbnails={thumbnails.filter(({ id }) => imageIds.includes(id))}*/}
-                      {/*    allowSelect={false}*/}
-                      {/*    $size={2}*/}
-                      {/*    $center*/}
-                      {/*  />*/}
-                      {/*)}*/}
+                      {projectImagesDetails[activeImageIds[0]] && <ImageViewer data={projectImagesDetails[activeImageIds[0]]} />}
+                      <ThumbnailsViewer
+                        thumbnails={projectImagesOptions}
+                        active={activeImageIds[0]}
+                        onClick={setActiveImageIds}
+                      />
                     </ImageViewerContainer>
                   </LeftPanel>
                 )}
@@ -325,7 +334,10 @@ const BlockSettingsForm = (props) => {
                       component={getFieldComponent(field.type)}
                       parse={getFieldParser(field.type)}
                       validate={field.required ? Validators.required : undefined}
-                      {...getFieldAdditionalProps(field.type, block)}
+                      {...getFieldAdditionalProps(field.type, block, {
+                        imagesOptions: projectImagesOptions,
+                        imagesChannelsOptions: projectImagesChannelsOptions,
+                      })}
                     />
                   ))}
                 </RightPanel>

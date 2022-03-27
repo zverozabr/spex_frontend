@@ -41,7 +41,7 @@ const AnalysisPage = () => {
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
 
   const datasetImages = useSelector(omeroSelectors.getImages(datasetId));
-  const datasetThumbnails = useSelector(omeroSelectors.getThumbnails(datasetId));
+  const datasetThumbnails = useSelector(omeroSelectors.getImagesThumbnails(datasetId));
   const imageDetails = useSelector(omeroSelectors.getImageDetails(imageId));
 
   const [imageIds, setImageIds] = useState([]);
@@ -151,7 +151,7 @@ const AnalysisPage = () => {
         return;
       }
       const imageIds = datasetImages.map((item) => item.id);
-      dispatch(omeroActions.fetchThumbnails({ groupId: datasetId, imageIds }));
+      dispatch(omeroActions.fetchImagesThumbnails({ groupId: datasetId, imageIds }));
     },
     [dispatch, datasetId, datasetImages, datasetThumbnails],
   );

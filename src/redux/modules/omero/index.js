@@ -1,4 +1,4 @@
-import { call, put } from 'redux-saga/effects';
+import { all, call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
 import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
 
@@ -56,16 +56,34 @@ const slice = createSlice({
       delete state.images[datasetId];
     },
 
-    fetchThumbnails: startFetching,
-    fetchThumbnailsSuccess: (state, { payload: { groupId, data } }) => {
+    fetchImagesThumbnails: startFetching,
+    fetchImagesThumbnailsSuccess: (state, { payload: data }) => {
       stopFetching(state);
-      state.thumbnails[groupId] = (data || {});
+      state.thumbnails = { ...state.thumbnails, ...data };
     },
-    clearThumbnails: (state, { payload: datasetId }) => {
-      if (!datasetId) {
+    clearThumbnails: (state, { payload: ids }) => {
+      if (!ids?.length) {
         return;
       }
-      delete state.thumbnails[datasetId];
+      ids.forEach((id) => {
+        delete state.thumbnails[id];
+      });
+    },
+
+    fetchImagesDetails: startFetching,
+    fetchImagesDetailsSuccess: (state, { payload: data }) => {
+      stopFetching(state);
+      data.forEach((item) => {
+        state.imagesDetails[item.id] = item;
+      });
+    },
+    clearImagesDetails: (state, { payload: ids }) => {
+      if (!ids?.length) {
+        return;
+      }
+      ids.forEach((id) => {
+        delete state.imagesDetails[id];
+      });
     },
 
     fetchImageDetails: startFetching,
@@ -141,14 +159,30 @@ const slice = createSlice({
       },
     },
 
-    [actions.fetchThumbnails]: {
-      * saga({ payload: { groupId, imageIds } }) {
+    [actions.fetchImagesThumbnails]: {
+      * saga({ payload: ids }) {
         initApi();
 
         try {
-          const url = `${baseUrl}/webclient/get_thumbnails/?${imageIds.map((id) => `id=${id}`).join('&')}`;
+          const url = `${baseUrl}/webclient/get_thumbnails/?${ids.map((id) => `id=${id}`).join('&')}`;
           const { data } = yield call(api.get, url);
-          yield put(actions.fetchThumbnailsSuccess({ groupId, data }));
+          yield put(actions.fetchImagesThumbnailsSuccess(data));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchImagesDetails]: {
+      * saga({ payload: ids }) {
+        initApi();
+
+        try {
+          const responses = yield all(ids.map((id) => call(api.get, `${baseUrl}/iviewer/image_data/${id}`)));
+          const data = responses.map((response) => response.data);
+          yield put(actions.fetchImagesDetailsSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -211,9 +245,14 @@ const slice = createSlice({
       (state) => state?.images[datasetId],
     ),
 
-    getThumbnails: (datasetId) => createSelector(
+    getImagesThumbnails: (ids) => createSelector(
       [getState],
-      (state) => state?.thumbnails[datasetId],
+      (state) => ids.reduce((acc, id) => state.thumbnails[id] ? { ...acc, [id]: state.thumbnails[id] } : acc, {}),
+    ),
+
+    getImagesDetails: (ids) => createSelector(
+      [getState],
+      (state) => ids.reduce((acc, id) => state.imagesDetails[id] ? { ...acc, [id]: state.imagesDetails[id] } : acc, {}),
     ),
 
     getImageDetails: (id) => createSelector(

@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
-import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as resourcesActions, selectors as resourcesSelectors } from '@/redux/modules/resources';
 
 import Button, { ButtonColors } from '+components/Button';
@@ -66,36 +65,12 @@ const ManageResourcesModal = styled((props) => {
     [onSubmit, selectedRows, project],
   );
 
-  const emitCancel = useCallback(
-    () => {
-      dispatch(omeroActions.fetchThumbnails({
-        groupId: project.id,
-        imageIds: project.omeroIds,
-      }));
-      onClose();
-    },
-    [dispatch, onClose, project],
-  );
-
-  useEffect(
-    () => {
-      if (!project?.omeroIds?.length) {
-        return undefined;
-      }
-
-      dispatch(omeroActions.fetchThumbnails({
-        groupId: project.id,
-        imageIds: project.omeroIds,
-      }));
-    },
-    [dispatch, project?.id, project?.omeroIds],
-  );
-
   useEffect(
     () => {
       if (Object.keys(resources || {}).length) {
         return;
       }
+
       dispatch(resourcesActions.fetchResources({}));
     },
     [dispatch, resources],
@@ -122,7 +97,7 @@ const ManageResourcesModal = styled((props) => {
       <ModalFooter>
         <Button
           color={ButtonColors.secondary}
-          onClick={emitCancel}
+          onClick={onClose}
         >
           {closeButtonText}
         </Button>

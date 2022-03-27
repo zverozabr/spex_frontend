@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
-import { actions as omeroActions } from '@/redux/modules/omero';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 
 import Button, { ButtonColors } from '+components/Button';
@@ -121,31 +120,6 @@ const ManageTasksModal = styled((props) => {
     [onSubmit, selectedRows, project],
   );
 
-  const emitCancel = useCallback(
-    () => {
-      dispatch(omeroActions.fetchThumbnails({
-        groupId: project.id,
-        imageIds: project.omeroIds,
-      }));
-      onClose();
-    },
-    [dispatch, onClose, project],
-  );
-
-  useEffect(
-    () => {
-      if (!project?.omeroIds?.length) {
-        return undefined;
-      }
-
-      dispatch(omeroActions.fetchThumbnails({
-        groupId: project.id,
-        imageIds: project.omeroIds,
-      }));
-    },
-    [dispatch, project?.id, project?.omeroIds],
-  );
-
   useEffect(
     () => {
       if (Object.keys(jobs || {}).length) {
@@ -161,6 +135,7 @@ const ManageTasksModal = styled((props) => {
       if (project.taskIds.length === 0 || Object.keys(tasks || {}).length !== 0) {
         return;
       }
+
       dispatch(tasksActions.fetchTasks({}));
     },
     [dispatch, tasks, project.taskIds.length],
@@ -231,7 +206,7 @@ const ManageTasksModal = styled((props) => {
       <ModalFooter>
         <Button
           color={ButtonColors.secondary}
-          onClick={emitCancel}
+          onClick={onClose}
         >
           {closeButtonText}
         </Button>

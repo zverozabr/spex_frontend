@@ -1,12 +1,13 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import intersectionBy from 'lodash/intersectionBy';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
-import { Field, Controls } from '+components/Form';
+import { Field, Controls, FormSpy } from '+components/Form';
 import Parsers from '+components/Form/utils/Parsers';
 import FormModalOrigin from '+components/FormModal';
 import Content from '+components/Modal/components/Content';
@@ -36,30 +37,46 @@ const ManageImagesFormModal = styled((props) => {
 
   const dispatch = useDispatch();
 
+  const [formValues, setFormValues] = useState(initialValues || {});
+
   const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
 
+  const projects = useSelector(omeroSelectors.getProjects);
+  const projectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
+  const datasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
+
+  const datasetImagesIds = useMemo(() => (datasetImages || []).map((item) => item.id),[datasetImages]);
+  const datasetImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(datasetImagesIds));
+  const datasetImagesDetails = useSelector(omeroSelectors.getImagesDetails(datasetImagesIds));
+
+  const formImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(formValues.omeroIds));
+  const formImagesDetails = useSelector(omeroSelectors.getImagesDetails(formValues.omeroIds));
+
   const isOmeroFetching = useSelector(omeroSelectors.isFetching);
-  const omeroProjects = useSelector(omeroSelectors.getProjects);
-  const omeroProjectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
-  const omeroDatasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
-  const omeroDatasetThumbnails = useSelector(omeroSelectors.getThumbnails(omeroDatasetId));
 
   const options = useMemo(
     () => {
-      const names = (omeroDatasetImages || []).reduce((acc, image) => ({
-        ...acc,
-        [image.id]: image.name,
-      }), {});
+      const formImagesChannels = Object.values(formImagesDetails).map((item) => item.channels);
 
-      return Object.entries(omeroDatasetThumbnails || {})
-        .map(([id, img]) => ({
-          id,
-          img,
-          title: names[id],
-        }));
-    },
-    [omeroDatasetThumbnails, omeroDatasetImages],
+      const formOptions = Object.entries(formImagesThumbnails || {}).map(([id, img]) => ({
+        id,
+        img,
+        title: formImagesDetails[id]?.meta.imageName,
+        description: `s: ${formImagesDetails[id]?.size.width} x ${formImagesDetails[id]?.size.height}, c: ${formImagesDetails[id]?.size.c}`,
+      }));
+
+      const datasetOptions = Object.entries(datasetImagesThumbnails || {}).reduce((acc, [id, img]) => formImagesThumbnails[id] ? acc : [...acc, {
+        id,
+        img,
+        title: datasetImagesDetails[id]?.meta.imageName,
+        description: `s: ${datasetImagesDetails[id]?.size.width} x ${datasetImagesDetails[id]?.size.height}, c: ${datasetImagesDetails[id]?.size.c}`,
+        disabled: !intersectionBy(...formImagesChannels, datasetImagesDetails[id]?.channels, 'color').length,
+      }], []);
+
+      return [...datasetOptions, ...formOptions];
+      },
+    [datasetImagesThumbnails, formImagesThumbnails, datasetImagesDetails, formImagesDetails],
   );
 
   const onProjectChange = useCallback(
@@ -77,27 +94,43 @@ const ManageImagesFormModal = styled((props) => {
     [],
   );
 
+  const timer = useRef();
+  const onFormChange = useCallback(
+    ({ values }) => {
+      timer.current = setTimeout(() => {
+        setFormValues(values);
+      }, 10);
+    },
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    },
+    [],
+  );
+
   useEffect(
     () => {
-      if (omeroProjects.length) {
+      if (projects.length) {
         return;
       }
 
       dispatch(omeroActions.fetchProjects());
     },
-    [dispatch, omeroProjects.length],
+    [dispatch, projects.length],
   );
 
   useEffect(
     () => {
       if (!omeroProjectId || omeroProjectId === none) {
-        return undefined;
+        return;
       }
 
       dispatch(omeroActions.fetchDatasets(omeroProjectId));
-      return () => {
-        dispatch(omeroActions.clearDatasets(omeroProjectId));
-      };
     },
     [dispatch, omeroProjectId],
   );
@@ -109,26 +142,32 @@ const ManageImagesFormModal = styled((props) => {
       }
 
       dispatch(omeroActions.fetchImages(omeroDatasetId));
-      return () => {
-        dispatch(omeroActions.clearImages(omeroDatasetId));
-      };
     },
     [dispatch, omeroDatasetId],
   );
 
   useEffect(
     () => {
-      if (!omeroDatasetImages?.length) {
-        return undefined;
+      if (!datasetImagesIds?.length) {
+        return;
       }
 
-      const imageIds = omeroDatasetImages.map((item) => item.id);
-      dispatch(omeroActions.fetchThumbnails({ groupId: omeroDatasetId, imageIds }));
-      return () => {
-        dispatch(omeroActions.clearThumbnails(omeroDatasetId));
-      };
+      dispatch(omeroActions.fetchImagesThumbnails(datasetImagesIds));
+      dispatch(omeroActions.fetchImagesDetails(datasetImagesIds));
     },
-    [dispatch, omeroDatasetId, omeroDatasetImages],
+    [dispatch, datasetImagesIds],
+  );
+
+  useEffect(
+    () => {
+      if (!formValues.omeroIds?.length) {
+        return;
+      }
+
+      dispatch(omeroActions.fetchImagesThumbnails(formValues.omeroIds));
+      dispatch(omeroActions.fetchImagesDetails(formValues.omeroIds));
+    },
+    [dispatch, formValues.omeroIds],
   );
 
   return (
@@ -142,6 +181,11 @@ const ManageImagesFormModal = styled((props) => {
       onClose={onClose}
       onSubmit={onSubmit}
     >
+      <FormSpy
+        subscription={{ values: true }}
+        onChange={onFormChange}
+      />
+
       <Row>
         <Select
           defaultValue={none}
@@ -150,7 +194,7 @@ const ManageImagesFormModal = styled((props) => {
           disabled={isOmeroFetching}
         >
           <Option value={none}>Select Omero Project</Option>
-          {omeroProjects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          {projects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
         </Select>
 
         <Select
@@ -160,7 +204,7 @@ const ManageImagesFormModal = styled((props) => {
           disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
         >
           <Option value={none}>Select Omero Dataset</Option>
-          {omeroProjectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          {projectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
         </Select>
       </Row>
 
