@@ -71,7 +71,7 @@ const ManageImagesFormModal = styled((props) => {
         img,
         title: datasetImagesDetails[id]?.meta.imageName,
         description: `s: ${datasetImagesDetails[id]?.size.width} x ${datasetImagesDetails[id]?.size.height}, c: ${datasetImagesDetails[id]?.size.c}`,
-        disabled: !intersectionBy(...formImagesChannels, datasetImagesDetails[id]?.channels, 'color').length,
+        disabled: !intersectionBy(...formImagesChannels, datasetImagesDetails[id]?.channels, 'label').length,
       }], []);
 
       return [...datasetOptions, ...formOptions];

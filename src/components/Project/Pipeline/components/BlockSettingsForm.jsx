@@ -215,9 +215,9 @@ const BlockSettingsForm = (props) => {
   const projectImagesChannelsOptions = useMemo(
     () => {
       const channels = Object.values(projectImagesDetails).map((item) => item.channels);
-      const intersectionChannels = intersectionBy(...channels, 'color');
+      const intersectionChannels = intersectionBy(...channels, 'label');
       return intersectionChannels.map((el, i) => ({
-        value: i,
+        value: el.label,
         label: el.label,
         color: el.color,
       }));
