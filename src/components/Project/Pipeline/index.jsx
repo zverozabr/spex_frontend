@@ -277,20 +277,20 @@ const Pipeline = () => {
           ...stage.scripts,
         ], []);
 
-      const { description, params_meta } = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
+      const jobType = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
+
       setSelectedBlock({
+        ...jobType,
         projectId,
         pipelineId,
         id: job.id,
         name: job.name,
         status: job.status,
         omeroIds: job.omeroIds,
-        description,
         folder: params.folder,
         script: params.script,
         script_path: params.part,
         params,
-        params_meta,
       });
 
       let keys = [];

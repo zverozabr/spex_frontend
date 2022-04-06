@@ -1,7 +1,8 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import Grid from '@material-ui/core/Grid';
 import classNames from 'classnames';
+import isEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
@@ -22,6 +23,8 @@ const AddBlockForm = styled((props) => {
   } = props;
 
   const [activeDataTab, setActiveDataTab] = useState(0);
+
+  const selectedReturn = useMemo(() => selectedBlock.return.map((item) => Object.keys(item)[0]), [selectedBlock]);
 
   const onDataTabChange = useCallback(
     (_, id) => {
@@ -67,6 +70,10 @@ const AddBlockForm = styled((props) => {
                     if (selectedBlock.type !== 'start') {
                       enabled = block.depends_and_script?.includes(selectedBlock.script_path)
                         || block.depends_or_script?.includes(selectedBlock.script_path);
+                      if (!enabled && selectedBlock.stage === block.stage) {
+                        const blockReturn = Object.values(block.params_meta).reduce((acc, item) => item.hidden ? [...acc, item.name] : acc, []);
+                        enabled = isEqual(selectedReturn, blockReturn);
+                      }
                     }
 
                     return (
