@@ -11,7 +11,7 @@ import { Field, Controls, FormSpy } from '+components/Form';
 import Parsers from '+components/Form/utils/Parsers';
 import FormModalOrigin from '+components/FormModal';
 import Content from '+components/Modal/components/Content';
-import Select, { Option } from '+components/Select';
+import Select, { Group, Option } from '+components/Select';
 
 import Row from '../../components/Row';
 
@@ -38,12 +38,11 @@ const ManageImagesFormModal = styled((props) => {
   const dispatch = useDispatch();
 
   const [formValues, setFormValues] = useState(initialValues || {});
-
-  const [omeroProjectId, setOmeroProjectId] = useState(none);
   const [omeroDatasetId, setOmeroDatasetId] = useState(none);
 
   const projects = useSelector(omeroSelectors.getProjects);
-  const projectDatasets = useSelector(omeroSelectors.getDatasets(omeroProjectId));
+  const projectIds = useMemo(() => projects.map((item) => item.id), [projects]);
+  const projectDatasets = useSelector(omeroSelectors.getDatasets(projectIds));
   const datasetImages = useSelector(omeroSelectors.getImages(omeroDatasetId));
 
   const datasetImagesIds = useMemo(() => (datasetImages || []).map((item) => item.id),[datasetImages]);
@@ -77,14 +76,6 @@ const ManageImagesFormModal = styled((props) => {
       return [...datasetOptions, ...formOptions];
       },
     [datasetImagesThumbnails, formImagesThumbnails, datasetImagesDetails, formImagesDetails],
-  );
-
-  const onProjectChange = useCallback(
-    ({ target: { value } }) => {
-      setOmeroProjectId(value);
-      setOmeroDatasetId(none);
-    },
-    [],
   );
 
   const onDatasetChange = useCallback(
@@ -126,13 +117,13 @@ const ManageImagesFormModal = styled((props) => {
 
   useEffect(
     () => {
-      if (!omeroProjectId || omeroProjectId === none) {
+      if (!projectIds.length) {
         return;
       }
 
-      dispatch(omeroActions.fetchDatasets(omeroProjectId));
+      dispatch(omeroActions.fetchDatasets(projectIds));
     },
-    [dispatch, omeroProjectId],
+    [dispatch, projectIds],
   );
 
   useEffect(
@@ -189,22 +180,18 @@ const ManageImagesFormModal = styled((props) => {
       <Row>
         <Select
           defaultValue={none}
-          value={omeroProjectId}
-          onChange={onProjectChange}
-          disabled={isOmeroFetching}
-        >
-          <Option value={none}>Select Omero Project</Option>
-          {projects?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
-        </Select>
-
-        <Select
-          defaultValue={none}
           value={omeroDatasetId}
           onChange={onDatasetChange}
-          disabled={isOmeroFetching || (omeroProjectId && omeroProjectId === none)}
+          disabled={isOmeroFetching}
         >
           <Option value={none}>Select Omero Dataset</Option>
-          {projectDatasets?.map((item) => (<Option key={item.id} value={item.id}>{item.name}</Option>))}
+          {projects?.reduce((acc, project) => ([
+            ...acc,
+            <Group key={`project-${project.id}`}>{project.name}</Group>,
+            ...Object.values(projectDatasets || {})
+              .filter((dataset) => dataset.project === project.id)
+              .map((dataset) => (<Option key={`dataset-${dataset.id}`} value={dataset.id}>{dataset.name}</Option>)),
+          ]), [])}
         </Select>
       </Row>
 

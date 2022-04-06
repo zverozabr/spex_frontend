@@ -33,15 +33,9 @@ const slice = createSlice({
     },
 
     fetchDatasets: startFetching,
-    fetchDatasetsSuccess: (state, { payload: { projectId, datasets } }) => {
+    fetchDatasetsSuccess: (state, { payload: data }) => {
       stopFetching(state);
-      state.datasets[projectId] = (datasets || []);
-    },
-    clearDatasets: (state, { payload: projectId }) => {
-      if (!projectId) {
-        return;
-      }
-      delete state.datasets[projectId];
+      state.datasets = { ...state.datasets, ...data };
     },
 
     fetchImages: startFetching,
@@ -124,15 +118,16 @@ const slice = createSlice({
     },
 
     [actions.fetchDatasets]: {
-      * saga({ payload: id }) {
+      * saga({ payload: projectIds }) {
         initApi();
 
         try {
-          const searchParams = new URLSearchParams('');
-          searchParams.append('id', `${id}`);
-          const url = `${baseUrl}/webclient/api/datasets/?${searchParams}`;
-          const { data } = yield call(api.get, url);
-          yield put(actions.fetchDatasetsSuccess({ projectId: id, datasets: data.datasets }));
+          const responses = yield all(projectIds.map((id) => call(api.get, `${baseUrl}/webclient/api/datasets/?id=${id}`)));
+          const data = responses.reduce((acc, response, index) => ({
+            ...acc,
+            ...response.data?.datasets.reduce((acc2, item) => ({ ...acc2, [item.id]: { ...item, project: projectIds[index] } }), {}),
+          }), {});
+          yield put(actions.fetchDatasetsSuccess(data));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -235,9 +230,14 @@ const slice = createSlice({
       (state) => state?.projects,
     ),
 
-    getDatasets: (projectId) => createSelector(
+    getDatasets: (projectIds) => createSelector(
       [getState],
-      (state) => state?.datasets[projectId],
+      (state) => Object.values(state.datasets).reduce((acc, item) => {
+        if (projectIds.includes(item.project)) {
+          acc[item.id] = item;
+        }
+        return acc;
+      }, {}),
     ),
 
     getImages: (datasetId) => createSelector(
