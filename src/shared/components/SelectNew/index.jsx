@@ -45,7 +45,7 @@ const SelectNew = (props) => {
           : options.find((opt) => opt.value === value) || { value, label: value };
       }
 
-      value = value ?? [];
+      value = value == null || value === '' ? [] : value;
       return (Array.isArray(value) ? value : [value])
         .map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
     },
