@@ -24,7 +24,7 @@ const AddBlockForm = styled((props) => {
 
   const [activeDataTab, setActiveDataTab] = useState(0);
 
-  const selectedReturn = useMemo(() => selectedBlock.return.map((item) => Object.keys(item)[0]), [selectedBlock]);
+  const selectedReturn = useMemo(() => (selectedBlock.return || []).map((item) => Object.keys(item)[0]), [selectedBlock]);
 
   const onDataTabChange = useCallback(
     (_, id) => {

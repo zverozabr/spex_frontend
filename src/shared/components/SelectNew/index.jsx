@@ -36,7 +36,7 @@ const SelectNew = (props) => {
   const fixedValue = useMemo(
     () => {
       if (!options.length) {
-        return null;
+        return undefined;
       }
       let value = input?.value ?? props.value;
       if (onlyOneValue) {
