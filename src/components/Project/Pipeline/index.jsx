@@ -47,7 +47,7 @@ const addNewVirtualJobToPipeline = (rootId, newJob, node) => {
     }
     node.jobs.push(newJob);
   } else {
-    for (let i = 0; i < node.jobs.length; i++) {
+    for (let i = 0; i < (node.jobs || []).length; i++) {
       // eslint-disable-next-line no-unused-vars
       addNewVirtualJobToPipeline(rootId, newJob, node.jobs[i]);
     }
@@ -62,6 +62,10 @@ const createElements = (inputData, result, options = {}, selectedBlock) => {
   }
 
   jobs.forEach((job) => {
+    if (!job.id) {
+      return;
+    }
+
     result.push({
       id: job.id,
       type: 'job',
