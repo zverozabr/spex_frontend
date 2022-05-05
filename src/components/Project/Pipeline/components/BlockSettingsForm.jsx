@@ -325,9 +325,10 @@ const BlockSettingsForm = (props) => {
                   {Object.keys(fields).length === 0 && (
                     <NoData>No block params to display</NoData>
                   )}
-                  {Object.values(fields).map((field) => (
+                  {Object.values(fields).map((field, i) => (
                     <Field
-                      key={field.name}
+                      // eslint-disable-next-line react/no-array-index-key
+                      key={`${i}-${field.name}`}
                       name={field.name}
                       label={field.label}
                       placeholder={field.placeholder}

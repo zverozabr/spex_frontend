@@ -25,9 +25,9 @@ const AddBlockForm = styled((props) => {
   const [activeDataTab, setActiveDataTab] = useState(0);
 
   const selectedReturn = useMemo(
-    () => (Array.isArray(selectedBlock.return) ? selectedBlock.return : (selectedBlock.return ? [selectedBlock.return] : [])).map((item) => Object.keys(item)[0]),
-    [selectedBlock],
-    );
+  () => (Object.keys(selectedBlock.return || {})),
+  [selectedBlock],
+  );
 
   const onDataTabChange = useCallback(
     (_, id) => {
@@ -109,10 +109,10 @@ const AddBlockForm = styled((props) => {
                           </ul>
                           <ul className="block__output">
                             Output:
-                            {(Array.isArray(block.return) ? block.return : (block.return ? [block.return] : []))
-                              .map(({ description, ...tail }, i) => (
+                            {Object.values(block.return)
+                              .map((el, i) => (
                                 <li key={i}>
-                                  {Object.keys(tail)[0]}: {description}
+                                  {el.name}: {el.description}
                                 </li>
                               ))}
                           </ul>
