@@ -6369,10 +6369,10 @@ fill-range@^7.0.1:
   dependencies:
     to-regex-range "^5.0.1"
 
-final-form-focus-on-first-field@^0.0.6:
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/final-form-focus-on-first-field/-/final-form-focus-on-first-field-0.0.6.tgz#96449d40948ab0cce1c10f1650345c94be6d190a"
-  integrity sha512-SFtKg0Yf3Ja9652B0iRM/Kwfyznt4ErTLOIxUCTHOlsbmKFpIF94mOVqp2KpARHncPG4eMtbjIN6tYIgWxpGJQ==
+final-form-focus-on-first-field@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/final-form-focus-on-first-field/-/final-form-focus-on-first-field-1.0.2.tgz#0842dacb5a8f47a76d6577ce6465fc94483603cc"
+  integrity sha512-ezif1YvGfe6R3KLkmbS9XdaaVSODEmEcO62jEFU1ruWk1tEIejn7Kwy/4OlhKV8fGWAANe8KWXxDRI1ZcOC7Vw==
 
 final-form-material-ui@^0.3.0:
   version "0.3.0"

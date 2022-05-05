@@ -50,7 +50,7 @@
     "favicons-webpack-plugin": "^4.2.0",
     "file-loader": "6.1.1",
     "final-form": "^4.20.2",
-    "final-form-focus-on-first-field": "^0.0.6",
+    "final-form-focus-on-first-field": "^1.0.2",
     "final-form-material-ui": "^0.3.0",
     "fs-extra": "^9.0.1",
     "html-webpack-plugin": "4.5.0",
