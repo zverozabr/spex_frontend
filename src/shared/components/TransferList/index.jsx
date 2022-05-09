@@ -152,9 +152,10 @@ const TransferList = styled((props) => {
         />
         <Divider />
         <List dense component="div" role="list">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <ListItem
-              key={item.id}
+              // eslint-disable-next-line react/no-array-index-key
+              key={`${item.id}-${index}`}
               role="listitem"
               button
               onClick={onToggle(item)}
