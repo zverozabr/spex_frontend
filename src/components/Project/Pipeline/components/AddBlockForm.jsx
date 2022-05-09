@@ -22,7 +22,7 @@ const AddBlockForm = styled((props) => {
     onClose,
   } = props;
 
-  const [activeDataTab, setActiveDataTab] = useState(0);
+  const [activeDataTab, setActiveDataTab] = useState(selectedBlock.folder);
 
   const selectedReturn = useMemo(
   () => (Object.keys(selectedBlock.return || {})),
@@ -50,15 +50,16 @@ const AddBlockForm = styled((props) => {
             <Tab
               key={type.key}
               label={type.name}
+              value={type.key}
             />
           ))}
         </Tabs>
 
-        {Object.values(jobTypes).map((jobType, typeIndex) => (
+        {Object.values(jobTypes).map((jobType) => (
           <TabPanel
-            key={`${jobType.key}_${typeIndex}`}
+            key={jobType.key}
             value={activeDataTab}
-            index={typeIndex}
+            index={jobType.key}
           >
             <Grid container>
               {Object.values(jobType.stages).map((stage, stageIndex) => (
