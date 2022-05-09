@@ -35,19 +35,10 @@ const SelectNew = (props) => {
 
   const fixedValue = useMemo(
     () => {
-      if (!options.length) {
-        return undefined;
-      }
-      let value = input?.value ?? props.value;
-      if (onlyOneValue) {
-        return value == null
-          ? value
-          : options.find((opt) => opt.value === value) || { value, label: value };
-      }
-
+      let value = options.length ? input?.value ?? props.value : [];
       value = value == null || value === '' ? [] : value;
-      return (Array.isArray(value) ? value : [value])
-        .map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
+      value = (Array.isArray(value) ? value : [value]).map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
+      return onlyOneValue ? value[0] || null : value;
     },
     [input?.value, options, props.value, onlyOneValue],
   );
@@ -117,7 +108,7 @@ SelectNew.defaultProps = {
   options: [],
   input: {},
   meta: {},
-  value: null,
+  value: [],
   onChange: null,
   onlyOneValue: false,
 };
