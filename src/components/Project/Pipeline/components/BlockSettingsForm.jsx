@@ -19,6 +19,7 @@ import ThumbnailsViewer from '+components/ThumbnailsViewer';
 const Container = styled.div`
   width: 100%;
   height: 100%;
+
   form {
     width: 100%;
     height: 100%;
@@ -29,7 +30,7 @@ const Header = styled.div`
   font-size: 1.5em;
   font-weight: bold;
   text-transform: capitalize;
-  
+
   :empty {
     display: none;
   }
@@ -43,13 +44,13 @@ const Body = styled.div`
   overflow-y: scroll;
 
   ${ScrollBarMixin};
-  
+
   gap: 20px;
 `;
 
 const LeftPanel = styled.div`
   padding: 20px 0;
-  
+
   display: flex;
   flex-direction: column;
   width: 60%;
@@ -59,10 +60,10 @@ const LeftPanel = styled.div`
 
 const RightPanel = styled.div`
   padding: 20px 0;
-  
+
   width: 40%;
   height: 100%;
-  
+
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -71,7 +72,7 @@ const RightPanel = styled.div`
   ${ScrollBarMixin};
 
   gap: 20px;
-  
+
   :only-child {
     width: 100%;
   }
@@ -79,11 +80,11 @@ const RightPanel = styled.div`
 
 const Footer = styled.div`
   align-self: flex-end;
-  
+
   :empty {
     display: none;
   }
-  
+
   .MuiButton-root + .MuiButton-root {
     margin-left: 15px;
   }
@@ -216,7 +217,7 @@ const BlockSettingsForm = (props) => {
     () => {
       const channels = Object.values(projectImagesDetails).map((item) => item.channels);
       const intersectionChannels = intersectionBy(...channels, 'label');
-      return intersectionChannels.map((el, i) => ({
+      return intersectionChannels.map((el) => ({
         value: el.label,
         label: el.label,
         color: el.color,
@@ -255,18 +256,19 @@ const BlockSettingsForm = (props) => {
 
   const initialValues = useMemo(
     () => ({
-        id: block.id,
-        name: block.name,
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
-        rootId: block.rootId,
-        params: {
-          ...block.params,
-          folder: block.folder,
-          script: block.script,
-          part: block.script_path,
-        },
-      }),
+      ...block,
+      id: block.id,
+      name: block.name,
+      projectId: block.projectId,
+      pipelineId: block.pipelineId,
+      rootId: block.rootId,
+      params: {
+        ...block.params,
+        folder: block.folder,
+        script: block.script,
+        part: block.script_path,
+      },
+    }),
     [block],
   );
 
@@ -294,6 +296,7 @@ const BlockSettingsForm = (props) => {
       {...tail}
       initialValues={initialValues}
       render={({ form, handleSubmit, submitting }) => {
+        const disabled = initialValues.id !== 'new';
         if (onForm) {
           onForm(form);
         }
@@ -339,6 +342,7 @@ const BlockSettingsForm = (props) => {
                         imagesOptions: projectImagesOptions,
                         imagesChannelsOptions: projectImagesChannelsOptions,
                       })}
+                      disabled={disabled}
                     />
                   ))}
                 </RightPanel>
@@ -383,7 +387,7 @@ const BlockSettingsForm = (props) => {
                 <Button
                   type="submit"
                   color={ButtonColors.primary}
-                  disabled={submitting}
+                  disabled={submitting || disabled}
                 >
                   {submitButtonText}
                 </Button>
@@ -411,7 +415,7 @@ const propTypes = {
   /**
    * Form fields.
    */
-  children: PropTypes.oneOfType([ PropTypes.node, PropTypes.object, PropTypes.func ]),
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.object, PropTypes.func]),
   /**
    * Initial values.
    */
@@ -438,13 +442,16 @@ const propTypes = {
    * Text for the confirm button.
    */
   submitButtonText: PropTypes.string,
-  /* Text for the restart button.
+  /**
+   * Text for the restart button.
    */
   restartButtonText: PropTypes.string,
-  /* Text for the restart button.
+  /**
+   * Text for the restart button.
    */
   reloadButtonText: PropTypes.string,
-  /* Text for the load keys button.
+  /**
+   * Text for the load keys button.
   */
   onLoadKeysButtonText: PropTypes.string,
   /**
@@ -467,13 +474,16 @@ const propTypes = {
    * A callback fired when confirm button clicked.
    */
   onSubmit: PropTypes.func,
-  /** A callback fired when restart button clicked.
-    */
+  /**
+   * A callback fired when restart button clicked.
+   */
   onRestart: PropTypes.func,
-  /** A callback fired when refresh button clicked.
+  /**
+   * A callback fired when refresh button clicked.
    */
   onReload: PropTypes.func,
-  /** A callback fired when load keys button clicked.
+  /**
+   * A callback fired when load keys button clicked.
    */
   onLoadKeys: PropTypes.func,
 };
