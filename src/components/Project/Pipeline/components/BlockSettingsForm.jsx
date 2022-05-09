@@ -177,6 +177,14 @@ const getFieldAdditionalProps = (type, block, { imagesOptions, imagesChannelsOpt
 
 const focusOnFirstFieldDecorator = createFocusOnFirstFieldDecorator();
 
+// TODO: Hardcode results
+// [, label, centroid-0, centroid-1, 0],
+const results = [
+  [undefined, 'label', 'centroid-0', 'centroid-1', 0],
+  [0, 1, 860.9620253164557, 124.9873417721519, 27.31642723083496],
+  [1, 2, 863.4266666666666, 6.3933333333333335, 27.659870147705078],
+];
+
 const BlockSettingsForm = (props) => {
   const {
     className,
@@ -314,7 +322,12 @@ const BlockSettingsForm = (props) => {
                 {!block.params_meta?.omeroIds && activeImageIds[0] && (
                   <LeftPanel>
                     <ImageViewerContainer>
-                      {projectImagesDetails[activeImageIds[0]] && <ImageViewer data={projectImagesDetails[activeImageIds[0]]} />}
+                      {projectImagesDetails[activeImageIds[0]] && (
+                        <ImageViewer
+                          data={projectImagesDetails[activeImageIds[0]]}
+                          results={results}
+                        />
+                      )}
                       <ThumbnailsViewer
                         thumbnails={projectImagesOptions}
                         active={activeImageIds[0]}
