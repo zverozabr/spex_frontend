@@ -1,10 +1,13 @@
 /* eslint-disable react/jsx-sort-default-props */
 import React, { useState, useMemo, useEffect } from 'react';
+import Refresh from '@material-ui/icons/Refresh';
+import Repeat from '@material-ui/icons/Repeat';
 import createFocusOnFirstFieldDecorator from 'final-form-focus-on-first-field';
 import intersectionBy from 'lodash/intersectionBy';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
+
 
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
@@ -15,6 +18,7 @@ import ImageViewer from '+components/ImageViewer';
 import NoData from '+components/NoData';
 import { ScrollBarMixin } from '+components/ScrollBar';
 import ThumbnailsViewer from '+components/ThumbnailsViewer';
+import statusFormatter from '+utils/statusFormatter';
 
 const Container = styled.div`
   width: 100%;
@@ -113,19 +117,6 @@ const Select = styled(Controls.SelectNew)`
   max-width: 300px;
 `;
 
-const statusFormatter = (status) => {
-  if (status == null) {
-    return 'N/A';
-  }
-  if (Math.round(status) === 0) {
-    return 'Waiting To Process';
-  }
-  if (Math.round(status) === 100) {
-    return 'Done';
-  }
-  return 'In Progress';
-};
-
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
@@ -190,11 +181,6 @@ const BlockSettingsForm = (props) => {
     className,
     children,
     block,
-    closeButtonText,
-    submitButtonText,
-    restartButtonText,
-    reloadButtonText,
-    onLoadKeysButtonText,
     onClose,
     onSubmit,
     onRestart,
@@ -209,15 +195,20 @@ const BlockSettingsForm = (props) => {
   const project = useSelector(projectsSelectors.getProject(block.projectId));
   const projectImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(project?.omeroIds || []));
   const projectImagesDetails = useSelector(omeroSelectors.getImagesDetails(project?.omeroIds || []));
-  const [activeImageIds, setActiveImageIds] = useState(block.omeroIds || []);
+  const [activeImageIds, setActiveImageIds] = useState(block?.omeroIds || []);
 
   const projectImagesOptions = useMemo(
-    () => Object.entries(projectImagesThumbnails || {}).map(([id, img]) => ({
-      id,
-      img,
-      title: projectImagesDetails[id]?.meta.imageName,
-      description: `s: ${projectImagesDetails[id]?.size.width} x ${projectImagesDetails[id]?.size.height}, c: ${projectImagesDetails[id]?.size.c}`,
-    })),
+    () => Object.entries(projectImagesThumbnails || {})
+      .map(([id, img]) => {
+        const { meta, size } = projectImagesDetails[id] || {};
+
+        return ({
+          id,
+          img,
+          title: `[${id}] ${meta?.imageName}`,
+          description: `s: ${size?.width} x ${size?.height}, c: ${size?.c}`,
+        });
+      }),
     [projectImagesThumbnails, projectImagesDetails],
   );
 
@@ -234,7 +225,8 @@ const BlockSettingsForm = (props) => {
     [projectImagesDetails],
   );
 
-  const header = `${block.description || block.name || ''} [${statusFormatter(block.status)}]`;
+  const status = block?.id === 'new' ? 'New' : statusFormatter(block.status);
+  const header = `[${status}] ${block.description || block.name || ''}`;
 
   const fields = useMemo(
     () => (Object.entries(block.params_meta || {}).reduce((acc, [key, item]) => {
@@ -365,19 +357,12 @@ const BlockSettingsForm = (props) => {
                 <Button
                   color={ButtonColors.secondary}
                   onClick={(event) => {
-                    onLoadKeys(event);
-                  }}
-                >
-                  {onLoadKeysButtonText}
-                </Button>
-                <Button
-                  color={ButtonColors.secondary}
-                  onClick={(event) => {
                     form.restart();
                     onRestart(event);
                   }}
+                  title="Restart the block"
                 >
-                  {restartButtonText}
+                  <Repeat />
                 </Button>
                 <Button
                   color={ButtonColors.secondary}
@@ -385,8 +370,9 @@ const BlockSettingsForm = (props) => {
                     onReload(event);
                     form.restart();
                   }}
+                  title="Refresh state of the block"
                 >
-                  {reloadButtonText}
+                  <Refresh />
                 </Button>
                 <Button
                   color={ButtonColors.secondary}
@@ -395,14 +381,14 @@ const BlockSettingsForm = (props) => {
                     onClose(event);
                   }}
                 >
-                  {closeButtonText}
+                  Close
                 </Button>
                 <Button
                   type="submit"
                   color={ButtonColors.primary}
                   disabled={submitting || disabled}
                 >
-                  {submitButtonText}
+                  Submit
                 </Button>
               </Footer>
             </FormRenderer>
@@ -448,26 +434,6 @@ const propTypes = {
     params: PropTypes.shape({}),
   }),
   /**
-   * Text for the close button.
-   */
-  closeButtonText: PropTypes.string,
-  /**
-   * Text for the confirm button.
-   */
-  submitButtonText: PropTypes.string,
-  /**
-   * Text for the restart button.
-   */
-  restartButtonText: PropTypes.string,
-  /**
-   * Text for the restart button.
-   */
-  reloadButtonText: PropTypes.string,
-  /**
-   * Text for the load keys button.
-  */
-  onLoadKeysButtonText: PropTypes.string,
-  /**
    * If true, the modal is open.
    */
   open: PropTypes.bool,
@@ -505,11 +471,6 @@ const defaultProps = {
   className: '',
   children: null,
   block: null,
-  closeButtonText: 'Cancel',
-  submitButtonText: 'Submit',
-  restartButtonText: 'Restart',
-  reloadButtonText: 'Reload',
-  onLoadKeysButtonText: 'Result',
   open: false,
   modalProps: null,
   onForm: () => {},
