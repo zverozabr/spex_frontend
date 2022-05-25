@@ -22,7 +22,12 @@ const AddBlockForm = styled((props) => {
     onClose,
   } = props;
 
-  const [activeDataTab, setActiveDataTab] = useState(selectedBlock.folder);
+  const jobTypesKeys = useMemo(
+    () => Object.keys(jobTypes) || [],
+    [jobTypes],
+  );
+
+  const [activeDataTab, setActiveDataTab] = useState(selectedBlock?.folder || jobTypesKeys[0]);
 
   const selectedReturn = useMemo(
   () => (Object.keys(selectedBlock.return || {})),
@@ -45,7 +50,10 @@ const AddBlockForm = styled((props) => {
       <ModalHeader>{header}</ModalHeader>
 
       <ModalBody>
-        <Tabs value={activeDataTab} onChange={onDataTabChange}>
+        <Tabs
+          value={activeDataTab}
+          onChange={onDataTabChange}
+        >
           {Object.values(jobTypes).map((type) => (
             <Tab
               key={type.key}
