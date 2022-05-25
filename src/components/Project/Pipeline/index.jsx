@@ -1,14 +1,22 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import Accordion from '@material-ui/core/Accordion';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
+import ListSubheader from '@material-ui/core/ListSubheader';
+import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
+import ErrorIcon from '@material-ui/icons/Error';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import GetAppIcon from '@material-ui/icons/GetApp';
 import classNames from 'classnames';
 import dagre from 'dagre';
 import cloneDeep from 'lodash/cloneDeep';
 import ReactFlow, { ReactFlowProvider, Controls, Background, isNode } from 'react-flow-renderer';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
 
 import PathNames from '@/models/PathNames';
 import { actions as jobsActions, selectors as jobsSelectors } from '@/redux/modules/jobs';
@@ -18,13 +26,14 @@ import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/mo
 import Button from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
+import { ScrollBarMixin } from '+components/ScrollBar';
+import statusFormatter from '+utils/statusFormatter';
 
 import JobBlock from './blocks/JobBlock';
 import StartBlock from './blocks/StartBlock';
 import AddBlockForm from './components/AddBlockForm';
 import BlockSettingsForm from './components/BlockSettingsForm';
 import BlockSettingsFormWrapper from './components/BlockSettingsFormWrapper';
-import ButtonsContainer from './components/ButtonsContainer';
 import Container from './components/Container';
 import FlowWrapper from './components/FlowWrapper';
 import OutputWrapper from './components/OutputWrapper';
@@ -39,6 +48,14 @@ const nodeTypes = {
   start: StartBlock,
   job: JobBlock,
 };
+
+const ResultValue = styled.div`
+  overflow-x: auto;
+  width: 500px;
+  margin-left: 1em;
+  
+  ${ScrollBarMixin}
+`;
 
 const addNewVirtualJobToPipeline = (rootId, newJob, node) => {
   if (node.id === rootId) {
@@ -126,6 +143,10 @@ const createGraphLayout = (elements, direction = 'LR') => {
   });
 };
 
+const sortTaskById = ({ id: a }, { id: b }) => {
+  return +a - +b;
+};
+
 const Pipeline = () => {
   const dispatch = useDispatch();
   const location = useLocation();
@@ -133,19 +154,21 @@ const Pipeline = () => {
   const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
   const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
 
-  const matchPipelinePath = matchPath(location.pathname, { path: `/${PathNames.projects}/${projectId}/${PathNames.pipelines}/:id` });
+  const matchPipelinePath = matchPath(location.pathname, {
+    path: `/${PathNames.projects}/${projectId}/${PathNames.pipelines}/:id`,
+  });
   const pipelineId = matchPipelinePath ? matchPipelinePath.params.id : undefined;
 
   const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
   const jobs = useSelector(jobsSelectors.getJobs);
   const tasks = useSelector(tasksSelectors.getTasks);
+  const results = useSelector(tasksSelectors.getResults);
   const jobTypes = useSelector(jobsSelectors.getJobTypes);
 
   const [refresher, setRefresher] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [actionWithBlock, setActionWithBlock] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
-  const [toSelectKeys, setToSelectKeys] = useState([]);
 
   const elements = useMemo(
     () => {
@@ -274,7 +297,9 @@ const Pipeline = () => {
         return;
       }
 
-      const { params } = job.tasks[0];
+      const jobTasks = [...(job.tasks || [])].sort(sortTaskById);
+
+      const [{ params }] = jobTasks;
       const jobTypeBlocks = (jobTypes[params.script]?.stages || [])
         .reduce((acc, stage) => [
           ...acc,
@@ -283,10 +308,15 @@ const Pipeline = () => {
 
       const jobType = jobTypeBlocks.find((el) => el.script_path === params.part) || {};
 
+      const errors = jobTasks
+        .map((task) => task.error && ({ id: task.id, error: task.error }))
+        .filter(Boolean);
+
       setSelectedBlock({
         ...jobType,
         projectId,
         pipelineId,
+        errors,
         id: job.id,
         name: job.name,
         status: job.status,
@@ -295,17 +325,10 @@ const Pipeline = () => {
         script: params.script,
         script_path: params.part,
         params,
+        tasks: jobTasks,
       });
-
-      let keys = [];
-      job.tasks.forEach((el) => {
-        if (tasks[el.id] && tasks[el.id].keys && tasks[el.id].keys.length > 0) {
-          keys = [...keys, ...tasks[el.id].keys];
-        }
-      });
-      setToSelectKeys(keys);
     },
-    [jobTypes, jobs, pipelineId, projectId, tasks],
+    [jobTypes, jobs, pipelineId, projectId],
   );
 
   const onJobReload = useCallback(
@@ -325,6 +348,7 @@ const Pipeline = () => {
   const onBlockAdd = useCallback(
     (block) => {
       setActionWithBlock(null);
+
       setSelectedBlock((prevValue) => ({
         projectId,
         pipelineId,
@@ -359,73 +383,99 @@ const Pipeline = () => {
     [setReactFlowInstance],
   );
 
-  const onLoadTaskKeys = useCallback(
-    (_) => {
-      if (!selectedBlock || !jobs || !jobs[selectedBlock.id]?.tasks || !tasks) {
+  const onLoadValue = useCallback(
+    (event) => {
+      const key = event.currentTarget.dataset.key;
+      const id = event.currentTarget.dataset.taskId;
+
+      if (id == null || !key) {
         return;
       }
-      let keys = [];
-      const job = jobs[selectedBlock.id];
 
-      job.tasks.forEach((el) => {
-        dispatch(tasksActions.fetchTaskKeys(el.id));
-        if (tasks[el.id]) {
-          if (!tasks[el.id].keys || tasks[el.id].keys.length === 0) {
-            keys = [];
-          } else {
-            keys = [...keys, ...tasks[el.id].keys];
-          }
-        }
-      });
+      dispatch(tasksActions.fetchTaskResult({ id, key: key }));
     },
-    [selectedBlock, dispatch, jobs, tasks],
+    [dispatch],
   );
 
-
-  const loadValue = useCallback(
-    (key) => {
-      if (!key || !selectedBlock || !tasks || !jobs?.tasks) {
-        return;
-      }
-      const job = jobs[selectedBlock.id];
-
-      job.tasks.forEach((el) => {
-        dispatch(tasksActions.fetchTaskResult({ id: el.id, key: key }));
-      });
-    },
-    [selectedBlock, tasks, jobs, dispatch],
-  );
-
-
-  useEffect(
+  const tasksRender = useMemo(
     () => {
-      if (!selectedBlock || !tasks || Object.keys(tasks).length === 0) {
-        return;
+      if (!selectedBlock?.tasks?.length) {
+        return null;
       }
 
-      let keys = [];
+      const returnKeys = Object.keys(selectedBlock.return || {});
 
-      Object.keys(tasks).forEach((el) => {
-        if (tasks[el]?.keys && tasks[el].keys.length > 0 && tasks[el].parent === selectedBlock.id) {
-          let all_params = [...tasks[el].keys];
-
-          if (selectedBlock.params_meta) {
-            Object.keys(selectedBlock.params_meta).forEach((key) => {
-              const index = all_params.indexOf(key);
-              if (index > -1) {
-                all_params.splice(index, 1);
-              }
-            });
-          }
-          keys = [...keys, ...all_params];
+      const resultKeys = selectedBlock.tasks.reduce((acc, { id }) => {
+        const keys = tasks[id]?.keys || [];
+        if (!keys.length) {
+          return acc;
         }
-      });
 
-      if (keys.length > 0) {
-        setToSelectKeys(keys);
-      }
+        const result = returnKeys.filter((key) => keys.includes(key));
+
+        if (result.length) {
+          acc[id] = result.map((key) => ({ key, value: results?.[id]?.[key] }));
+        }
+
+        return acc;
+      }, {});
+
+      return (
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <DynamicFeedOutlinedIcon /> Tasks
+          </AccordionSummary>
+          <AccordionDetails>
+            <List dense component="div">
+              {selectedBlock.tasks.map((item) => (
+                <ListItem component="div" key={item.id}>
+                  <ListItemText
+                    primary={`task id: ${item.id}`}
+                    secondary={`[${statusFormatter(item.status)}] ${item.name}`}
+                  />
+                  <List dense component="div">
+                    <ListSubheader component="div">
+                      Results
+                    </ListSubheader>
+                    {!resultKeys[item.id] ? (
+                      <ListItem component="div">
+                        No Data
+                      </ListItem>
+                    ) : resultKeys[item.id].map(({ key, value }) => (
+                      <ListItem component="div" key={key}>
+                        <ListItemText
+                          primary={key}
+                          secondary={(
+                            <Button
+                              onClick={onLoadValue}
+                              size="small"
+                              variant="outlined"
+                              startIcon={<GetAppIcon />}
+                              data-key={key}
+                              data-task-id={item.id}
+                            >
+                              Load value
+                            </Button>
+                          )}
+                        />
+                        {value != null && (
+                          <ResultValue>
+                            <pre>
+                              {value || ''}
+                            </pre>
+                          </ResultValue>
+                        )}
+                      </ListItem>
+                    ))}
+                  </List>
+                </ListItem>
+              ))}
+            </List>
+          </AccordionDetails>
+        </Accordion>
+      );
     },
-    [selectedBlock, tasks],
+    [onLoadValue, selectedBlock, tasks, results],
   );
 
   useEffect(
@@ -443,19 +493,12 @@ const Pipeline = () => {
       if (!selectedBlock || !jobs?.[selectedBlock.id]) {
         return;
       }
-      if (selectedBlock.status !== jobs[selectedBlock.id].status) {
-        selectedBlock.status = jobs[selectedBlock.id].status;
-        const job = jobs[selectedBlock.id];
-        if (!job) {
-          setSelectedBlock({
-            projectId,
-            pipelineId,
-            ...selectedBlock,
-          });
-          return;
-        }
 
-        const { params } = job.tasks[0];
+      if (selectedBlock.status !== jobs[selectedBlock.id].status) {
+        const job = jobs[selectedBlock.id];
+        const jobTasks = [...(job.tasks || [])].sort(sortTaskById);
+
+        const [{ params }] = jobTasks;
         const jobTypeBlocks = (jobTypes[params.script]?.stages || [])
           .reduce((acc, stage) => [
             ...acc,
@@ -476,10 +519,26 @@ const Pipeline = () => {
           script_path: params.part,
           params,
           params_meta,
+          tasks: jobTasks,
         });
       }
     },
     [selectedBlock, jobs, projectId, pipelineId, jobTypes],
+  );
+
+  useEffect(
+    () => {
+      if (!selectedBlock || !jobs?.[selectedBlock.id]) {
+        return;
+      }
+
+      const job = jobs[selectedBlock.id];
+
+      job.tasks.forEach(({ id }) => {
+        dispatch(tasksActions.fetchTaskKeys(id));
+      });
+    },
+    [dispatch, jobs, selectedBlock],
   );
 
   useEffect(
@@ -565,7 +624,6 @@ const Pipeline = () => {
                 onSubmit={onJobSubmit}
                 onRestart={onJobRestart}
                 onReload={onJobReload}
-                onLoadKeys={onLoadTaskKeys}
               />
             ) : (
               <NoData>Select block</NoData>
@@ -574,23 +632,26 @@ const Pipeline = () => {
         </FlowWrapper>
 
         <OutputWrapper>
-          <List dense component="div" role="list">
-            {toSelectKeys.map((el) => {
-              const id = `result-list-keys-${el}-label`;
-              return (
-                <ListItem key={id} role="listitem">
-                  <ListItemIcon />
-                  {el && <ListItemText id={id} primary={el} />}
-                  <ButtonsContainer>
-                    <Button onClick={() => loadValue(el)} size="small">
-                      🔍
-                    </Button>
-                  </ButtonsContainer>
-                </ListItem>
-              );
-            })}
-            <ListItem />
-          </List>
+          {tasksRender}
+          {!!selectedBlock?.errors?.length && (
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <ErrorIcon /> Errors
+              </AccordionSummary>
+              <AccordionDetails>
+                <List dense component="div">
+                  {selectedBlock.errors.map((item) => (
+                    <ListItem key={item.id}>
+                      <ListItemText primary={`task id: ${item.id}`} />
+                      <pre>
+                        {item.error}
+                      </pre>
+                    </ListItem>
+                  ))}
+                </List>
+              </AccordionDetails>
+            </Accordion>
+          )}
         </OutputWrapper>
 
         {actionWithBlock === 'add' && selectedBlock?.id && (
