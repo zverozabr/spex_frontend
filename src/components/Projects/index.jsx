@@ -69,7 +69,10 @@ const Projects = () => {
       Header: 'Name',
       Cell: ({ row: { original: { id, name } } }) => useMemo(
         () => (
-          <Link to={`/${PathNames.projects}/${id}`}>
+          <Link
+            to={`/${PathNames.projects}/${id}`}
+            underline="always"
+          >
             {name}
           </Link>
         ),
