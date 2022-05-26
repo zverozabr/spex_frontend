@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Switch, Route } from 'react-router-dom';
 
-import AnalysisPage from '@/components/AnalysisPage';
-import Jobs from '@/components/Jobs';
 import Layout from '@/components/Layout';
 import NotFound404 from '@/components/NotFound404';
 import Project from '@/components/Project';
@@ -50,19 +48,6 @@ const PrivateRoutes = () => {
             `/${PathNames.projects}/:id/${PathNames.visualization}`,
           ]}
           component={Project}
-        />
-        <Route
-          exact
-          path={[ `/${PathNames.jobs}` ]}
-          component={Jobs}
-        />
-        <Route
-          exact
-          path={[
-            '/project/:id/dataset', '/project/:id/dataset/:id',
-            '/project/:id/dataset/:id/img', '/project/:id/dataset/:id/img/:id',
-          ]}
-          component={AnalysisPage}
         />
         <Route hidden component={NotFound404} />
       </Switch>

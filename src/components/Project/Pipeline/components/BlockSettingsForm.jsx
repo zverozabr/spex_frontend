@@ -1,20 +1,29 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Refresh from '@material-ui/icons/Refresh';
+import Repeat from '@material-ui/icons/Repeat';
 import createFocusOnFirstFieldDecorator from 'final-form-focus-on-first-field';
+import intersectionBy from 'lodash/intersectionBy';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 
+
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
+
+import { selectors as projectsSelectors } from '@/redux/modules/projects';
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
 import ImageViewer from '+components/ImageViewer';
 import NoData from '+components/NoData';
 import { ScrollBarMixin } from '+components/ScrollBar';
+import ThumbnailsViewer from '+components/ThumbnailsViewer';
+import statusFormatter from '+utils/statusFormatter';
 
 const Container = styled.div`
   width: 100%;
   height: 100%;
+
   form {
     width: 100%;
     height: 100%;
@@ -25,7 +34,7 @@ const Header = styled.div`
   font-size: 1.5em;
   font-weight: bold;
   text-transform: capitalize;
-  
+
   :empty {
     display: none;
   }
@@ -39,13 +48,13 @@ const Body = styled.div`
   overflow-y: scroll;
 
   ${ScrollBarMixin};
-  
+
   gap: 20px;
 `;
 
 const LeftPanel = styled.div`
   padding: 20px 0;
-  
+
   display: flex;
   flex-direction: column;
   width: 60%;
@@ -55,10 +64,10 @@ const LeftPanel = styled.div`
 
 const RightPanel = styled.div`
   padding: 20px 0;
-  
+
   width: 40%;
   height: 100%;
-  
+
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -67,7 +76,7 @@ const RightPanel = styled.div`
   ${ScrollBarMixin};
 
   gap: 20px;
-  
+
   :only-child {
     width: 100%;
   }
@@ -75,11 +84,11 @@ const RightPanel = styled.div`
 
 const Footer = styled.div`
   align-self: flex-end;
-  
+
   :empty {
     display: none;
   }
-  
+
   .MuiButton-root + .MuiButton-root {
     margin-left: 15px;
   }
@@ -93,7 +102,7 @@ const ImageViewerContainer = styled.div`
   height: 100%;
   background-color: #ccc;
   border-radius: 4px;
-  overflow: hidden;
+  //overflow: hidden;
 `;
 
 const TextField = styled(Controls.TextField)`
@@ -104,19 +113,19 @@ const NumberField = styled(Controls.NumberField)`
   max-width: 300px;
 `;
 
-const SelectOmeroChannels = styled(Controls.SelectOmeroChannels)`
+const Select = styled(Controls.SelectNew)`
   max-width: 300px;
 `;
 
 const getFieldComponent = (type) => {
   switch (type) {
     case 'omero':
-      return Controls.SelectOmeroImages;
+      return Controls.TransferList;
     case 'job_id':
       return Controls.SelectJobs;
     case 'channel':
     case 'channels':
-      return SelectOmeroChannels;
+      return Select;
     case 'int':
     case 'float':
       return NumberField;
@@ -134,25 +143,23 @@ const getFieldParser = (type) => {
       return Parsers.channels;
     case 'channel':
       return Parsers.channel;
+    case 'int':
+      return Parsers.number;
     default:
       return undefined;
   }
 };
 
-const getFieldAdditionalProps = (type, block) => {
+const getFieldAdditionalProps = (type, block, { imagesOptions, imagesChannelsOptions }) => {
   switch (type) {
     case 'omero':
-      return { projectId: block.projectId };
+      return { options: imagesOptions };
     case 'channels':
-      return {
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
-      };
+      return { options: imagesChannelsOptions };
     case 'channel':
       return {
         onlyOneValue: true,
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
+        options: imagesChannelsOptions,
       };
     default:
       return {};
@@ -161,16 +168,19 @@ const getFieldAdditionalProps = (type, block) => {
 
 const focusOnFirstFieldDecorator = createFocusOnFirstFieldDecorator();
 
+// TODO: Hardcode results
+// [, label, centroid-0, centroid-1, 0],
+const results = [
+  [undefined, 'label', 'centroid-0', 'centroid-1', 0],
+  [0, 1, 860.9620253164557, 124.9873417721519, 27.31642723083496],
+  [1, 2, 863.4266666666666, 6.3933333333333335, 27.659870147705078],
+];
+
 const BlockSettingsForm = (props) => {
   const {
     className,
     children,
     block,
-    closeButtonText,
-    submitButtonText,
-    restartButtonText,
-    reloadButtonText,
-    onLoadKeysButtonText,
     onClose,
     onSubmit,
     onRestart,
@@ -182,86 +192,103 @@ const BlockSettingsForm = (props) => {
 
   const dispatch = useDispatch();
 
-  // If 'omeroIds' in params_meta then this is block with Select Omero Image component
-  // and we don't need to display omero image preview
-  const [omeroId] = block.params_meta?.omeroIds ? [] : block.omeroIds || [];
-  const omeroImageDetails = useSelector(omeroSelectors.getImageDetails(omeroId));
-  const isOmeroFetching = useSelector(omeroSelectors.isFetching);
+  const project = useSelector(projectsSelectors.getProject(block.projectId));
+  const projectImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(project?.omeroIds || []));
+  const projectImagesDetails = useSelector(omeroSelectors.getImagesDetails(project?.omeroIds || []));
+  const [activeImageIds, setActiveImageIds] = useState(block?.omeroIds || []);
 
-  const header = `${block.description || block.name} id: ${block.id} status: ${block.status}`;
+  const projectImagesOptions = useMemo(
+    () => Object.entries(projectImagesThumbnails || {})
+      .map(([id, img]) => {
+        const { meta, size } = projectImagesDetails[id] || {};
+
+        return ({
+          id,
+          img,
+          title: `[${id}] ${meta?.imageName}`,
+          description: `s: ${size?.width} x ${size?.height}, c: ${size?.c}`,
+        });
+      }),
+    [projectImagesThumbnails, projectImagesDetails],
+  );
+
+  const projectImagesChannelsOptions = useMemo(
+    () => {
+      const channels = Object.values(projectImagesDetails).map((item) => item.channels);
+      const intersectionChannels = intersectionBy(...channels, 'label');
+      return intersectionChannels.map((el) => ({
+        value: el.label,
+        label: el.label,
+        color: el.color,
+      }));
+    },
+    [projectImagesDetails],
+  );
+
+  const status = block?.id === 'new' ? 'New' : statusFormatter(block.status);
+  const header = `[${status}] ${block.description || block.name || ''}`;
 
   const fields = useMemo(
-    () => (Object.keys(block.params_meta || {}).reduce((acc, el) => {
-      const {
-        name, label,
-        description, type,
-        hidden, required,
-      } = block.params_meta[el];
-
-      if (hidden) {
+    () => (Object.entries(block.params_meta || {}).reduce((acc, [key, item]) => {
+      if (item.hidden) {
         return acc;
       }
 
+      const {
+        name,
+        label,
+        description,
+        type,
+        required,
+      } = item;
+
       const param = {
-        name: `params.${name}`,
+        name: `params.${key}`,
         label: label || name,
         placeholder: description,
         type,
         required,
       };
-      return {
-        ...acc,
-        [name]: param,
-      };
+      return { ...acc, [name]: param };
     }, {})),
     [block.params_meta],
   );
 
   const initialValues = useMemo(
-    () => {
-      return {
-        id: block.id,
-        name: block.name,
-        projectId: block.projectId,
-        pipelineId: block.pipelineId,
-        rootId: block.rootId,
-        params: {
-          ...block.params,
-          folder: block.folder,
-          script: block.script,
-          part: block.script_path,
-        },
-      };
-    },
+    () => ({
+      ...block,
+      id: block.id,
+      name: block.name,
+      projectId: block.projectId,
+      pipelineId: block.pipelineId,
+      rootId: block.rootId,
+      params: {
+        ...block.params,
+        folder: block.folder,
+        script: block.script,
+        part: block.script_path,
+      },
+    }),
     [block],
-  );
-
-  const omeroImageErrorMsg = useMemo(
-    () => {
-      switch (true) {
-        case block.omeroIds && block.omeroIds?.length > 0:
-          return null;
-        case omeroId == null:
-          return 'Select image to analyse';
-        case omeroId >= 0 && !omeroImageDetails && isOmeroFetching:
-          return 'Image is loading...';
-        case omeroId >= 0 && !omeroImageDetails:
-          return 'Image not found';
-        default:
-          return null;
-      }
-    },
-    [omeroImageDetails, omeroId, block.omeroIds, isOmeroFetching],
   );
 
   useEffect(
     () => {
-      if (!omeroId || omeroImageDetails) {
+      if (!project?.omeroIds.length) {
         return;
       }
-      dispatch(omeroActions.fetchImageDetails(omeroId));
+
+      dispatch(omeroActions.fetchImagesThumbnails(project?.omeroIds));
+      dispatch(omeroActions.fetchImagesDetails(project?.omeroIds));
     },
-    [omeroId, dispatch, omeroImageDetails],
+    [dispatch, project?.omeroIds],
+  );
+
+  useEffect(
+    () => {
+      setActiveImageIds(block.omeroIds || []);
+    },
+    [block.omeroIds],
   );
 
   return (
@@ -269,6 +296,7 @@ const BlockSettingsForm = (props) => {
       {...tail}
       initialValues={initialValues}
       render={({ form, handleSubmit, submitting }) => {
+        const disabled = initialValues.id !== 'new';
         if (onForm) {
           onForm(form);
         }
@@ -283,37 +311,43 @@ const BlockSettingsForm = (props) => {
               <Header>{header}</Header>
 
               <Body>
-                {omeroId && (
+                {!block.params_meta?.omeroIds && activeImageIds[0] && (
                   <LeftPanel>
                     <ImageViewerContainer>
-                      {omeroImageErrorMsg && <NoData>{omeroImageErrorMsg}</NoData>}
-                      {!omeroImageErrorMsg && omeroImageDetails && <ImageViewer data={omeroImageDetails} />}
-                      {/*{imageIds.length > 0 && (*/}
-                      {/*  <ThumbnailsViewer*/}
-                      {/*    thumbnails={thumbnails.filter(({ id }) => imageIds.includes(id))}*/}
-                      {/*    allowSelect={false}*/}
-                      {/*    $size={2}*/}
-                      {/*    $center*/}
-                      {/*  />*/}
-                      {/*)}*/}
+                      {projectImagesDetails[activeImageIds[0]] && (
+                        <ImageViewer
+                          data={projectImagesDetails[activeImageIds[0]]}
+                          results={results}
+                        />
+                      )}
+                      <ThumbnailsViewer
+                        thumbnails={projectImagesOptions}
+                        active={activeImageIds[0]}
+                        onClick={setActiveImageIds}
+                      />
                     </ImageViewerContainer>
                   </LeftPanel>
                 )}
 
                 <RightPanel>
-                  {Object.values(fields).length === 0 && (
+                  {Object.keys(fields).length === 0 && (
                     <NoData>No block params to display</NoData>
                   )}
-                  {Object.values(fields).map((params) => (
+                  {Object.values(fields).map((field, i) => (
                     <Field
-                      key={params.name}
-                      name={params.name}
-                      label={params.label}
-                      placeholder={params.placeholder}
-                      component={getFieldComponent(params.type)}
-                      parse={getFieldParser(params.type)}
-                      validate={params.required ? Validators.required : undefined}
-                      {...getFieldAdditionalProps(params.type, block)}
+                      // eslint-disable-next-line react/no-array-index-key
+                      key={`${i}-${field.name}`}
+                      name={field.name}
+                      label={field.label}
+                      placeholder={field.placeholder}
+                      component={getFieldComponent(field.type)}
+                      parse={getFieldParser(field.type)}
+                      validate={field.required ? Validators.required : undefined}
+                      {...getFieldAdditionalProps(field.type, block, {
+                        imagesOptions: projectImagesOptions,
+                        imagesChannelsOptions: projectImagesChannelsOptions,
+                      })}
+                      disabled={disabled}
                     />
                   ))}
                 </RightPanel>
@@ -323,19 +357,12 @@ const BlockSettingsForm = (props) => {
                 <Button
                   color={ButtonColors.secondary}
                   onClick={(event) => {
-                    onLoadKeys(event);
-                  }}
-                >
-                  {onLoadKeysButtonText}
-                </Button>
-                <Button
-                  color={ButtonColors.secondary}
-                  onClick={(event) => {
                     form.restart();
                     onRestart(event);
                   }}
+                  title="Restart the block"
                 >
-                  {restartButtonText}
+                  <Repeat />
                 </Button>
                 <Button
                   color={ButtonColors.secondary}
@@ -343,8 +370,9 @@ const BlockSettingsForm = (props) => {
                     onReload(event);
                     form.restart();
                   }}
+                  title="Refresh state of the block"
                 >
-                  {reloadButtonText}
+                  <Refresh />
                 </Button>
                 <Button
                   color={ButtonColors.secondary}
@@ -353,14 +381,14 @@ const BlockSettingsForm = (props) => {
                     onClose(event);
                   }}
                 >
-                  {closeButtonText}
+                  Close
                 </Button>
                 <Button
                   type="submit"
                   color={ButtonColors.primary}
-                  disabled={submitting}
+                  disabled={submitting || disabled}
                 >
-                  {submitButtonText}
+                  Submit
                 </Button>
               </Footer>
             </FormRenderer>
@@ -386,7 +414,7 @@ const propTypes = {
   /**
    * Form fields.
    */
-  children: PropTypes.oneOfType([ PropTypes.node, PropTypes.object, PropTypes.func ]),
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.object, PropTypes.func]),
   /**
    * Initial values.
    */
@@ -405,23 +433,6 @@ const propTypes = {
     params_meta: PropTypes.shape(),
     params: PropTypes.shape({}),
   }),
-  /**
-   * Text for the close button.
-   */
-  closeButtonText: PropTypes.string,
-  /**
-   * Text for the confirm button.
-   */
-  submitButtonText: PropTypes.string,
-  /* Text for the restart button.
-   */
-  restartButtonText: PropTypes.string,
-  /* Text for the restart button.
-   */
-  reloadButtonText: PropTypes.string,
-  /* Text for the load keys button.
-  */
-  onLoadKeysButtonText: PropTypes.string,
   /**
    * If true, the modal is open.
    */
@@ -442,13 +453,16 @@ const propTypes = {
    * A callback fired when confirm button clicked.
    */
   onSubmit: PropTypes.func,
-  /** A callback fired when restart button clicked.
-    */
+  /**
+   * A callback fired when restart button clicked.
+   */
   onRestart: PropTypes.func,
-  /** A callback fired when refresh button clicked.
+  /**
+   * A callback fired when refresh button clicked.
    */
   onReload: PropTypes.func,
-  /** A callback fired when load keys button clicked.
+  /**
+   * A callback fired when load keys button clicked.
    */
   onLoadKeys: PropTypes.func,
 };
@@ -457,11 +471,6 @@ const defaultProps = {
   className: '',
   children: null,
   block: null,
-  closeButtonText: 'Cancel',
-  submitButtonText: 'Submit',
-  restartButtonText: 'Restart',
-  reloadButtonText: 'Reload',
-  onLoadKeysButtonText: 'Result',
   open: false,
   modalProps: null,
   onForm: () => {},

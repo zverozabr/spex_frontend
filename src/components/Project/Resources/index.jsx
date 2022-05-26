@@ -36,24 +36,14 @@ const Resources = () => {
 
   const project = useSelector(projectsSelectors.getProject(projectId));
 
-  const images = useSelector(omeroSelectors.getThumbnails(projectId));
+  const imageIds = useMemo(() => (project?.omeroIds || []),[project]);
+  const taskIds = useMemo(() => (project?.taskIds || []),[project]);
+  const resourceIds = useMemo(() => (project?.resource_ids || []),[project]);
+
+  const imageThumbnails = useSelector(omeroSelectors.getImagesThumbnails(imageIds));
+  const imagesDetails = useSelector(omeroSelectors.getImagesDetails(imageIds));
   const tasks = useSelector(tasksSelectors.getTasks);
   const resources = useSelector(resourcesSelectors.getResources);
-
-  const imageIds = useMemo(
-    () => (project?.omeroIds || []),
-    [project],
-  );
-
-  const taskIds = useMemo(
-    () => (project?.taskIds || []),
-    [project],
-  );
-
-  const resourceIds = useMemo(
-    () => (project?.resource_ids || []),
-    [project],
-  );
 
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
@@ -138,12 +128,14 @@ const Resources = () => {
   );
 
   const imageData = useMemo(
-    () => (Object.keys(images || {}).map((id) =>({
+    () => Object.entries(imageThumbnails || {}).map(([id, img]) => ({
       id,
+      img,
+      title: imagesDetails[id]?.meta.imageName,
+      description: `s: ${imagesDetails[id]?.size.width} x ${imagesDetails[id]?.size.height}, c: ${imagesDetails[id]?.size.c}`,
       type: 'image',
-      img: images[id],
-    }))),
-    [images],
+    })),
+    [imagesDetails, imageThumbnails],
   );
 
   const taskData = useMemo(
@@ -273,19 +265,14 @@ const Resources = () => {
 
   useEffect(
     () => {
-      if (imageIds.length === 0) {
-        dispatch(omeroActions.clearThumbnails(projectId));
+      if (!imageIds?.length) {
+        return;
       }
 
-      if (imageIds.length > 0) {
-        dispatch(omeroActions.fetchThumbnails({ groupId: projectId, imageIds: imageIds }));
-      }
-
-      return () => {
-        dispatch(omeroActions.clearThumbnails(projectId));
-      };
+      dispatch(omeroActions.fetchImagesThumbnails(imageIds));
+      dispatch(omeroActions.fetchImagesDetails(imageIds));
     },
-    [dispatch, imageIds, projectId],
+    [dispatch, imageIds],
   );
 
   useEffect(
@@ -348,7 +335,8 @@ const Resources = () => {
       {manageImagesModalOpen && (
         <ManageImagesFormModal
           header="Manage Images"
-          initialValues={{ ...project, omeroIds: imageData }}
+          // initialValues={{ ...project, omeroIds: imageData }}
+          initialValues={project}
           onClose={onManageImagesModalClose}
           onSubmit={onManageImagesModalSubmit}
           open

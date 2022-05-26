@@ -3,11 +3,14 @@ import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 import classNames from 'classnames';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
+import { scaleLinear } from 'd3-scale';
 import L from 'leaflet';
 import cloneDeep from 'lodash/cloneDeep';
 import SideBarToggleIcon from 'mdi-react/MenuRightIcon';
 import PropTypes from 'prop-types';
-import { MapContainer, ZoomControl, FeatureGroup, Rectangle, ImageOverlay } from 'react-leaflet';
+import {
+ MapContainer, ZoomControl, FeatureGroup, Rectangle, ImageOverlay, Circle,
+} from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import { useToggle } from 'react-use';
 
@@ -24,9 +27,7 @@ import ResetZoomControl from './components/ResetZoomControl';
 import SideBar from './components/Sidebar';
 import SidebarToggle from './components/SidebarToggle';
 
-const {
-  REACT_APP_BACKEND_URL_ROOT,
-} = process.env;
+const { REACT_APP_BACKEND_URL_ROOT } = process.env;
 
 const baseUrl = `${REACT_APP_BACKEND_URL_ROOT}/omero/webgateway/render_image_region`;
 
@@ -35,6 +36,7 @@ const ImageViewer = (props) => {
     className,
     image,
     data,
+    results,
     value,
     editable,
     onChange,
@@ -47,6 +49,7 @@ const ImageViewer = (props) => {
   const [channels, setChannels] = useState(cloneDeep(data.channels));
   const [sidebarCollapsed, toggleSidebar] = useToggle(true);
   const [rectangleBounds, setRectangleBounds] = useState(null);
+  const [centroids, setCentroids] = useState([]);
 
   const imageLatLngBounds = useMemo(
     () => {
@@ -177,6 +180,45 @@ const ImageViewer = (props) => {
     [map, value],
   );
 
+  useEffect(
+    () => {
+      if (!map?.options?.crs || !results) {
+        return;
+      }
+
+      const _centroids = [];
+      let minRadius;
+      let maxRadius;
+      const { maxZoom } = omeroLayerRef.current;
+      // [, label, centroid-0, centroid-1, 0],
+      const [, , , , ...channelIndexes] = results[0];
+      results.forEach((item, index) => {
+        if (index === 0) {
+          return;
+        }
+
+        const [, , x, y, ...itemTail] = item;
+        const p = L.point(x, y);
+        const center = map.options.crs.pointToLatLng(p, maxZoom);
+
+        channelIndexes.forEach((channelIndex, i) => {
+          minRadius = Math.min(minRadius ?? itemTail[i], itemTail[i]);
+          maxRadius = Math.max(maxRadius ?? itemTail[i], itemTail[i]);
+
+          _centroids.push({
+            center,
+            radius: itemTail[i],
+            color: channels[channelIndex].color,
+          });
+        });
+      });
+
+      const radius = scaleLinear().domain([minRadius, maxRadius]).range([3, 12]);
+      setCentroids(_centroids.map((item) => ({ ...item, radius: radius(item.radius) })));
+    },
+    [map, channels, results],
+  );
+
   return (
     <Container className={classNames(className, 'image-viewer', { editable, 'with-rectangle': rectangleBounds })}>
       <MapContainer
@@ -207,6 +249,17 @@ const ImageViewer = (props) => {
             zIndex={10}
           />
         )}
+
+        {(centroids || []).map((item, i) => (
+          <Circle
+            // eslint-disable-next-line react/no-array-index-key
+            key={i}
+            center={item.center}
+            radius={item.radius}
+            pathOptions={{ color: item.color }}
+            fillColor={item.color}
+          />
+        ))}
 
         <FullscreenControl position="topright" />
 
@@ -293,6 +346,7 @@ ImageViewer.propTypes = {
       height: PropTypes.number,
     }),
   }),
+  results: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string,PropTypes.number]))),
   /**
    * Selected area value [{ x1, y1 }, { x2, y2 }]
    */
@@ -311,6 +365,7 @@ ImageViewer.defaultProps = {
   className: '',
   image: null,
   data: {},
+  results: null,
   value: null,
   editable: false,
   onChange: null,

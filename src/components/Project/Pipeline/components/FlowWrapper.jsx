@@ -4,7 +4,10 @@ export default styled.div`
   display: flex;
   flex-direction: row;
   width: 100%;
-  height: 85%;
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-height: 85%;
+  max-height: 85%;
   
   .react-flow {
     width: 30%;

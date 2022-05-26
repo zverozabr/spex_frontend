@@ -36,6 +36,30 @@ const normalizeTask = (task) => {
   return { ...task, content };
 };
 
+const saveFile = (blob, fileName) => new Promise((resolve) => {
+  if (navigator.msSaveOrOpenBlob) {
+    navigator.msSaveOrOpenBlob(blob, fileName);
+    resolve();
+    return;
+  }
+
+  const listener = (e) => {
+    resolve();
+    window.removeEventListener('focus', listener, true);
+  };
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  a.click();
+
+  window.addEventListener('focus', listener, true);
+
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+  }, 0);
+});
+
 const slice = createSlice({
   name: 'tasks',
   initialState,
@@ -65,9 +89,10 @@ const slice = createSlice({
       state.tasks[task.id] = normalizeTask(task);
     },
 
-    fetchTaskResultSuccess: (state, { payload: result }) => {
+    fetchTaskResultSuccess: (state, { payload: { id, key, value } }) => {
       stopFetching(state);
-      state.results[result.id] = result;
+      state.results[id] = state.results[id] || {};
+      state.results[id][key] = value;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -186,19 +211,24 @@ const slice = createSlice({
 
         try {
           const url_keys = `${baseUrl}/file/${id}?key=${key}`;
-          const url_tasks = `${baseUrl}/${id}`;
 
-          const [
-            { data: { data: keys } },
-            { data: { data: task } },
-          ] = yield all([
-            call(api.get, url_keys),
-            call(api.get, url_tasks),
-          ]);
+          const res = yield call(api.get, url_keys, { responseType: 'blob' });
 
-          task.keys = keys;
+          const type = res.data.type;
 
-          yield put(actions.fetchTaskResultSuccess(task));
+          let value;
+
+          if (type === 'application/json') {
+            value = yield res.data.text();
+            const { data, message } = JSON.parse(value);
+
+            value = data || (message && `Error at converting: ${message}`);
+          } else {
+            yield put(actions.fetchTaskResultSuccess({ id, key, value: 'Open save dialog...' }));
+            yield saveFile(res.data, `${id}_result_${key}.${type.split('/')[1]}`);
+          }
+
+          yield put(actions.fetchTaskResultSuccess({ id, key, value }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -265,6 +295,11 @@ const slice = createSlice({
     getTasks: createSelector(
       [getState],
       (state) => state?.tasks,
+    ),
+
+    getResults: createSelector(
+      [getState],
+      (state) => state?.results,
     ),
 
     getTask: (id) => createSelector(

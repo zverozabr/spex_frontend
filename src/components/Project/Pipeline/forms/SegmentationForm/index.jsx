@@ -32,7 +32,7 @@ const SegmentationForm = styled((props) => {
   const [formValues, setFormValues] = useState(initialValues || {});
 
   const project = useSelector(projectsSelectors.getProject(formValues.projectId));
-  const projectThumbnails = useSelector(omeroSelectors.getThumbnails(formValues.projectId));
+  const projectThumbnails = useSelector(omeroSelectors.getImagesThumbnails(formValues.projectId));
   const projectImages = useMemo(
     () => (Object.keys(projectThumbnails || {}).map((id) => ({ id, img: projectThumbnails[id] }))),
     [projectThumbnails],
@@ -72,11 +72,21 @@ const SegmentationForm = styled((props) => {
     [],
   );
 
+  const timer = useRef();
   const onFormChange = useCallback(
     ({ values }) => {
-      // Workaround for FormSpy - Cannot update a component while rendering a different component
-      // @see: https://github.com/final-form/react-final-form/issues/809
-      setTimeout(() => { setFormValues(values); }, 0);
+      timer.current = setTimeout(() => {
+        setFormValues(values);
+      }, 10);
+    },
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
     },
     [],
   );
@@ -117,7 +127,7 @@ const SegmentationForm = styled((props) => {
     () => {
       const projectImageIds = project?.omeroIds || [];
       if (projectImageIds.length) {
-        dispatch(omeroActions.fetchThumbnails({ groupId: formValues.projectId, imageIds: projectImageIds }));
+        dispatch(omeroActions.fetchImagesThumbnails({ groupId: formValues.projectId, imageIds: projectImageIds }));
       }
       return () => {
         dispatch(omeroActions.clearThumbnails(formValues.projectId));

@@ -1,7 +1,8 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import Grid from '@material-ui/core/Grid';
 import classNames from 'classnames';
+import isEqual from 'lodash/isEqual';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 
@@ -21,7 +22,17 @@ const AddBlockForm = styled((props) => {
     onClose,
   } = props;
 
-  const [activeDataTab, setActiveDataTab] = useState(0);
+  const jobTypesKeys = useMemo(
+    () => Object.keys(jobTypes) || [],
+    [jobTypes],
+  );
+
+  const [activeDataTab, setActiveDataTab] = useState(selectedBlock?.folder || jobTypesKeys[0]);
+
+  const selectedReturn = useMemo(
+  () => (Object.keys(selectedBlock.return || {})),
+  [selectedBlock],
+  );
 
   const onDataTabChange = useCallback(
     (_, id) => {
@@ -39,20 +50,24 @@ const AddBlockForm = styled((props) => {
       <ModalHeader>{header}</ModalHeader>
 
       <ModalBody>
-        <Tabs value={activeDataTab} onChange={onDataTabChange}>
+        <Tabs
+          value={activeDataTab}
+          onChange={onDataTabChange}
+        >
           {Object.values(jobTypes).map((type) => (
             <Tab
               key={type.key}
               label={type.name}
+              value={type.key}
             />
           ))}
         </Tabs>
 
-        {Object.values(jobTypes).map((jobType, typeIndex) => (
+        {Object.values(jobTypes).map((jobType) => (
           <TabPanel
-            key={`${jobType.key}_${typeIndex}`}
+            key={jobType.key}
             value={activeDataTab}
-            index={typeIndex}
+            index={jobType.key}
           >
             <Grid container>
               {Object.values(jobType.stages).map((stage, stageIndex) => (
@@ -67,6 +82,10 @@ const AddBlockForm = styled((props) => {
                     if (selectedBlock.type !== 'start') {
                       enabled = block.depends_and_script?.includes(selectedBlock.script_path)
                         || block.depends_or_script?.includes(selectedBlock.script_path);
+                      if (!enabled && selectedBlock.stage === block.stage) {
+                        const blockReturn = Object.values(block.params_meta).reduce((acc, item) => item.hidden ? [...acc, item.name] : acc, []);
+                        enabled = isEqual(selectedReturn, blockReturn);
+                      }
                     }
 
                     return (
@@ -99,10 +118,10 @@ const AddBlockForm = styled((props) => {
                           </ul>
                           <ul className="block__output">
                             Output:
-                            {(block.return || [])
-                              .map(({ description, ...tail }, i) => (
+                            {Object.values(block.return)
+                              .map((el, i) => (
                                 <li key={i}>
-                                  {Object.keys(tail)[0]}: {description}
+                                  {el.name}: {el.description}
                                 </li>
                               ))}
                           </ul>

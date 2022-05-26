@@ -91,10 +91,34 @@ const Pipelines = () => {
       Header: 'id',
       getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
       Cell: ({ row: { original: { id } } }) => useMemo(
-        () => (<Link to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}>{id}</Link>),
+        () => (
+          <Link
+            to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}
+            underline="always"
+          >
+            {id}
+          </Link>
+        ),
         [id],
       ),
+      minWidth: 50,
+      maxWidth: 50,
     }, {
+      accessor: 'name',
+      Header: 'name',
+      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
+      Cell: ({ row: { original: { name, id } } }) => useMemo(
+        () => (
+          <Link
+            to={`/${PathNames.projects}/${projectId}/${PathNames.pipelines}/${id}`}
+            underline="always"
+          >
+            {name}
+          </Link>
+        ),
+        [id, name],
+      ),
+    },{
       accessor: 'status',
       Header: 'status',
       Cell: ({ row: { original: { status } } }) => useMemo(
@@ -119,14 +143,6 @@ const Pipelines = () => {
           return statusAsString;
         },
         [status],
-      ),
-    }, {
-      accessor: 'name',
-      Header: 'name',
-      getCellProps: () => ({ style: { textTransform: 'capitalize' } }),
-      Cell: ({ row: { original: { name } } }) => useMemo(
-        () => name,
-        [name],
       ),
     }, {
       accessor: 'author',

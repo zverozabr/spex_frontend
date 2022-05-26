@@ -51,8 +51,20 @@ const TransferList = styled((props) => {
   const [checked, setChecked] = useState([]);
 
   const fixedValue = useMemo(
-    () => (Array.isArray(value) ? value : [value])
-      .map((val) => options.find((opt) => opt.id === val) || { id: val }),
+    () => {
+      const arr = Array.isArray(value) ? value : [value];
+      if (!options?.length) {
+        return arr;
+      }
+      return arr.map((val) => {
+        const foundedOption = options.find((item) => item.id === (val.id || val));
+        if (foundedOption) {
+          const { disabled, ...rest } = foundedOption;
+          return rest;
+        }
+        return val.id ? val : { id: val };
+      });
+    },
     [options, value],
   );
 
@@ -140,28 +152,35 @@ const TransferList = styled((props) => {
         />
         <Divider />
         <List dense component="div" role="list">
-          {items.map((el) => {
-            const id = `transfer-list-all-item-${el.id}-label`;
-
-            return (
-              <ListItem key={el.id} role="listitem" button onClick={onToggle(el)}>
+          {items.map((item, index) => (
+            <ListItem
+              // eslint-disable-next-line react/no-array-index-key
+              key={`${item.id}-${index}`}
+              role="listitem"
+              button
+              onClick={onToggle(item)}
+              disabled={item.disabled}
+            >
+              <ListItemIcon>
+                <Checkbox
+                  checked={checked.indexOf(item) !== -1}
+                  tabIndex={-1}
+                  disableRipple
+                />
+              </ListItemIcon>
+              {item.img && (
                 <ListItemIcon>
-                  <Checkbox
-                    checked={checked.indexOf(el) !== -1}
-                    tabIndex={-1}
-                    inputProps={{ 'aria-labelledby': id }}
-                    disableRipple
-                  />
+                  <img src={item.img} alt={item.title || 'Image'} />
                 </ListItemIcon>
-                {el.img && (
-                  <ListItemIcon>
-                    <img src={el.img} alt={el.title || 'Image'} />
-                  </ListItemIcon>
-                )}
-                {el.title && <ListItemText id={id} primary={el.title} />}
-              </ListItem>
-            );
-          })}
+              )}
+              {(item.title || item.description) && (
+                <ListItemText
+                  primary={item.title}
+                  secondary={item.description}
+                />
+              )}
+            </ListItem>
+          ))}
           <ListItem />
         </List>
       </Card>

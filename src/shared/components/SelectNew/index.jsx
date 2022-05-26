@@ -1,12 +1,8 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import PropTypes from 'prop-types';
-import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
-
-import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
-import { selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
 const Option = styled.div`
   :before {
@@ -25,10 +21,9 @@ const renderOption = (option) => (
   </Option>
 );
 
-const SelectOmeroChannels = (props) => {
+const SelectNew = (props) => {
   const {
-    projectId,
-    pipelineId,
+    options,
     onlyOneValue,
     input,
     meta,
@@ -38,33 +33,12 @@ const SelectOmeroChannels = (props) => {
   const showError = ((meta.submitError && !meta.dirtySinceLastSubmit) || meta.error) && meta.touched;
   const onChange = input.onChange || props.onChange;
 
-  const dispatch = useDispatch();
-
-  const pipeline = useSelector(pipelineSelectors.getPipeline(projectId, pipelineId));
-  const omeroId = useMemo(() => pipeline?.jobs?.[0]?.tasks?.[0]?.omeroId, [pipeline]);
-  const imageDetails = useSelector(omeroSelectors.getImageDetails(omeroId));
-
-  const options = useMemo(
-    () => ((imageDetails?.channels || []).map((el, i) => ({
-      value: i,
-      label: el.label,
-      color: el.color,
-    }))),
-  [imageDetails],
-  );
-
   const fixedValue = useMemo(
     () => {
-      let value = input?.value || props.value;
-      if (onlyOneValue) {
-        return value == null
-          ? value
-          : options.find((opt) => opt.value === value) || { value, label: value };
-      }
-
-      value = value || [];
-      return (Array.isArray(value) ? value : [value])
-        .map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
+      let value = options.length ? input?.value ?? props.value : [];
+      value = value == null || value === '' ? [] : value;
+      value = (Array.isArray(value) ? value : [value]).map((val) => options.find((opt) => opt.value === val) || { value: val, label: val });
+      return onlyOneValue ? value[0] || null : value;
     },
     [input?.value, options, props.value, onlyOneValue],
   );
@@ -89,16 +63,6 @@ const SelectOmeroChannels = (props) => {
     [tail.label, showError, meta.error, meta.submitError],
   );
 
-  useEffect(
-    () => {
-      if (imageDetails) {
-        return;
-      }
-      dispatch(omeroActions.fetchImageDetails(omeroId));
-    },
-    [dispatch, imageDetails, omeroId],
-  );
-
   return (
     <Autocomplete
       multiple={!onlyOneValue}
@@ -113,9 +77,8 @@ const SelectOmeroChannels = (props) => {
   );
 };
 
-SelectOmeroChannels.propTypes = {
-  projectId: PropTypes.string,
-  pipelineId: PropTypes.string,
+SelectNew.propTypes = {
+  options: PropTypes.arrayOf(PropTypes.shape({})),
   input: PropTypes.shape({
     value: PropTypes.oneOfType([
       PropTypes.number,
@@ -141,14 +104,13 @@ SelectOmeroChannels.propTypes = {
   onlyOneValue: PropTypes.bool,
 };
 
-SelectOmeroChannels.defaultProps = {
-  projectId: '',
-  pipelineId: '',
+SelectNew.defaultProps = {
+  options: [],
   input: {},
   meta: {},
-  value: null,
+  value: [],
   onChange: null,
   onlyOneValue: false,
 };
 
-export default SelectOmeroChannels;
+export default SelectNew;
