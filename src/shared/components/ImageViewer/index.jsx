@@ -191,13 +191,12 @@ const ImageViewer = (props) => {
       let maxRadius;
       const { maxZoom } = omeroLayerRef.current;
       // [, label, centroid-0, centroid-1, 0],
-      const [, , , , ...channelIndexes] = results[0];
+      const [, , , ...channelIndexes] = results[0];
       results.forEach((item, index) => {
         if (index === 0) {
           return;
         }
-
-        const [, , x, y, ...itemTail] = item;
+        const [, x, y, ...itemTail] = item;
         const p = L.point(x, y);
         const center = map.options.crs.pointToLatLng(p, maxZoom);
 
