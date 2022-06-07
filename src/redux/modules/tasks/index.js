@@ -110,10 +110,11 @@ const slice = createSlice({
       state.tasks[task.id] = normalizeTask(task);
     },
 
-    fetchTaskResultSuccess: (state, { payload: { id, key, value } }) => {
+    fetchTaskResultSuccess: (state, { payload: { id, key, arr } }) => {
       stopFetching(state);
       state.results[id] = state.results[id] || {};
-      state.results[id][key] = value;
+      state.results[id][key] = arr;
+      state.results.currentTask = id;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -280,9 +281,7 @@ const slice = createSlice({
           } else {
             value = yield res.data.text();
             arr = loadDataFrame(value);
-            yield put(actions.fetchTaskResultSuccess({ id, key, arr }));
           }
-
           yield put(actions.fetchTaskResultSuccess({ id, key, arr }));
         } catch (error) {
           yield put(actions.requestFail(error));
@@ -375,6 +374,11 @@ const slice = createSlice({
     getTaskResults: (id) => createSelector(
       [getState],
       (state) => state?.results[id],
+    ),
+
+    getSelectedTask: createSelector(
+      [getState],
+      (state) => state?.results.currentTask,
     ),
   }),
 });

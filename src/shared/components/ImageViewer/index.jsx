@@ -191,12 +191,25 @@ const ImageViewer = (props) => {
       let maxRadius;
       const { maxZoom } = omeroLayerRef.current;
       // [, label, centroid-0, centroid-1, 0],
-      const [, , , ...channelIndexes] = results[0];
+      const [, , , ...channelNames] = results[0];
+      let channelIndexes = [];
+      channelNames.forEach((channelName, index) => {
+        channels.forEach((channel, ind) => {
+          if (channel.label === channelName) {
+            channelIndexes.push(ind);
+          }
+        });
+      });
+
       results.forEach((item, index) => {
         if (index === 0) {
           return;
         }
         const [, x, y, ...itemTail] = item;
+        if (x === undefined || y === undefined) {
+          return;
+        }
+
         const p = L.point(x, y);
         const center = map.options.crs.pointToLatLng(p, maxZoom);
 
@@ -212,7 +225,7 @@ const ImageViewer = (props) => {
         });
       });
 
-      const radius = scaleLinear().domain([minRadius, maxRadius]).range([3, 12]);
+      const radius = scaleLinear().domain([minRadius, maxRadius]).range([2, 5]);
       setCentroids(_centroids.map((item) => ({ ...item, radius: radius(item.radius) })));
     },
     [map, channels, results],

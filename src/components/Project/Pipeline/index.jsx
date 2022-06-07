@@ -406,7 +406,6 @@ const Pipeline = () => {
       if (id == null || !key) {
         return;
       }
-
       dispatch(tasksActions.fetchTaskResultOnImage({ id, key: key }));
     },
     [dispatch],
@@ -480,7 +479,7 @@ const Pipeline = () => {
                               data-key={key}
                               data-task-id={item.id}
                             >
-                              Load value
+                              Download value
                             </Button>
                           )}
                         />
