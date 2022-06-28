@@ -90,6 +90,7 @@ const slice = createSlice({
     fetchTaskKeys: startFetching,
     fetchTaskResult: startFetching,
     fetchTaskResultOnImage: startFetching,
+    fetchTaskVisualize: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
     deleteTask: startFetching,
@@ -265,6 +266,43 @@ const slice = createSlice({
 
         try {
           const url_keys = `${baseUrl}/file/${id}?key=${key}`;
+
+          const res = yield call(api.get, url_keys, { responseType: 'blob' });
+
+          const type = res.data.type;
+
+          let value;
+          let arr = [];
+
+          if (type === 'application/json') {
+            value = yield res.data.text();
+            const { data, message } = JSON.parse(value);
+
+            value = data || (message && `Error at converting: ${message}`);
+          } else {
+            value = yield res.data.text();
+            arr = loadDataFrame(value);
+          }
+          yield put(actions.fetchTaskResultSuccess({ id, key, arr }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchTaskVisualize]: {
+      * saga({ payload: { id, name } }) {
+        initApi();
+        let key = '';
+        let vis_name = '';
+        try {
+          if (name === 'feature_extraction') {
+            key = 'dataframe';
+            vis_name = 'scatter';
+          }
+          const url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
 
           const res = yield call(api.get, url_keys, { responseType: 'blob' });
 
