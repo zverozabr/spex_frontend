@@ -11,6 +11,7 @@ const initialState = {
   images: {},
   taskKeys: {},
   results: {},
+  vis: {},
 };
 
 let api;
@@ -116,6 +117,12 @@ const slice = createSlice({
       state.results[id] = state.results[id] || {};
       state.results[id][key] = arr;
       state.results.currentTask = id;
+    },
+
+    fetchTaskVisSuccess: (state, { payload: { id, data } }) => {
+      stopFetching(state);
+      state.vis[id] = state.vis[id] || {};
+      state.vis[id] = data;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -303,24 +310,10 @@ const slice = createSlice({
             vis_name = 'scatter';
           }
           const url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-
           const res = yield call(api.get, url_keys, { responseType: 'blob' });
+          let data = yield res.data.text();
 
-          const type = res.data.type;
-
-          let value;
-          let arr = [];
-
-          if (type === 'application/json') {
-            value = yield res.data.text();
-            const { data, message } = JSON.parse(value);
-
-            value = data || (message && `Error at converting: ${message}`);
-          } else {
-            value = yield res.data.text();
-            arr = loadDataFrame(value);
-          }
-          yield put(actions.fetchTaskResultSuccess({ id, key, arr }));
+          yield put(actions.fetchTaskVisSuccess({ id, data }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -418,6 +411,12 @@ const slice = createSlice({
       [getState],
       (state) => state?.results.currentTask,
     ),
+
+    getTaskVisualizations: createSelector(
+      [getState],
+      (state) => state?.vis,
+    ),
+
   }),
 });
 

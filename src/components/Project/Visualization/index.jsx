@@ -12,7 +12,6 @@ import { matchPath, useLocation } from 'react-router-dom';
 
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
-import { selectors as tasksSelectors } from '@/redux/modules/tasks';
 
 import Button from '+components/Button';
 import Link from '+components/Link';
@@ -35,7 +34,6 @@ const Visualization = () => {
 
   const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
   const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
-  const tasks = useSelector(tasksSelectors.getTasks) || {};
   const pipelines = useSelector(pipelineSelectors.getPipelinesWithTasksForVis(projectId)) || {};
 
   const [pipelineToManage, setPipelineToManage] = useState(null);
@@ -179,7 +177,6 @@ const Visualization = () => {
     <Fragment>
       <ButtonsContainer>
         <Button onClick={() => {
-          const newProject = { ...defaultPipeline, project: `${projectId}` };
           onShowVisualize(selectedRows, pipelines);
         }}
         >

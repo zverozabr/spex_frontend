@@ -1,20 +1,19 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
 import List from '@material-ui/core/List';
-import ListItemText from '@material-ui/core/ListItemText';
 import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
 import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import PropTypes from 'prop-types';
-
-import FormModal from '+components/FormModal';
-import { useDispatch } from 'react-redux';
-import Button from '+components/Button';
 import WallpaperIcon from '@material-ui/icons/Wallpaper';
-import { actions as tasksActions } from '@/redux/modules/tasks';
+import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
+import Button from '+components/Button';
+import FormModal from '+components/FormModal';
 
 const ShowVisualizeModal = (props) => {
   const {
@@ -29,17 +28,42 @@ const ShowVisualizeModal = (props) => {
   } = props;
 
   const dispatch = useDispatch();
+  const images_visualization = useSelector(tasksSelectors.getTaskVisualizations);
 
-  const onLoadVisualise = useCallback(
+  const onLoadVisualize = useCallback(
     () => {
       // dispatch(tasksActions.fetchTaskVisualize({ id, key: key }));
-      initialValues.map((item) => {
+      initialValues.forEach((item) => {
         dispatch(tasksActions.fetchTaskVisualize({ id: item.id, name: item.name }));
       });
-
     },
     [dispatch, initialValues],
   );
+
+  useMemo(
+    () => {
+      if (images_visualization !== {}) {
+        console.log(images_visualization);
+      }
+    },
+    [images_visualization],
+  );
+
+  const images = useMemo(
+    () => {
+      if (images_visualization !== {}) {
+        return [];
+      }
+      let data = [];
+      Object.values(images_visualization).forEach((item) => {
+        data.append(item);
+      });
+      return data;
+    },
+
+    [images_visualization],
+  );
+
 
 
   return (
@@ -51,6 +75,7 @@ const ShowVisualizeModal = (props) => {
       submitButtonText={submitButtonText}
       open={open}
       onClose={onClose}
+      images={images}
       onSubmit={onSubmit}
     >
       <Accordion expanded>
@@ -66,13 +91,18 @@ const ShowVisualizeModal = (props) => {
                 />
               </ListItem>
             ))}
+            {Object.values(images_visualization).map((children) => (
+              <ListItem component="div" key={children}>
+                <img src={children} alt={children} />
+              </ListItem>
+            ))}
           </List>
         </AccordionDetails>
       </Accordion>
       <Button
         size="small"
         variant="outlined"
-        onClick={onLoadVisualise}
+        onClick={onLoadVisualize}
         startIcon={<WallpaperIcon />}
       >
         Render value
