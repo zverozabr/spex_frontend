@@ -1,8 +1,3 @@
-// import React from 'react';
-//
-// const Visualization = () => (<div>Visualization</div>);
-//
-// export default Visualization;
 import React, {
   Fragment, useRef, useState, useMemo, useCallback, useEffect,
 } from 'react';
@@ -21,10 +16,6 @@ import ButtonsContainer from './components/ButtonsContainer.jsx';
 import ShowVisualizeModal from './components/ShowVisualizeModal';
 import SubComponent from './components/SubComponent';
 
-
-const defaultPipeline = {
-  name: '',
-};
 
 const refreshInterval = 6e4; // 1 minute
 
@@ -191,6 +182,8 @@ const Visualization = () => {
         data={pipelineData}
         SubComponent={WithSelected}
       />
+
+
 
       {tasksToShow.length > 0 && (
         <ShowVisualizeModal

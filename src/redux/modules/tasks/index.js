@@ -119,10 +119,10 @@ const slice = createSlice({
       state.results.currentTask = id;
     },
 
-    fetchTaskVisSuccess: (state, { payload: { id, data } }) => {
+    fetchTaskVisSuccess: (state, { payload: { id, vis_name, data } }) => {
       stopFetching(state);
       state.vis[id] = state.vis[id] || {};
-      state.vis[id] = data;
+      state.vis[id][vis_name] = data;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -307,13 +307,21 @@ const slice = createSlice({
         try {
           if (name === 'feature_extraction') {
             key = 'dataframe';
-            vis_name = 'scatter';
-          }
-          const url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-          const res = yield call(api.get, url_keys, { responseType: 'blob' });
-          let data = yield res.data.text();
 
-          yield put(actions.fetchTaskVisSuccess({ id, data }));
+
+            vis_name = 'boxplot';
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            vis_name = 'scatter';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+          }
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console

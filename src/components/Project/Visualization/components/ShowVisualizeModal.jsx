@@ -78,7 +78,7 @@ const ShowVisualizeModal = (props) => {
       images={images}
       onSubmit={onSubmit}
     >
-      <Accordion expanded>
+      <Accordion >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <DynamicFeedOutlinedIcon /> Tasks
         </AccordionSummary>
@@ -92,9 +92,11 @@ const ShowVisualizeModal = (props) => {
               </ListItem>
             ))}
             {Object.values(images_visualization).map((children) => (
-              <ListItem component="div" key={children}>
-                <img src={children} alt={children} />
-              </ListItem>
+              Object.keys(children).map((key) => (
+                <ListItem component="div" key={Object.keys(children)[0]}>
+                  <img src={children[key]} alt={key} />
+                </ListItem>
+              ))
             ))}
           </List>
         </AccordionDetails>
