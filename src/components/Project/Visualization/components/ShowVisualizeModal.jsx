@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-sort-default-props */
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
@@ -40,14 +40,6 @@ const ShowVisualizeModal = (props) => {
     [dispatch, initialValues],
   );
 
-  useMemo(
-    () => {
-      if (images_visualization !== {}) {
-        console.log(images_visualization);
-      }
-    },
-    [images_visualization],
-  );
 
   const images = useMemo(
     () => {
