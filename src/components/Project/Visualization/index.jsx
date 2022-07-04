@@ -1,7 +1,15 @@
 import React, {
   Fragment, useRef, useState, useMemo, useCallback, useEffect,
 } from 'react';
+import Accordion from '@material-ui/core/Accordion';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
 import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import WallpaperIcon from '@material-ui/icons/Wallpaper';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
@@ -9,22 +17,13 @@ import { matchPath, useLocation } from 'react-router-dom';
 import PathNames from '@/models/PathNames';
 import { actions as pipelineActions, selectors as pipelineSelectors } from '@/redux/modules/pipelines';
 
+import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import Button from '+components/Button';
 import Link from '+components/Link';
 import Table from '+components/Table';
-import Tabs, { Tab, TabPanel, Box } from '+components/Tabs';
-import ButtonsContainer from './components/ButtonsContainer.jsx';
-import ShowVisualizeModal from './components/ShowVisualizeModal';
+import Tabs, { Tab, Box } from '+components/Tabs';
 import SubComponent from './components/SubComponent';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
 
-// import Card from '@material-ui/core/Card';
-// import CardHeader from '@material-ui/core/CardHeader';
-// import CardContent from '@material-ui/core/CardContent';
-// import CardMedia from '@material-ui/core/CardMedia';
-// import Typography from '@material-ui/core/Typography';
-// import { CardActionArea, CardActions } from '@material-ui/core';
 
 const refreshInterval = 6e4; // 1 minute
 
@@ -34,61 +33,44 @@ const Visualization = () => {
 
   const matchProjectPath = matchPath(location.pathname, { path: `/${PathNames.projects}/:id` });
   const projectId = matchProjectPath ? matchProjectPath.params.id : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const pipelines = useSelector(pipelineSelectors.getPipelinesWithTasksForVis(projectId)) || {};
-
-  const [pipelineToManage, setPipelineToManage] = useState(null);
-  const [tasksToShow, setTasksToShow] = useState([]);
+  const images_visualization = useSelector(tasksSelectors.getTaskVisualizations || {});
   const [taskToPanels, setTasksToPanels] = useState([]);
+  const [currImages, setCurrImages] = useState({});
   const [refresher, setRefresher] = useState(null);
   const selectedRef = useRef({});
   const [selectedRows, setSelectedRows] = useState([]);
   const [activeDataTab, setActiveDataTab] = useState('');
 
-  const onShowVisualize = useCallback(
-    (selectedRows, pipelines) => {
-      let taskList = [];
-      Object.values(pipelines).forEach(function (o) {
-        o.jobs.forEach(function (job) {
-          if (selectedRows.includes(job.id) === true) {taskList = [...taskList, ...job.tasks];}
-        });
+  const onLoadVisualize = useCallback(
+    () => {
+      taskToPanels.forEach((item) => {
+        dispatch(tasksActions.fetchTaskVisualize({ id: item.id, name: item.name }));
       });
-      setTasksToShow(taskList);
     },
-    [],
+    [dispatch, taskToPanels],
   );
 
-  const onShowVisualizeClose = useCallback(
+
+  const pipelineData = useMemo(
     () => {
-      setTasksToShow([]);
+      if (pipelines.length === 0 || Object.keys(pipelines).length === 0) {
+        return [];
+      }
+      return Object.values(pipelines);
     },
-    [],
+
+    [pipelines],
   );
 
   const onSelectedRowsChange = useCallback(
     (selected, parent) => {
-
       selectedRef.current[parent.id] = selected.map(({ id }) => id);
       const selected2 = Object.values(selectedRef.current).flat();
       setSelectedRows(selected2);
     },
     [],
-  );
-
-  const onManagePipelineModalSubmit = useCallback(
-    (values) => {
-      const normalizedPipeline = {
-        ...values,
-      };
-
-      if (normalizedPipeline.id) {
-        dispatch(pipelineActions.updatePipeline(normalizedPipeline));
-      } else {
-        dispatch(pipelineActions.createPipeline(normalizedPipeline));
-      }
-
-      setPipelineToManage(null);
-    },
-    [dispatch],
   );
 
   const columns = useMemo(
@@ -140,6 +122,15 @@ const Visualization = () => {
 
   useEffect(
     () => {
+      if (selectedRows.length === 0) {
+        setTasksToPanels([]);
+      }
+    },
+    [selectedRows],
+  );
+
+  useEffect(
+    () => {
       const intervalId = setInterval(() => {
         setRefresher(Date.now());
       }, refreshInterval);
@@ -150,46 +141,80 @@ const Visualization = () => {
     [dispatch],
   );
 
+  useEffect(
+    () => {
+      let imgToShow = {};
+      const taskIds = taskToPanels.map((item) => {return item.id;});
+      Object.keys(images_visualization).forEach((task_id) => {
+        if (taskIds.includes(task_id)) {
+          imgToShow[task_id] = images_visualization[task_id];
+        }
+      });
+      setCurrImages(imgToShow);
+    },
+    [images_visualization, taskToPanels, setCurrImages],
+  );
+
+  const getTasks = useCallback(
+    (id, pipelines, taskToPanels) => {
+      if (Object.keys(pipelines).length !== 0) {
+        let taskList = [];
+        pipelines.forEach(function (o) {
+          o.jobs.forEach(function (job) {
+            if ([id].includes(job.id) === true) {
+              taskList = [...taskList, ...job.tasks];
+            }
+          });
+        });
+
+        if (taskToPanels !== taskList) {
+          return taskList;
+        }
+        return taskList;
+      }
+    },
+    [],
+  );
+
+
   const onDataTabChange = useCallback(
     (_, id) => {
       setActiveDataTab(id);
-      let taskList = [];
-      if (Object.keys(pipelines).length === 0) {
-        return;
-      }
-      Object.values(pipelines).forEach(function (o) {
-        o.jobs.forEach(function (job) {
-          if ([id].includes(job.id) === true) {taskList = [...taskList, ...job.tasks];}
-        });
+      const taskList = getTasks(id, pipelineData, taskToPanels);
+      setTasksToPanels(taskList);
+      const taskIds = taskList.map((item) => {return item.id;});
+      let imgToShow = {};
+      Object.keys(images_visualization).forEach((task_id) => {
+        if (taskIds.includes(task_id)) {
+          imgToShow[task_id] = images_visualization[task_id];
+        }
       });
-
-      if (taskToPanels !== taskList) {
-        setTasksToPanels(taskList);
-      }
+      setCurrImages(imgToShow);
     },
-    [pipelines, taskToPanels],
+    [taskToPanels, pipelineData, getTasks, images_visualization],
   );
+
 
   const tabsData = useMemo(
     () => {
-      if (Object.values(pipelines).length === 0 || selectedRows.length === 0) {
+      if (pipelineData.length === 0 || selectedRows.length === 0) {
         return [];
       }
       let tabs = [];
-      // Object.values(pipelines)[0]["jobs"][0]["id"]
-      Object.values(pipelines).map(function (pipeline) {
-        let curr_pipeline_job_ids = pipeline.jobs.map((job) => {
-          return job.id;
+      let pipelines_job_ids = [];
+      pipelineData.forEach((pipeline) => {
+        pipeline.jobs.forEach((job) => {
+          pipelines_job_ids.push(job.id);
         });
-
-        tabs = selectedRows.filter(((n) => curr_pipeline_job_ids.includes(n)));
-        setActiveDataTab(tabs[0]);
       });
+
+      tabs = selectedRows.filter(((n) => pipelines_job_ids.includes(n)));
+      onDataTabChange('', tabs[0]);
 
       return tabs;
     },
-
-    [selectedRows, pipelines, onDataTabChange],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedRows, pipelineData],
   );
 
   const WithSelected = useCallback(
@@ -204,33 +229,12 @@ const Visualization = () => {
     [onSelectedRowsChange],
   );
 
-  const pipelineData = useMemo(
-    () => {
-      if (pipelines.length === 0 || Object.keys(pipelines).length === 0) {
-        return [];
-      }
-      return Object.values(pipelines);
-    },
-
-    [pipelines],
-  );
-
-
   return (
     <Fragment>
-      <ButtonsContainer>
-        <Button onClick={() => {
-          onShowVisualize(selectedRows, pipelines);
-        }}
-        >
-          Show vis
-        </Button>
-      </ButtonsContainer>
 
       <Table
         onSelectedRowsChange={setSelectedRows}
         columns={columns}
-        selectedRowIds={pipelineToManage}
         data={pipelineData}
         SubComponent={WithSelected}
       />
@@ -248,53 +252,39 @@ const Visualization = () => {
           ))}
         </Tabs>
       </Box>
-      <List dense component="div">
-        {taskToPanels.map((type) => (
-          <ListItem component="div" key={type.id}>
-            <ListItemText
-              primary={`task id: ${type.id}.`}
-            />
-          </ListItem>
-        ))}
-      </List>
+      <Accordion expanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <DynamicFeedOutlinedIcon /> Tasks
+        </AccordionSummary>
+        <AccordionDetails>
+          <List dense component="div">
+            {taskToPanels.map((type) => (
+              <ListItem component="div" key={type.id}>
+                <ListItemText
+                  primary={`task id: ${type.id}.`}
+                />
+                {Object.keys(currImages).map((taskImgId) => (
+                  Object.values(currImages).map((children) => (
+                    Object.keys(children).map((key) => (
+                      taskImgId === type.id
+                      ? <img src={children[key]} alt={key} key={`${type.id}-${key}-${taskImgId}`} />
+                      : <div>empty</div>
+                    ))
+                ))))}
+              </ListItem>
+            ))}
 
-      {/*<Card sx={{ maxWidth: 345 }}>*/}
-      {/*  <CardActionArea>*/}
-      {/*    <CardMedia*/}
-      {/*      component="img"*/}
-      {/*      height="140"*/}
-      {/*      image="https://mui.com/static/images/cards/contemplative-reptile.jpg"*/}
-      {/*      alt="green iguana"*/}
-      {/*    />*/}
-      {/*    <CardContent>*/}
-      {/*      <Typography gutterBottom variant="h5" component="div">*/}
-      {/*        Lizard*/}
-      {/*      </Typography>*/}
-      {/*      <Typography variant="body2" color="text.secondary">*/}
-      {/*        Lizards are a widespread group of squamate reptiles, with over 6,000*/}
-      {/*        species, ranging across all continents except Antarctica*/}
-      {/*      </Typography>*/}
-      {/*    </CardContent>*/}
-      {/*  </CardActionArea>*/}
-      {/*  <CardActions>*/}
-      {/*    <Button size="small" color="primary">*/}
-      {/*      Share*/}
-      {/*    </Button>*/}
-      {/*  </CardActions>*/}
-      {/*</Card>*/}
-
-
-
-      {tasksToShow.length > 0 && (
-        <ShowVisualizeModal
-          // header={`${pipelineToManage.id ? 'Edit' : 'Add'} Pipeline`}
-          // header={tasksToShow}
-          initialValues={tasksToShow}
-          onClose={onShowVisualizeClose}
-          onSubmit={onManagePipelineModalSubmit}
-          open
-        />
-      )}
+          </List>
+        </AccordionDetails>
+      </Accordion>
+      <Button
+        size="small"
+        variant="outlined"
+        onClick={onLoadVisualize}
+        startIcon={<WallpaperIcon />}
+      >
+        Render value
+      </Button>
     </Fragment>
   );
 };
