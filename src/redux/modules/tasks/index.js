@@ -22,6 +22,14 @@ const initApi = () => {
   }
 };
 
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
+
 const baseUrl = '/tasks';
 
 const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
@@ -314,6 +322,8 @@ const slice = createSlice({
             let res = yield call(api.get, url_keys, { responseType: 'blob' });
             let data = yield res.data.text();
             yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
 
             vis_name = 'scatter';
             url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;

@@ -263,14 +263,9 @@ const Visualization = () => {
                 <ListItemText
                   primary={`task id: ${type.id}.`}
                 />
-                {Object.keys(currImages).map((taskImgId) => (
-                  Object.values(currImages).map((children) => (
-                    Object.keys(children).map((key) => (
-                      taskImgId === type.id
-                      ? <img src={children[key]} alt={key} key={`${type.id}-${key}-${taskImgId}`} />
-                      : <div>empty</div>
-                    ))
-                ))))}
+                {Object.keys(Object(currImages[type.id])).map((key) => (
+                  <img src={currImages[type.id][key]} alt={key} key={`${type.id}-${key}-${type.id}`} />
+                ))}
               </ListItem>
             ))}
 
