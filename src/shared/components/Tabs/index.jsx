@@ -39,4 +39,5 @@ export {
   Tabs as default,
   Tab,
   TabPanel,
+  Box,
 };

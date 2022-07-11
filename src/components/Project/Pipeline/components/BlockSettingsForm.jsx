@@ -12,6 +12,7 @@ import styled from 'styled-components';
 import { actions as omeroActions, selectors as omeroSelectors } from '@/redux/modules/omero';
 
 import { selectors as projectsSelectors } from '@/redux/modules/projects';
+import { selectors as tasksSelectors } from '@/redux/modules/tasks';
 import Button, { ButtonColors } from '+components/Button';
 import Form, { Controls, Field, FormRenderer, Validators, Parsers } from '+components/Form';
 import ImageViewer from '+components/ImageViewer';
@@ -170,10 +171,8 @@ const focusOnFirstFieldDecorator = createFocusOnFirstFieldDecorator();
 
 // TODO: Hardcode results
 // [, label, centroid-0, centroid-1, 0],
-const results = [
-  [undefined, 'label', 'centroid-0', 'centroid-1', 0],
-  [0, 1, 860.9620253164557, 124.9873417721519, 27.31642723083496],
-  [1, 2, 863.4266666666666, 6.3933333333333335, 27.659870147705078],
+let res = [
+  ['label', 'centroid-0', 'centroid-1', 0],
 ];
 
 const BlockSettingsForm = (props) => {
@@ -191,11 +190,14 @@ const BlockSettingsForm = (props) => {
   } = props;
 
   const dispatch = useDispatch();
-
   const project = useSelector(projectsSelectors.getProject(block.projectId));
   const projectImagesThumbnails = useSelector(omeroSelectors.getImagesThumbnails(project?.omeroIds || []));
   const projectImagesDetails = useSelector(omeroSelectors.getImagesDetails(project?.omeroIds || []));
   const [activeImageIds, setActiveImageIds] = useState(block?.omeroIds || []);
+
+  const currentTask = useSelector(tasksSelectors.getSelectedTask);
+  const taskResults = useSelector(tasksSelectors.getTaskResults(currentTask));
+  const [results, setResuls] = useState(res);
 
   const projectImagesOptions = useMemo(
     () => Object.entries(projectImagesThumbnails || {})
@@ -289,6 +291,24 @@ const BlockSettingsForm = (props) => {
       setActiveImageIds(block.omeroIds || []);
     },
     [block.omeroIds],
+  );
+
+  useEffect(
+    () => {
+      // eslint-disable-next-line react/prop-types
+      if (!block?.tasks) {
+        return;
+      }
+
+      // eslint-disable-next-line react-hooks/exhaustive-deps,react/prop-types
+      block?.tasks.forEach(function (task) {
+        if (task.id === currentTask) {
+          setResuls(taskResults?.dataframe);
+        } else
+          setResuls(res);
+      });
+    },
+    [block, results, currentTask, taskResults?.dataframe],
   );
 
   return (

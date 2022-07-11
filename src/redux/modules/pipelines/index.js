@@ -8,6 +8,7 @@ const initialState = {
   isFetching: false,
   error: '',
   pipelines: [],
+  visPipelines: [],
 };
 
 let api;
@@ -25,6 +26,7 @@ const slice = createSlice({
   initialState,
   reducers: {
     fetchPipelines: startFetching,
+    fetchPipelinesForVis: startFetching,
     fetchPipeline: startFetching,
     createPipeline: startFetching,
     updatePipeline: startFetching,
@@ -42,6 +44,16 @@ const slice = createSlice({
         state.pipelines[projectId] = [];
       } else {
         state.pipelines[projectId] = hashedPipelines;
+      }
+    },
+
+    fetchPipelinesForVisSuccess: (state, { payload: { projectId, data } }) => {
+      stopFetching(state);
+      const hashedPipelines = hash(data || [], 'id');
+      if (JSON.stringify(hashedPipelines) === JSON.stringify( { } ) ) {
+        state.visPipelines[projectId] = [];
+      } else {
+        state.visPipelines[projectId] = hashedPipelines;
       }
     },
 
@@ -94,6 +106,22 @@ const slice = createSlice({
           const url = `${baseUrl}s/${projectId}`;
           const { data } = yield call(api.get, url);
           yield put(actions.fetchPipelinesSuccess({ projectId: projectId, data: data.data['pipelines'] }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchPipelinesForVis]: {
+      * saga({ payload: projectId }) {
+        initApi();
+
+        try {
+          const url = `projects/${projectId}/list`;
+          const { data } = yield call(api.get, url);
+          yield put(actions.fetchPipelinesForVisSuccess({ projectId: projectId, data: data['data'] }));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
@@ -288,6 +316,11 @@ const slice = createSlice({
     getPipelines: (projectId) => createSelector(
       [getState],
       (state) => state?.pipelines[projectId],
+    ),
+
+    getPipelinesWithTasksForVis: (projectId) => createSelector(
+      [getState],
+      (state) => state?.visPipelines[projectId],
     ),
 
     getPipeline: (projectId, pipelineId) => createSelector(

@@ -1,6 +1,6 @@
-import { call, put, all } from 'redux-saga/effects';
+import { all, call, put } from 'redux-saga/effects';
 import backendClient from '@/middleware/backendClient';
-import { createSlice, createSelector, startFetching, stopFetching } from '@/redux/utils';
+import { createSelector, createSlice, startFetching, stopFetching } from '@/redux/utils';
 
 import hash from '+utils/hash';
 
@@ -11,6 +11,7 @@ const initialState = {
   images: {},
   taskKeys: {},
   results: {},
+  vis: {},
 };
 
 let api;
@@ -20,6 +21,14 @@ const initApi = () => {
     api = backendClient();
   }
 };
+
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
 
 const baseUrl = '/tasks';
 
@@ -60,6 +69,26 @@ const saveFile = (blob, fileName) => new Promise((resolve) => {
   }, 0);
 });
 
+const loadDataFrame = (str, delimiter = ',') => {
+  let headers = str.slice(0, str.indexOf('\n')).split(delimiter);
+  const rows = str.slice(str.indexOf('\n') + 1).split('\n');
+
+  let res_arr = [];
+  headers = headers.map(function (row) {
+    return row.replace('\r', '');
+  });
+
+  res_arr = rows.map(function (row) {
+    const values = row.split(delimiter);
+    res_arr = values.map(function (val) {
+      return parseFloat(val.replace('\r', ''));
+    });
+    return res_arr;
+  });
+
+  return [headers, ...res_arr];
+};
+
 const slice = createSlice({
   name: 'tasks',
   initialState,
@@ -69,6 +98,8 @@ const slice = createSlice({
     fetchTaskImage: startFetching,
     fetchTaskKeys: startFetching,
     fetchTaskResult: startFetching,
+    fetchTaskResultOnImage: startFetching,
+    fetchTaskVisualize: startFetching,
     createTask: startFetching,
     updateTask: startFetching,
     deleteTask: startFetching,
@@ -89,10 +120,17 @@ const slice = createSlice({
       state.tasks[task.id] = normalizeTask(task);
     },
 
-    fetchTaskResultSuccess: (state, { payload: { id, key, value } }) => {
+    fetchTaskResultSuccess: (state, { payload: { id, key, arr } }) => {
       stopFetching(state);
       state.results[id] = state.results[id] || {};
-      state.results[id][key] = value;
+      state.results[id][key] = arr;
+      state.results.currentTask = id;
+    },
+
+    fetchTaskVisSuccess: (state, { payload: { id, vis_name, data } }) => {
+      stopFetching(state);
+      state.vis[id] = state.vis[id] || {};
+      state.vis[id][vis_name] = data;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -237,6 +275,70 @@ const slice = createSlice({
       },
     },
 
+    [actions.fetchTaskResultOnImage]: {
+      * saga({ payload: { id, key } }) {
+        initApi();
+
+        try {
+          const url_keys = `${baseUrl}/file/${id}?key=${key}`;
+
+          const res = yield call(api.get, url_keys, { responseType: 'blob' });
+
+          const type = res.data.type;
+
+          let value;
+          let arr = [];
+
+          if (type === 'application/json') {
+            value = yield res.data.text();
+            const { data, message } = JSON.parse(value);
+
+            value = data || (message && `Error at converting: ${message}`);
+          } else {
+            value = yield res.data.text();
+            arr = loadDataFrame(value);
+          }
+          yield put(actions.fetchTaskResultSuccess({ id, key, arr }));
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
+    [actions.fetchTaskVisualize]: {
+      * saga({ payload: { id, name } }) {
+        initApi();
+        let key = '';
+        let vis_name = '';
+        try {
+          if (name === 'feature_extraction') {
+            key = 'dataframe';
+
+
+            vis_name = 'boxplot';
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'scatter';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+          }
+        } catch (error) {
+          yield put(actions.requestFail(error));
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      },
+    },
+
     [actions.createTask]: {
       * saga({ payload: task }) {
         initApi();
@@ -321,6 +423,17 @@ const slice = createSlice({
       [getState],
       (state) => state?.results[id],
     ),
+
+    getSelectedTask: createSelector(
+      [getState],
+      (state) => state?.results.currentTask,
+    ),
+
+    getTaskVisualizations: createSelector(
+      [getState],
+      (state) => state?.vis,
+    ),
+
   }),
 });
 

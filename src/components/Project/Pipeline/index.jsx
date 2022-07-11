@@ -10,6 +10,7 @@ import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ErrorIcon from '@material-ui/icons/Error';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import GetAppIcon from '@material-ui/icons/GetApp';
+import WallpaperIcon from '@material-ui/icons/Wallpaper';
 import classNames from 'classnames';
 import dagre from 'dagre';
 import cloneDeep from 'lodash/cloneDeep';
@@ -397,6 +398,19 @@ const Pipeline = () => {
     [dispatch],
   );
 
+  const onLoadResults = useCallback(
+    (event) => {
+      const key = event.currentTarget.dataset.key;
+      const id = event.currentTarget.dataset.taskId;
+
+      if (id == null || !key) {
+        return;
+      }
+      dispatch(tasksActions.fetchTaskResultOnImage({ id, key: key }));
+    },
+    [dispatch],
+  );
+
   const tasksRender = useMemo(
     () => {
       if (!selectedBlock?.tasks?.length) {
@@ -444,7 +458,18 @@ const Pipeline = () => {
                     ) : resultKeys[item.id].map(({ key, value }) => (
                       <ListItem component="div" key={key}>
                         <ListItemText
-                          primary={key}
+                          primary={(
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={onLoadResults}
+                              data-key={key}
+                              data-task-id={item.id}
+                              startIcon={<WallpaperIcon />}
+                            >
+                              Show value
+                            </Button>
+                          )}
                           secondary={(
                             <Button
                               onClick={onLoadValue}
@@ -454,7 +479,7 @@ const Pipeline = () => {
                               data-key={key}
                               data-task-id={item.id}
                             >
-                              Load value
+                              Download value
                             </Button>
                           )}
                         />
@@ -475,7 +500,7 @@ const Pipeline = () => {
         </Accordion>
       );
     },
-    [onLoadValue, selectedBlock, tasks, results],
+    [onLoadValue, onLoadResults, selectedBlock, tasks, results],
   );
 
   useEffect(
