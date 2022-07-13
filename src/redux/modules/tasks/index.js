@@ -316,7 +316,6 @@ const slice = createSlice({
           if (name === 'feature_extraction') {
             key = 'dataframe';
 
-
             vis_name = 'boxplot';
             let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
             let res = yield call(api.get, url_keys, { responseType: 'blob' });
@@ -330,6 +329,75 @@ const slice = createSlice({
             res = yield call(api.get, url_keys, { responseType: 'blob' });
             data = yield res.data.text();
             yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+          } else if (name === 'transformation') {
+            key = 'transformed';
+
+            vis_name = 'heatmap';
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'barplot';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+          } else if (name === 'cluster') {
+            key = 'cluster';
+
+            vis_name = 'heatmap';
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'barplot';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'scatter';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+          } else if (name === 'dml') {
+            key = 'dml';
+
+            vis_name = 'heatmap';
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'barplot';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+            sleep(1000);
+
+            vis_name = 'scatter';
+            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+            res = yield call(api.get, url_keys, { responseType: 'blob' });
+            data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+
+
+
           }
         } catch (error) {
           yield put(actions.requestFail(error));

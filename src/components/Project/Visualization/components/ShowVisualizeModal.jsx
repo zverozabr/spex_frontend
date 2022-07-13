@@ -14,6 +14,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import Button from '+components/Button';
 import FormModal from '+components/FormModal';
+import Divider from '@material-ui/core/Divider';
+import { Box } from '+components/Tabs';
 
 const ShowVisualizeModal = (props) => {
   const {
@@ -85,9 +87,11 @@ const ShowVisualizeModal = (props) => {
             ))}
             {Object.values(images_visualization).map((children) => (
               Object.keys(children).map((key) => (
-                <ListItem component="div" key={Object.keys(children)[0]}>
-                  <img src={children[key]} alt={key} />
-                </ListItem>
+                <Box key={Object.keys(children)[0]}>
+                  <ListItem component="div" key={Object.keys(children)[0]}>
+                    <img src={children[key]} alt={key} />
+                  </ListItem>
+                </Box>
               ))
             ))}
           </List>
