@@ -345,7 +345,6 @@ const slice = createSlice({
             res = yield call(api.get, url_keys, { responseType: 'blob' });
             data = yield res.data.text();
             yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
           } else if (name === 'cluster') {
             key = 'cluster';
 
@@ -370,7 +369,6 @@ const slice = createSlice({
             res = yield call(api.get, url_keys, { responseType: 'blob' });
             data = yield res.data.text();
             yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
           } else if (name === 'dml') {
             key = 'dml';
 
@@ -395,9 +393,6 @@ const slice = createSlice({
             res = yield call(api.get, url_keys, { responseType: 'blob' });
             data = yield res.data.text();
             yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-
-
           }
         } catch (error) {
           yield put(actions.requestFail(error));

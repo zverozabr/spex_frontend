@@ -222,6 +222,7 @@ const BlockSettingsForm = (props) => {
         value: el.label,
         label: el.label,
         color: el.color,
+        index: el.value,
       }));
     },
     [projectImagesDetails],
@@ -383,6 +384,7 @@ const BlockSettingsForm = (props) => {
                   title="Restart the block"
                 >
                   <Repeat />
+                  Restart
                 </Button>
                 <Button
                   color={ButtonColors.secondary}
@@ -393,6 +395,7 @@ const BlockSettingsForm = (props) => {
                   title="Refresh state of the block"
                 >
                   <Refresh />
+                  refresh
                 </Button>
                 <Button
                   color={ButtonColors.secondary}

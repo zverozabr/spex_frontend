@@ -16,6 +16,7 @@ import Button from '+components/Button';
 import FormModal from '+components/FormModal';
 import Divider from '@material-ui/core/Divider';
 import { Box } from '+components/Tabs';
+import Container from '@/components/Project/components/Container';
 
 const ShowVisualizeModal = (props) => {
   const {
@@ -77,24 +78,25 @@ const ShowVisualizeModal = (props) => {
           <DynamicFeedOutlinedIcon /> Tasks
         </AccordionSummary>
         <AccordionDetails>
-          <List dense component="div">
-            {initialValues.map((item) => (
-              <ListItem component="div" key={item}>
-                <ListItemText
-                  primary={`task id: ${item.id}.`}
+          {/*{initialValues.map((item) => (*/}
+          {/*  <ListItem component="div" key={item}>*/}
+          {/*    <ListItemText*/}
+          {/*      primary={`task id: ${item.id}.`}*/}
+          {/*    />*/}
+          {/*  </ListItem>*/}
+          {/*))}*/}
+          {Object.values(images_visualization).map((children) => (
+            Object.keys(children).map((key) => (
+              <Container key={Object.keys(children)[0]}>
+                <Box
+                  key={Object.keys(children)[0]}
+                  component="img"
+                  src={children[key]}
+                  alt={key}
                 />
-              </ListItem>
-            ))}
-            {Object.values(images_visualization).map((children) => (
-              Object.keys(children).map((key) => (
-                <Box key={Object.keys(children)[0]}>
-                  <ListItem component="div" key={Object.keys(children)[0]}>
-                    <img src={children[key]} alt={key} />
-                  </ListItem>
-                </Box>
-              ))
-            ))}
-          </List>
+              </Container>
+            ))
+          ))}
         </AccordionDetails>
       </Accordion>
       <Button
