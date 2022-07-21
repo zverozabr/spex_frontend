@@ -3,9 +3,6 @@ import React, { useCallback, useMemo } from 'react';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
 import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import WallpaperIcon from '@material-ui/icons/Wallpaper';
@@ -14,7 +11,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import Button from '+components/Button';
 import FormModal from '+components/FormModal';
-import Divider from '@material-ui/core/Divider';
 import { Box } from '+components/Tabs';
 import Container from '@/components/Project/components/Container';
 

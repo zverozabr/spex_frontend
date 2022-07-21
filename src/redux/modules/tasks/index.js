@@ -22,14 +22,6 @@ const initApi = () => {
   }
 };
 
-function sleep(milliseconds) {
-  const date = Date.now();
-  let currentDate = null;
-  do {
-    currentDate = Date.now();
-  } while (currentDate - date < milliseconds);
-}
-
 const baseUrl = '/tasks';
 
 const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
@@ -88,6 +80,21 @@ const loadDataFrame = (str, delimiter = ',') => {
 
   return [headers, ...res_arr];
 };
+
+function* fetchData(id, key, vis_name) {
+  try {
+    let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
+    let res = yield call(api.get, url_keys, { responseType: 'blob' });
+    let data = yield res.data.text();
+    yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+    return true;
+  } catch (error) {
+    yield put(actions.requestFail(error));
+    // eslint-disable-next-line no-console
+    console.error(error.message);
+    return false;
+  }
+}
 
 const slice = createSlice({
   name: 'tasks',
@@ -308,92 +315,25 @@ const slice = createSlice({
     },
 
     [actions.fetchTaskVisualize]: {
-      * saga({ payload: { id, name } }) {
-        initApi();
-        let key = '';
-        let vis_name = '';
-        try {
-          if (name === 'feature_extraction') {
-            key = 'dataframe';
-
-            vis_name = 'boxplot';
-            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            let res = yield call(api.get, url_keys, { responseType: 'blob' });
-            let data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'scatter';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-          } else if (name === 'transformation') {
-            key = 'transformed';
-
-            vis_name = 'heatmap';
-            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            let res = yield call(api.get, url_keys, { responseType: 'blob' });
-            let data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'barplot';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-          } else if (name === 'cluster') {
-            key = 'cluster';
-
-            vis_name = 'heatmap';
-            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            let res = yield call(api.get, url_keys, { responseType: 'blob' });
-            let data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'barplot';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'scatter';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-          } else if (name === 'dml') {
-            key = 'dml';
-
-            vis_name = 'heatmap';
-            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            let res = yield call(api.get, url_keys, { responseType: 'blob' });
-            let data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'barplot';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-
-            sleep(1000);
-
-            vis_name = 'scatter';
-            url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-            res = yield call(api.get, url_keys, { responseType: 'blob' });
-            data = yield res.data.text();
-            yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
+      * saga({ payload: { id, name, key, script } }) {
+        initApi();       
+        let visList = [];
+        if (script === 'segmentation' || script === 'cell_seg') {
+          const labels_list = ['load_tiff, background_subtract'];
+          if (labels_list.includes(name)) {
+            // skipping
+            visList = ['image'];
+          } else if (name === 'feature_extraction') {
+            visList = ['boxplot', 'scatter'];
+          } else {
+            visList = ['labels'];
           }
+        } else {
+          visList = ['heatmap', 'barplot', 'scatter'];
+        }
+
+        try {
+            yield all(visList.map((vis_name) => fetchData(id, key, vis_name)));
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
