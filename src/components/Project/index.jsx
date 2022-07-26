@@ -5,7 +5,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import AppsIcon from '@material-ui/icons/Apps';
 import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 import FolderIcon from '@material-ui/icons/Folder';
-import VisibilityIcon from '@material-ui/icons/Visibility';
 import classNames from 'classnames';
 import { matchPath, useHistory, useLocation } from 'react-router-dom';
 
@@ -163,15 +162,6 @@ const Project = () => {
             <ListItemText primary="Build Analysis" />
           </ListItem>
 
-          <ListItem
-            className={classes.listItem}
-            selected={showVisualization}
-            onClick={onSidebarItemClick(visualizationUrl)}
-            button
-          >
-            <ListItemIcon><VisibilityIcon /></ListItemIcon>
-            <ListItemText primary="Visualization" />
-          </ListItem>
         </List>
       </Drawer>
 

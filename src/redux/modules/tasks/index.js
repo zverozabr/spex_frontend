@@ -22,6 +22,14 @@ const initApi = () => {
   }
 };
 
+const sleep = (milliseconds) => {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+};
+
 const baseUrl = '/tasks';
 
 const isObject = (value) => value != null && typeof value === 'object' && !Array.isArray(value);
@@ -81,20 +89,6 @@ const loadDataFrame = (str, delimiter = ',') => {
   return [headers, ...res_arr];
 };
 
-function* fetchData(id, key, vis_name) {
-  try {
-    let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${vis_name}`;
-    let res = yield call(api.get, url_keys, { responseType: 'blob' });
-    let data = yield res.data.text();
-    yield put(actions.fetchTaskVisSuccess({ id, vis_name, data }));
-    return true;
-  } catch (error) {
-    yield put(actions.requestFail(error));
-    // eslint-disable-next-line no-console
-    console.error(error.message);
-    return false;
-  }
-}
 
 const slice = createSlice({
   name: 'tasks',
@@ -134,10 +128,10 @@ const slice = createSlice({
       state.results.currentTask = id;
     },
 
-    fetchTaskVisSuccess: (state, { payload: { id, vis_name, data } }) => {
+    fetchTaskVisSuccess: (state, { payload: { id, visName, data } }) => {
       stopFetching(state);
       state.vis[id] = state.vis[id] || {};
-      state.vis[id][vis_name] = data;
+      state.vis[id][visName] = data;
     },
 
     updateTaskSuccess: (state, { payload: task }) => {
@@ -333,7 +327,14 @@ const slice = createSlice({
         }
 
         try {
-            yield all(visList.map((vis_name) => fetchData(id, key, vis_name)));
+          for (let i = 0; i < visList.length; i++) {
+            let visName = visList[i];
+            let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${visName}`;
+            let res = yield call(api.get, url_keys, { responseType: 'blob' });
+            let data = yield res.data.text();
+            yield put(actions.fetchTaskVisSuccess({ id, visName, data }));
+            sleep(1000);
+          }
         } catch (error) {
           yield put(actions.requestFail(error));
           // eslint-disable-next-line no-console
