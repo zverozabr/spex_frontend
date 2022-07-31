@@ -10,6 +10,8 @@ import ListItemText from '@material-ui/core/ListItemText';
 import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import WallpaperIcon from '@material-ui/icons/Wallpaper';
+import ImageList from '@mui/material/ImageList';
+import ImageListItem from '@mui/material/ImageListItem';
 import { useDispatch, useSelector } from 'react-redux';
 import { matchPath, useLocation } from 'react-router-dom';
 
@@ -263,12 +265,22 @@ const Visualization = () => {
                 <ListItemText
                   primary={`task id: ${type.id}.`}
                 />
-                {Object.keys(Object(currImages[type.id])).map((key) => (
-                  <img src={currImages[type.id][key]} alt={key} key={`${type.id}-${key}-${type.id}`} />
-                ))}
+                <ImageList cols={2}>
+                  {Object.keys(Object(currImages[type.id])).map((key) => (
+                    <ImageListItem key={`${type.id}-${key}-${type.id}`}>
+                      <p>
+                        <Box
+                          key={`${type.id}-${key}-${type.id}`}
+                          component="img"
+                          src={currImages[type.id][key]}
+                          alt={key}
+                        />
+                      </p>
+                    </ImageListItem>
+                  ))}
+                </ImageList>
               </ListItem>
             ))}
-
           </List>
         </AccordionDetails>
       </Accordion>

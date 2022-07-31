@@ -2,15 +2,17 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
+import Grid from '@material-ui/core/Grid';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
-import ListSubheader from '@material-ui/core/ListSubheader';
 import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ErrorIcon from '@material-ui/icons/Error';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import GetAppIcon from '@material-ui/icons/GetApp';
 import WallpaperIcon from '@material-ui/icons/Wallpaper';
+import ImageList from '@mui/material/ImageList';
+import ImageListItem from '@mui/material/ImageListItem';
 import classNames from 'classnames';
 import dagre from 'dagre';
 import cloneDeep from 'lodash/cloneDeep';
@@ -28,6 +30,7 @@ import Button from '+components/Button';
 import ConfirmModal, { ConfirmActions } from '+components/ConfirmModal';
 import NoData from '+components/NoData';
 import { ScrollBarMixin } from '+components/ScrollBar';
+import { Box } from '+components/Tabs';
 import statusFormatter from '+utils/statusFormatter';
 
 import JobBlock from './blocks/JobBlock';
@@ -170,6 +173,8 @@ const Pipeline = () => {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [actionWithBlock, setActionWithBlock] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
+  const [currImages, setCurrImages] = useState({});
+  const images_visualization = useSelector(tasksSelectors.getTaskVisualizations || {});
 
   const elements = useMemo(
     () => {
@@ -220,6 +225,55 @@ const Pipeline = () => {
     [],
   );
 
+  const nameReturnKey = useMemo(
+    () => {
+      if (Object.keys(jobTypes).length === 0) {
+        return {};
+      }
+      let returnValues = {};
+      Object.keys(jobTypes).forEach((jobType) => {
+        jobTypes[jobType]['stages'].forEach((stage) => {
+          stage['scripts'].forEach((script) => {
+            returnValues[script['name']] = Object.keys(script['return'])[0];
+          });
+        });
+      });
+      return returnValues;
+    },
+    [jobTypes],
+  );
+
+  const onLoadVisualize = useCallback(
+    () => {
+      selectedBlock.tasks.forEach((item) => {
+        dispatch(tasksActions.fetchTaskVisualize({
+          id: item.id,
+          name: item.name,
+          key: nameReturnKey[item.name],
+          script: selectedBlock.script,
+        }));
+      });
+    },
+    [dispatch, selectedBlock, nameReturnKey],
+  );
+
+  useEffect(
+    () => {
+      let imgToShow = {};
+      if (!selectedBlock || !selectedBlock.tasks || Object.keys(images_visualization).length === 0) {
+        return;
+      }
+      const taskIds = selectedBlock.tasks.map((item) => {return item.id;});
+      Object.keys(images_visualization).forEach((task_id) => {
+        if (taskIds.includes(task_id)) {
+          imgToShow[task_id] = images_visualization[task_id];
+        }
+      });
+      setCurrImages(imgToShow);
+    },
+    [images_visualization, selectedBlock, setCurrImages],
+  );
+
   const onJobSubmit = useCallback(
     (values) => {
       setActionWithBlock(null);
@@ -253,9 +307,9 @@ const Pipeline = () => {
   const onJobRestart = useCallback(
     (_) => {
       const job = {
-        id: jobs[selectedBlock.id].id,
+        id: jobs[selectedBlock?.id].id,
         status: 0,
-        tasks: jobs[selectedBlock.id].tasks,
+        tasks: jobs[selectedBlock?.id].tasks,
       };
 
 
@@ -398,19 +452,6 @@ const Pipeline = () => {
     [dispatch],
   );
 
-  const onLoadResults = useCallback(
-    (event) => {
-      const key = event.currentTarget.dataset.key;
-      const id = event.currentTarget.dataset.taskId;
-
-      if (id == null || !key) {
-        return;
-      }
-      dispatch(tasksActions.fetchTaskResultOnImage({ id, key: key }));
-    },
-    [dispatch],
-  );
-
   const tasksRender = useMemo(
     () => {
       if (!selectedBlock?.tasks?.length) {
@@ -441,66 +482,86 @@ const Pipeline = () => {
           </AccordionSummary>
           <AccordionDetails>
             <List dense component="div">
-              {selectedBlock.tasks.map((item) => (
-                <ListItem component="div" key={item.id}>
-                  <ListItemText
-                    primary={`task id: ${item.id}`}
-                    secondary={`[${statusFormatter(item.status)}] ${item.name}`}
-                  />
-                  <List dense component="div">
-                    <ListSubheader component="div">
-                      Results
-                    </ListSubheader>
-                    {!resultKeys[item.id] ? (
-                      <ListItem component="div">
-                        No Data
-                      </ListItem>
-                    ) : resultKeys[item.id].map(({ key, value }) => (
-                      <ListItem component="div" key={key}>
+              <Grid container>
+                {selectedBlock.tasks.map((item) => (
+                  <Grid item xs={12} key={item.id}>
+                    <Grid item xs={12}>
+                      <List dense component="div">
                         <ListItemText
-                          primary={(
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={onLoadResults}
-                              data-key={key}
-                              data-task-id={item.id}
-                              startIcon={<WallpaperIcon />}
-                            >
-                              Show value
-                            </Button>
-                          )}
-                          secondary={(
-                            <Button
-                              onClick={onLoadValue}
-                              size="small"
-                              variant="outlined"
-                              startIcon={<GetAppIcon />}
-                              data-key={key}
-                              data-task-id={item.id}
-                            >
-                              Download value
-                            </Button>
-                          )}
+                          primary={`task id: ${item.id}`}
+                          secondary={`[${statusFormatter(item.status)}] ${item.name}`}
                         />
-                        {value != null && (
-                          <ResultValue>
-                            <pre>
-                              {value || ''}
-                            </pre>
-                          </ResultValue>
-                        )}
-                      </ListItem>
-                    ))}
-                  </List>
-                </ListItem>
-              ))}
+                        <ListItem component="div">
+                          Results
+                        </ListItem>
+                        {!resultKeys[item.id] ? (
+                          <ListItem component="div">
+                            No Data
+                          </ListItem>
+                        ) : resultKeys[item.id].map(({ key, value }) => (
+                          <ListItem component="div" key={key}>
+                            <ListItemText
+                              primary={(
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={onLoadVisualize}
+                                  data-key={key}
+                                  data-task-id={item.id}
+                                  startIcon={<WallpaperIcon />}
+                                >
+                                  Render value
+                                </Button>
+                              )}
+                              secondary={(
+                                <Button
+                                  onClick={onLoadValue}
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<GetAppIcon />}
+                                  data-key={key}
+                                  data-task-id={item.id}
+                                >
+                                  Download value
+                                </Button>
+                              )}
+                            />
+                            {value != null && (
+                              <ResultValue>
+                                <pre>
+                                  {value || ''}
+                                </pre>
+                              </ResultValue>
+                            )}
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ImageList cols={2}>
+                        {Object.keys(Object(currImages[item.id])).map((key) => (
+                          <ImageListItem key={`${item.id}-${key}-${item.id}`}>
+                            <p>
+                              <Box
+                                key={`${item.id}-${key}-${item.id}`}
+                                component="img"
+                                src={currImages[item.id][key]}
+                                alt={key}
+                              />
+                            </p>
+                          </ImageListItem>
+                        ))}
+                      </ImageList>
+                    </Grid>
+                  </Grid>
+                ))}
+              </Grid>
             </List>
           </AccordionDetails>
         </Accordion>
       );
     },
-    [onLoadValue, onLoadResults, selectedBlock, tasks, results],
+    [onLoadValue, selectedBlock, tasks, results, onLoadVisualize, currImages],
   );
 
   useEffect(

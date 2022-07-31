@@ -3,9 +3,6 @@ import React, { useCallback, useMemo } from 'react';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
 import DynamicFeedOutlinedIcon from '@material-ui/icons/DynamicFeedOutlined';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import WallpaperIcon from '@material-ui/icons/Wallpaper';
@@ -14,6 +11,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { actions as tasksActions, selectors as tasksSelectors } from '@/redux/modules/tasks';
 import Button from '+components/Button';
 import FormModal from '+components/FormModal';
+import { Box } from '+components/Tabs';
+import Container from '@/components/Project/components/Container';
 
 const ShowVisualizeModal = (props) => {
   const {
@@ -75,22 +74,25 @@ const ShowVisualizeModal = (props) => {
           <DynamicFeedOutlinedIcon /> Tasks
         </AccordionSummary>
         <AccordionDetails>
-          <List dense component="div">
-            {initialValues.map((item) => (
-              <ListItem component="div" key={item}>
-                <ListItemText
-                  primary={`task id: ${item.id}.`}
+          {/*{initialValues.map((item) => (*/}
+          {/*  <ListItem component="div" key={item}>*/}
+          {/*    <ListItemText*/}
+          {/*      primary={`task id: ${item.id}.`}*/}
+          {/*    />*/}
+          {/*  </ListItem>*/}
+          {/*))}*/}
+          {Object.values(images_visualization).map((children) => (
+            Object.keys(children).map((key) => (
+              <Container key={Object.keys(children)[0]}>
+                <Box
+                  key={Object.keys(children)[0]}
+                  component="img"
+                  src={children[key]}
+                  alt={key}
                 />
-              </ListItem>
-            ))}
-            {Object.values(images_visualization).map((children) => (
-              Object.keys(children).map((key) => (
-                <ListItem component="div" key={Object.keys(children)[0]}>
-                  <img src={children[key]} alt={key} />
-                </ListItem>
-              ))
-            ))}
-          </List>
+              </Container>
+            ))
+          ))}
         </AccordionDetails>
       </Accordion>
       <Button
