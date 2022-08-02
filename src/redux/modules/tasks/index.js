@@ -319,6 +319,8 @@ const slice = createSlice({
             visList = ['image'];
           } else if (name === 'feature_extraction') {
             visList = ['boxplot', 'scatter'];
+           } else if (['transformation', 'cluster', 'dml'].includes(name) && name) {
+            visList = ['heatmap', 'scatter', 'barplot'];
           } else {
             visList = ['labels'];
           }
