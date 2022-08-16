@@ -538,7 +538,7 @@ const Pipeline = () => {
                       </List>
                     </Grid>
                     <Grid item xs={12}>
-                      <ImageList cols={2}>
+                      <ImageList cols={1}>
                         {Object.keys(Object(currImages[item.id])).map((key) => (
                           <ImageListItem key={`${item.id}-${key}-${item.id}`}>
                             <p>
