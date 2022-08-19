@@ -264,7 +264,11 @@ const slice = createSlice({
             value = data || (message && `Error at converting: ${message}`);
           } else {
             yield put(actions.fetchTaskResultSuccess({ id, key, value: 'Open save dialog...' }));
-            yield saveFile(res.data, `${id}_result_${key}.${type.split('/')[1]}`);
+            let ext = type.split('/')[1];
+            if (ext === 'vnd.ms-excel') {
+              ext = 'csv';
+            }
+            yield saveFile(res.data, `${id}_result_${key}.${ext}`);
           }
 
           yield put(actions.fetchTaskResultSuccess({ id, key, value }));
