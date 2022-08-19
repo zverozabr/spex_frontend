@@ -264,7 +264,11 @@ const slice = createSlice({
             value = data || (message && `Error at converting: ${message}`);
           } else {
             yield put(actions.fetchTaskResultSuccess({ id, key, value: 'Open save dialog...' }));
-            yield saveFile(res.data, `${id}_result_${key}.${type.split('/')[1]}`);
+            let ext = type.split('/')[1];
+            if (ext === 'vnd.ms-excel') {
+              ext = 'csv';
+            }
+            yield saveFile(res.data, `${id}_result_${key}.${ext}`);
           }
 
           yield put(actions.fetchTaskResultSuccess({ id, key, value }));
@@ -310,7 +314,6 @@ const slice = createSlice({
 
     [actions.fetchTaskVisualize]: {
       * saga({ payload: { id, name, key, script } }) {
-        initApi();       
         let visList = [];
         if (script === 'segmentation' || script === 'cell_seg') {
           const labels_list = ['load_tiff, background_subtract'];
@@ -319,16 +322,21 @@ const slice = createSlice({
             visList = ['image'];
           } else if (name === 'feature_extraction') {
             visList = ['boxplot', 'scatter'];
-           } else if (['transformation', 'cluster', 'dml'].includes(name) && name) {
-            visList = ['heatmap', 'scatter', 'barplot'];
           } else {
             visList = ['labels'];
           }
-        } else {
-          visList = ['heatmap', 'barplot', 'scatter'];
+        } else if (script === 'clustering') {
+          if (['transformation', 'zscore'].includes(name) && name) {
+            visList = [];
+          } else if (name === 'cluster') {
+            visList = ['heatmap', 'scatter'];
+          } else {
+            visList = ['heatmap', 'barplot', 'scatter'];
+          }
         }
 
         try {
+          initApi();
           for (let i = 0; i < visList.length; i++) {
             let visName = visList[i];
             let url_keys = `${baseUrl}/vis/${id}?key=${key}&vis_name=${visName}`;
