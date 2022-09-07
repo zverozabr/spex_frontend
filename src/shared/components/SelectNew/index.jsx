@@ -71,6 +71,7 @@ const SelectNew = (props) => {
       getOptionLabel={getOptionLabel}
       renderOption={renderOption}
       options={options}
+      disableCloseOnSelect
       value={fixedValue}
       onChange={doChange}
     />
